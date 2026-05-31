@@ -3,6 +3,9 @@ import { NextResponse } from "next/server";
 import { createProviderRegistration } from "@/lib/provider-registration-storage";
 import type { ProviderRegistrationData } from "@/lib/provider-registration-types";
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 export async function POST(request: Request) {
   try {
     const payload = (await request.json()) as ProviderRegistrationData;
