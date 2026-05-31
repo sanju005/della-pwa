@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -11,23 +12,24 @@ import {
 
 export default function LoginPage() {
   return (
-    <main className="min-h-[100dvh] overflow-x-hidden bg-[#f6fff8]">
-      <div className="mx-auto min-h-[100dvh] w-full max-w-[430px] bg-[#fff] px-5 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
-        <div className="relative min-h-[100dvh] bg-[radial-gradient(circle_at_top,_rgba(190,242,198,0.5),_transparent_38%),linear-gradient(180deg,#fbfffb_0%,#f6fff8_100%)] pb-8">
-          <section className="relative overflow-hidden px-2 pt-6">
-            <div className="absolute inset-x-[-20%] top-[22%] h-[58%] rounded-full bg-[radial-gradient(circle,_rgba(187,247,208,0.36),_transparent_70%)]" />
+    <main className="min-h-[100dvh] overflow-x-hidden bg-[#F6FFF8]">
+      <div className="mx-auto min-h-[100dvh] w-full max-w-[430px] bg-[#F6FFF8] px-5 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
+        <div className="relative min-h-[100dvh] bg-[#F6FFF8] pb-8">
+          <section className="relative overflow-hidden px-1 pt-6">
+            <div className="absolute right-[-24%] top-[5%] h-[75%] w-[78%] rounded-full bg-[#ECF8EE]" />
+            <div className="absolute left-[45%] top-[34%] h-[55%] w-[72%] rounded-full bg-[#F1FAF3]" />
 
             <div className="relative z-10">
               <Link
-                href="/signup"
+                href="/"
                 aria-label="Back"
-                className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-white text-[#16A34A] shadow-[0_12px_22px_rgba(15,23,42,0.08)]"
+                className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-white text-[#16A34A] shadow-[0_12px_24px_rgba(15,23,42,0.08)]"
               >
                 <ArrowLeft className="h-5 w-5" />
               </Link>
 
               <div className="mt-5">
-                <h1 className="text-[3.1rem] font-extrabold leading-none tracking-[-0.08em] text-[#16A34A]">
+                <h1 className="text-[3rem] font-extrabold leading-none tracking-[-0.08em] text-[#16A34A]">
                   DELLA
                 </h1>
                 <p className="mt-2 text-[16px] font-medium text-[#64748B]">
@@ -35,18 +37,18 @@ export default function LoginPage() {
                 </p>
               </div>
 
-              <div className="mt-7 inline-flex items-center gap-3 rounded-full bg-[linear-gradient(90deg,rgba(220,252,231,0.96),rgba(220,252,231,0.55))] px-5 py-3 text-[#15803D] shadow-[0_12px_28px_rgba(22,163,74,0.08)]">
-                <BadgeCheck className="h-5 w-5 fill-[#16A34A] text-white" />
+              <div className="mt-8 inline-flex items-center gap-3 rounded-full bg-[#E8F7EA] px-5 py-3 text-[#15803D] shadow-[0_8px_18px_rgba(22,163,74,0.06)]">
+                <BadgeCheck className="h-5 w-5 text-[#16A34A]" />
                 <span className="text-[15px] font-semibold">
-                  Trusted. Verified. Reliable.
+                  Trusted • Verified • Reliable
                 </span>
               </div>
 
-              <div className="mt-6">
-                <h2 className="text-[4rem] font-extrabold leading-[0.92] tracking-[-0.09em] text-[#0F172A]">
+              <div className="mt-7">
+                <h2 className="text-[3.45rem] font-extrabold leading-[0.95] tracking-[-0.075em] text-[#0F172A]">
                   Welcome back
                 </h2>
-                <p className="mt-4 text-[19px] leading-8 text-[#64748B]">
+                <p className="mt-4 text-[18px] leading-8 text-[#64748B]">
                   Sign in to continue to DELLA
                 </p>
               </div>
@@ -55,7 +57,7 @@ export default function LoginPage() {
             </div>
           </section>
 
-          <section className="relative z-20 -mt-6 rounded-[28px] bg-white px-6 py-7 shadow-[0_18px_38px_rgba(15,23,42,0.08)]">
+          <section className="relative z-20 -mt-5 rounded-[28px] bg-white px-6 py-7 shadow-[0_16px_36px_rgba(15,23,42,0.08)]">
             <div>
               <label className="block text-[16px] font-extrabold text-[#0F172A]">
                 Email or Phone
@@ -93,13 +95,13 @@ export default function LoginPage() {
 
             <div className="mt-4 flex justify-end">
               <Link href="/login" className="text-[15px] font-extrabold text-[#16A34A]">
-                Forgot password?
+                Forgot Password?
               </Link>
             </div>
 
             <Link
               href="/home"
-              className="mt-8 inline-flex h-[56px] w-full items-center justify-center rounded-[20px] bg-[linear-gradient(180deg,#18B548_0%,#149B3F_100%)] text-[18px] font-extrabold text-white shadow-[0_18px_34px_rgba(22,163,74,0.22)]"
+              className="mt-8 inline-flex h-[56px] w-full items-center justify-center rounded-[20px] bg-[#16A34A] text-[18px] font-extrabold text-white shadow-[0_14px_28px_rgba(22,163,74,0.16)]"
             >
               Continue
             </Link>
@@ -118,22 +120,24 @@ export default function LoginPage() {
             </p>
           </section>
 
-          <section className="mt-7 rounded-[26px] bg-[linear-gradient(180deg,#fbfffc_0%,#f4fbf6_100%)] px-5 py-5 shadow-[0_16px_34px_rgba(15,23,42,0.05)]">
-            <div className="grid grid-cols-3 gap-4">
+          <section className="mt-7 rounded-[26px] bg-[#FBFFFC] px-5 py-5 shadow-[0_12px_28px_rgba(15,23,42,0.05)]">
+            <div className="grid grid-cols-3 gap-0">
               <TrustItem
                 icon={<ShieldCheck className="h-6 w-6 text-[#16A34A]" />}
                 title="Verified Professionals"
                 subtitle="Only trusted experts"
+                bordered
               />
               <TrustItem
                 icon={<Lock className="h-6 w-6 text-[#16A34A]" />}
                 title="Secure Bookings"
                 subtitle="Your data is safe"
+                bordered
               />
               <TrustItem
                 icon={<Headphones className="h-6 w-6 text-[#16A34A]" />}
                 title="Fast Support"
-                subtitle="We’re here to help"
+                subtitle="We're here to help"
               />
             </div>
           </section>
@@ -152,14 +156,16 @@ function TrustItem({
   icon,
   title,
   subtitle,
+  bordered = false,
 }: {
-  icon: React.ReactNode;
+  icon: ReactNode;
   title: string;
   subtitle: string;
+  bordered?: boolean;
 }) {
   return (
-    <div className="flex flex-col items-center text-center">
-      <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[linear-gradient(180deg,#eefbef_0%,#dff6e2_100%)]">
+    <div className={`flex flex-col px-3 text-left ${bordered ? "border-r border-[#E2E8F0]" : ""}`}>
+      <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#EEF8EF]">
         {icon}
       </div>
       <p className="mt-3 text-[15px] font-extrabold leading-5 text-[#0F172A]">
@@ -172,47 +178,48 @@ function TrustItem({
 
 function HeroScene() {
   return (
-    <div className="relative mt-6 h-[340px] overflow-hidden rounded-[34px] bg-[radial-gradient(circle_at_top_left,_rgba(220,252,231,0.95),_rgba(240,253,244,0.7)_46%,_transparent_70%),linear-gradient(180deg,#f8fff9_0%,#eff9f1_100%)]">
-      <div className="absolute right-[-14%] top-[10%] h-[86%] w-[78%] rounded-full bg-[radial-gradient(circle,_rgba(187,247,208,0.55),_transparent_70%)]" />
+    <div className="relative mt-6 h-[312px] overflow-hidden rounded-[34px] bg-[#F4FBF6]">
+      <div className="absolute right-[-10%] top-[9%] h-[84%] w-[72%] rounded-full bg-[#E9F7EB]" />
+      <div className="absolute left-[46%] top-[32%] h-[60%] w-[70%] rounded-full bg-[#EFF9F1]" />
 
-      <div className="absolute right-14 top-7 h-26 w-22 rounded-[4px] border-[6px] border-[#ecdcb9] bg-white shadow-[0_14px_26px_rgba(15,23,42,0.08)]">
+      <div className="absolute right-12 top-7 h-24 w-20 rounded-[4px] border-[5px] border-[#ECDCB9] bg-white shadow-[0_12px_24px_rgba(15,23,42,0.07)]">
         <div className="flex h-full items-center justify-center">
           <HouseBadge />
         </div>
       </div>
 
-      <div className="absolute left-[56%] top-[34%] h-24 w-16 -translate-x-1/2">
-        <div className="absolute bottom-0 left-4 h-16 w-8 rounded-t-full bg-[#67b95e]" />
-        <div className="absolute bottom-11 left-0 h-10 w-7 rotate-[-28deg] rounded-full bg-[#79c76e]" />
-        <div className="absolute bottom-13 left-7 h-10 w-7 rotate-[22deg] rounded-full bg-[#76c36b]" />
-        <div className="absolute bottom-18 left-2 h-10 w-7 rotate-[-10deg] rounded-full bg-[#87d07b]" />
-        <div className="absolute bottom-0 left-2 h-8 w-12 rounded-t-[18px] rounded-b-[14px] bg-[#efe6d5]" />
+      <div className="absolute left-[54%] top-[35%] h-22 w-14 -translate-x-1/2">
+        <div className="absolute bottom-0 left-4 h-14 w-7 rounded-t-full bg-[#67B95E]" />
+        <div className="absolute bottom-9 left-0 h-9 w-6 rotate-[-28deg] rounded-full bg-[#79C76E]" />
+        <div className="absolute bottom-11 left-6 h-9 w-6 rotate-[22deg] rounded-full bg-[#76C36B]" />
+        <div className="absolute bottom-15 left-2 h-9 w-6 rotate-[-10deg] rounded-full bg-[#87D07B]" />
+        <div className="absolute bottom-0 left-2 h-7 w-10 rounded-t-[16px] rounded-b-[12px] bg-[#EFE6D5]" />
       </div>
 
-      <div className="absolute left-[59%] top-[56%] h-18 w-16 -translate-x-1/2 rounded-full bg-[#ddc18b]" />
-      <div className="absolute left-[59%] top-[61%] h-18 w-16 -translate-x-1/2 rounded-[14px] bg-[#f0d9a8]" />
-      <div className="absolute left-[55%] top-[70%] h-18 w-1.5 rounded-full bg-[#e2b96b]" />
-      <div className="absolute left-[59%] top-[70%] h-18 w-1.5 rounded-full bg-[#e2b96b]" />
-      <div className="absolute left-[63%] top-[70%] h-18 w-1.5 rounded-full bg-[#e2b96b]" />
-      <div className="absolute left-[57.5%] top-[78%] h-8 w-1.5 rotate-[14deg] rounded-full bg-[#c99a51]" />
-      <div className="absolute left-[61.5%] top-[78%] h-8 w-1.5 rotate-[-14deg] rounded-full bg-[#c99a51]" />
+      <div className="absolute left-[56%] top-[58%] h-16 w-14 -translate-x-1/2 rounded-full bg-[#DDC18B]" />
+      <div className="absolute left-[56%] top-[62%] h-14 w-14 -translate-x-1/2 rounded-[14px] bg-[#F0D9A8]" />
+      <div className="absolute left-[52.5%] top-[70%] h-14 w-1.5 rounded-full bg-[#E2B96B]" />
+      <div className="absolute left-[56%] top-[70%] h-14 w-1.5 rounded-full bg-[#E2B96B]" />
+      <div className="absolute left-[59.5%] top-[70%] h-14 w-1.5 rounded-full bg-[#E2B96B]" />
+      <div className="absolute left-[54.5%] top-[77%] h-6 w-1.5 rotate-[14deg] rounded-full bg-[#C99A51]" />
+      <div className="absolute left-[57.8%] top-[77%] h-6 w-1.5 rotate-[-14deg] rounded-full bg-[#C99A51]" />
 
-      <div className="absolute right-[8%] top-[15%] h-44 w-20">
-        <div className="absolute bottom-0 left-5 h-24 w-10 rounded-t-full bg-[#63b857]" />
-        <div className="absolute bottom-13 left-0 h-16 w-10 rotate-[-30deg] rounded-full bg-[#79c96e]" />
-        <div className="absolute bottom-18 left-10 h-16 w-10 rotate-[26deg] rounded-full bg-[#77c66a]" />
-        <div className="absolute bottom-29 left-1 h-16 w-10 rotate-[-18deg] rounded-full bg-[#83d177]" />
-        <div className="absolute bottom-30 left-10 h-16 w-10 rotate-[16deg] rounded-full bg-[#72c165]" />
-        <div className="absolute bottom-0 left-2 h-14 w-16 rounded-t-[24px] rounded-b-[18px] bg-[#efe3ca]" />
+      <div className="absolute right-[6%] top-[18%] h-40 w-18">
+        <div className="absolute bottom-0 left-4 h-20 w-9 rounded-t-full bg-[#63B857]" />
+        <div className="absolute bottom-11 left-0 h-14 w-9 rotate-[-30deg] rounded-full bg-[#79C96E]" />
+        <div className="absolute bottom-16 left-8 h-14 w-9 rotate-[26deg] rounded-full bg-[#77C66A]" />
+        <div className="absolute bottom-25 left-1 h-14 w-9 rotate-[-18deg] rounded-full bg-[#83D177]" />
+        <div className="absolute bottom-26 left-8 h-14 w-9 rotate-[16deg] rounded-full bg-[#72C165]" />
+        <div className="absolute bottom-0 left-1 h-12 w-14 rounded-t-[22px] rounded-b-[16px] bg-[#EFE3CA]" />
       </div>
 
-      <div className="absolute right-[20%] top-[49%] h-40 w-40 rounded-[34px] bg-[linear-gradient(180deg,#eaf7ea_0%,#bfe7c0_100%)] shadow-[0_18px_34px_rgba(72,119,73,0.2)]">
-        <div className="absolute left-[10%] top-[19%] h-28 w-28 rounded-[26px] bg-[linear-gradient(180deg,#d7f0d8_0%,#a8d7a9_100%)]" />
-        <div className="absolute left-[8%] top-[24%] h-16 w-11 rounded-[20px] bg-[linear-gradient(180deg,#d7efd8_0%,#b0d7b1_100%)]" />
-        <div className="absolute right-[8%] top-[24%] h-16 w-11 rounded-[20px] bg-[linear-gradient(180deg,#d7efd8_0%,#b0d7b1_100%)]" />
-        <div className="absolute left-[28%] top-[28%] h-14 w-14 rounded-[18px] bg-[linear-gradient(180deg,#fffdf6_0%,#f0ead6_100%)] shadow-[0_10px_16px_rgba(15,23,42,0.08)]" />
-        <div className="absolute bottom-[5%] left-[26%] h-20 w-4 rotate-[14deg] rounded-full bg-[#d2a255]" />
-        <div className="absolute bottom-[5%] right-[26%] h-20 w-4 rotate-[-14deg] rounded-full bg-[#d2a255]" />
+      <div className="absolute right-[18%] top-[51%] h-36 w-36 rounded-[30px] bg-[#CEE9D0] shadow-[0_16px_30px_rgba(72,119,73,0.16)]">
+        <div className="absolute left-[11%] top-[20%] h-24 w-24 rounded-[24px] bg-[#B9D9BA]" />
+        <div className="absolute left-[7%] top-[24%] h-14 w-10 rounded-[18px] bg-[#B8D8B9]" />
+        <div className="absolute right-[7%] top-[24%] h-14 w-10 rounded-[18px] bg-[#B8D8B9]" />
+        <div className="absolute left-[29%] top-[29%] h-12 w-12 rounded-[16px] bg-[#FFF9EE] shadow-[0_8px_14px_rgba(15,23,42,0.08)]" />
+        <div className="absolute bottom-[5%] left-[26%] h-18 w-3.5 rotate-[14deg] rounded-full bg-[#D2A255]" />
+        <div className="absolute bottom-[5%] right-[26%] h-18 w-3.5 rotate-[-14deg] rounded-full bg-[#D2A255]" />
       </div>
     </div>
   );
