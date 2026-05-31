@@ -1,12 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Manrope } from "next/font/google";
 import "./globals.css";
-
-const manrope = Manrope({
-  variable: "--font-manrope",
-  subsets: ["latin"],
-  weight: ["500", "600", "700", "800"],
-});
 
 export const metadata: Metadata = {
   title: "DELLA",
@@ -35,10 +28,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="en"
-      className={`${manrope.variable} h-full bg-[#f3fbf4] antialiased`}
-    >
+    <html lang="en" className="h-full bg-[#f3fbf4] antialiased">
       <body className="min-h-full overflow-x-hidden bg-[#f3fbf4] text-[#0f172a]">
         {children}
       </body>

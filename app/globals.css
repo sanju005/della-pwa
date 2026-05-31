@@ -3,6 +3,8 @@
 :root {
   --background: #f3fbf4;
   --foreground: #0f172a;
+  --font-manrope:
+    "Aptos", "Segoe UI", "Helvetica Neue", "Arial", sans-serif;
   --della-green: #16a34a;
   --della-green-dark: #0f8b3d;
   --della-green-soft: #d8f4dd;
