@@ -29,7 +29,7 @@ export default function LoginPage() {
               </Link>
 
               <div className="mt-5">
-                <h1 className="text-[3rem] font-extrabold leading-none tracking-[-0.08em] text-[#16A34A]">
+                <h1 className="text-[3.1rem] font-extrabold leading-none tracking-[-0.08em] text-[#16A34A]">
                   DELLA
                 </h1>
                 <p className="mt-2 text-[16px] font-medium text-[#64748B]">
@@ -37,7 +37,7 @@ export default function LoginPage() {
                 </p>
               </div>
 
-              <div className="mt-8 inline-flex items-center gap-3 rounded-full bg-[#E8F7EA] px-5 py-3 text-[#15803D] shadow-[0_8px_18px_rgba(22,163,74,0.06)]">
+              <div className="mt-8 inline-flex items-center gap-3 rounded-full bg-[#E8F7EA] px-5 py-3 text-[#15803D] shadow-[0_8px_18px_rgba(22,163,74,0.05)]">
                 <BadgeCheck className="h-5 w-5 text-[#16A34A]" />
                 <span className="text-[15px] font-semibold">
                   Trusted • Verified • Reliable
@@ -45,7 +45,7 @@ export default function LoginPage() {
               </div>
 
               <div className="mt-7">
-                <h2 className="text-[3.45rem] font-extrabold leading-[0.95] tracking-[-0.075em] text-[#0F172A]">
+                <h2 className="text-[3.5rem] font-extrabold leading-[0.94] tracking-[-0.08em] text-[#0F172A]">
                   Welcome back
                 </h2>
                 <p className="mt-4 text-[18px] leading-8 text-[#64748B]">
@@ -57,7 +57,7 @@ export default function LoginPage() {
             </div>
           </section>
 
-          <section className="relative z-20 -mt-5 rounded-[28px] bg-white px-6 py-7 shadow-[0_16px_36px_rgba(15,23,42,0.08)]">
+          <section className="relative z-20 -mt-3 rounded-[28px] bg-white px-6 py-7 shadow-[0_16px_36px_rgba(15,23,42,0.08)]">
             <div>
               <label className="block text-[16px] font-extrabold text-[#0F172A]">
                 Email or Phone
@@ -120,7 +120,7 @@ export default function LoginPage() {
             </p>
           </section>
 
-          <section className="mt-7 rounded-[26px] bg-[#FBFFFC] px-5 py-5 shadow-[0_12px_28px_rgba(15,23,42,0.05)]">
+          <section className="mt-7 rounded-[26px] bg-[#FBFFFC] px-5 py-5 shadow-[0_12px_28px_rgba(15,23,42,0.045)]">
             <div className="grid grid-cols-3 gap-0">
               <TrustItem
                 icon={<ShieldCheck className="h-6 w-6 text-[#16A34A]" />}
@@ -178,48 +178,48 @@ function TrustItem({
 
 function HeroScene() {
   return (
-    <div className="relative mt-6 h-[312px] overflow-hidden rounded-[34px] bg-[#F4FBF6]">
-      <div className="absolute right-[-10%] top-[9%] h-[84%] w-[72%] rounded-full bg-[#E9F7EB]" />
-      <div className="absolute left-[46%] top-[32%] h-[60%] w-[70%] rounded-full bg-[#EFF9F1]" />
+    <div className="relative mt-4 h-[306px] overflow-hidden">
+      <div className="absolute right-[-12%] top-[8%] h-[86%] w-[74%] rounded-full bg-[#ECF8EE]" />
+      <div className="absolute left-[48%] top-[37%] h-[56%] w-[67%] rounded-full bg-[#F1FAF3]" />
 
-      <div className="absolute right-12 top-7 h-24 w-20 rounded-[4px] border-[5px] border-[#ECDCB9] bg-white shadow-[0_12px_24px_rgba(15,23,42,0.07)]">
+      <div className="absolute right-12 top-2 h-28 w-24 rounded-[4px] border-[5px] border-[#EADAB8] bg-white shadow-[0_10px_24px_rgba(15,23,42,0.06)]">
         <div className="flex h-full items-center justify-center">
           <HouseBadge />
         </div>
       </div>
 
-      <div className="absolute left-[54%] top-[35%] h-22 w-14 -translate-x-1/2">
-        <div className="absolute bottom-0 left-4 h-14 w-7 rounded-t-full bg-[#67B95E]" />
-        <div className="absolute bottom-9 left-0 h-9 w-6 rotate-[-28deg] rounded-full bg-[#79C76E]" />
-        <div className="absolute bottom-11 left-6 h-9 w-6 rotate-[22deg] rounded-full bg-[#76C36B]" />
-        <div className="absolute bottom-15 left-2 h-9 w-6 rotate-[-10deg] rounded-full bg-[#87D07B]" />
-        <div className="absolute bottom-0 left-2 h-7 w-10 rounded-t-[16px] rounded-b-[12px] bg-[#EFE6D5]" />
+      <div className="absolute left-[56%] top-[43%] h-24 w-16 -translate-x-1/2">
+        <div className="absolute bottom-0 left-4 h-16 w-8 rounded-t-full bg-[#6ABD61]" />
+        <div className="absolute bottom-10 left-0 h-10 w-7 rotate-[-28deg] rounded-full bg-[#81CA74]" />
+        <div className="absolute bottom-12 left-7 h-10 w-7 rotate-[22deg] rounded-full bg-[#79C96D]" />
+        <div className="absolute bottom-17 left-2 h-10 w-7 rotate-[-10deg] rounded-full bg-[#8CD580]" />
+        <div className="absolute bottom-0 left-2 h-8 w-12 rounded-t-[18px] rounded-b-[14px] bg-[#EFE4D0]" />
       </div>
 
-      <div className="absolute left-[56%] top-[58%] h-16 w-14 -translate-x-1/2 rounded-full bg-[#DDC18B]" />
-      <div className="absolute left-[56%] top-[62%] h-14 w-14 -translate-x-1/2 rounded-[14px] bg-[#F0D9A8]" />
-      <div className="absolute left-[52.5%] top-[70%] h-14 w-1.5 rounded-full bg-[#E2B96B]" />
-      <div className="absolute left-[56%] top-[70%] h-14 w-1.5 rounded-full bg-[#E2B96B]" />
-      <div className="absolute left-[59.5%] top-[70%] h-14 w-1.5 rounded-full bg-[#E2B96B]" />
-      <div className="absolute left-[54.5%] top-[77%] h-6 w-1.5 rotate-[14deg] rounded-full bg-[#C99A51]" />
-      <div className="absolute left-[57.8%] top-[77%] h-6 w-1.5 rotate-[-14deg] rounded-full bg-[#C99A51]" />
+      <div className="absolute left-[58.5%] top-[66%] h-10 w-16 -translate-x-1/2 rounded-full bg-[#DDBE82]" />
+      <div className="absolute left-[58.5%] top-[69%] h-10 w-16 -translate-x-1/2 rounded-[14px] bg-[#F0D49A]" />
+      <div className="absolute left-[55%] top-[76%] h-11 w-1.5 rounded-full bg-[#DDB166]" />
+      <div className="absolute left-[58.5%] top-[76%] h-11 w-1.5 rounded-full bg-[#DDB166]" />
+      <div className="absolute left-[62%] top-[76%] h-11 w-1.5 rounded-full bg-[#DDB166]" />
+      <div className="absolute left-[56.8%] top-[81%] h-5 w-1.5 rotate-[16deg] rounded-full bg-[#C99545]" />
+      <div className="absolute left-[60.1%] top-[81%] h-5 w-1.5 rotate-[-16deg] rounded-full bg-[#C99545]" />
 
-      <div className="absolute right-[6%] top-[18%] h-40 w-18">
-        <div className="absolute bottom-0 left-4 h-20 w-9 rounded-t-full bg-[#63B857]" />
-        <div className="absolute bottom-11 left-0 h-14 w-9 rotate-[-30deg] rounded-full bg-[#79C96E]" />
-        <div className="absolute bottom-16 left-8 h-14 w-9 rotate-[26deg] rounded-full bg-[#77C66A]" />
-        <div className="absolute bottom-25 left-1 h-14 w-9 rotate-[-18deg] rounded-full bg-[#83D177]" />
-        <div className="absolute bottom-26 left-8 h-14 w-9 rotate-[16deg] rounded-full bg-[#72C165]" />
-        <div className="absolute bottom-0 left-1 h-12 w-14 rounded-t-[22px] rounded-b-[16px] bg-[#EFE3CA]" />
+      <div className="absolute right-[5%] top-[18%] h-44 w-20">
+        <div className="absolute bottom-0 left-5 h-24 w-10 rounded-t-full bg-[#63B857]" />
+        <div className="absolute bottom-13 left-0 h-16 w-10 rotate-[-30deg] rounded-full bg-[#79C96E]" />
+        <div className="absolute bottom-18 left-10 h-16 w-10 rotate-[26deg] rounded-full bg-[#77C66A]" />
+        <div className="absolute bottom-29 left-1 h-16 w-10 rotate-[-18deg] rounded-full bg-[#83D177]" />
+        <div className="absolute bottom-30 left-10 h-16 w-10 rotate-[16deg] rounded-full bg-[#72C165]" />
+        <div className="absolute bottom-0 left-2 h-14 w-16 rounded-t-[24px] rounded-b-[18px] bg-[#EFE3CA]" />
       </div>
 
-      <div className="absolute right-[18%] top-[51%] h-36 w-36 rounded-[30px] bg-[#CEE9D0] shadow-[0_16px_30px_rgba(72,119,73,0.16)]">
-        <div className="absolute left-[11%] top-[20%] h-24 w-24 rounded-[24px] bg-[#B9D9BA]" />
-        <div className="absolute left-[7%] top-[24%] h-14 w-10 rounded-[18px] bg-[#B8D8B9]" />
-        <div className="absolute right-[7%] top-[24%] h-14 w-10 rounded-[18px] bg-[#B8D8B9]" />
-        <div className="absolute left-[29%] top-[29%] h-12 w-12 rounded-[16px] bg-[#FFF9EE] shadow-[0_8px_14px_rgba(15,23,42,0.08)]" />
-        <div className="absolute bottom-[5%] left-[26%] h-18 w-3.5 rotate-[14deg] rounded-full bg-[#D2A255]" />
-        <div className="absolute bottom-[5%] right-[26%] h-18 w-3.5 rotate-[-14deg] rounded-full bg-[#D2A255]" />
+      <div className="absolute right-[12%] top-[47%] h-44 w-40 rounded-[34px] bg-[#D3EAD3] shadow-[0_14px_28px_rgba(72,119,73,0.14)]">
+        <div className="absolute left-[10%] top-[18%] h-29 w-28 rounded-[28px] bg-[#C3DFC3]" />
+        <div className="absolute left-[7%] top-[24%] h-16 w-11 rounded-[20px] bg-[#C3DFC3]" />
+        <div className="absolute right-[7%] top-[24%] h-16 w-11 rounded-[20px] bg-[#C3DFC3]" />
+        <div className="absolute left-[29%] top-[28%] h-14 w-14 rounded-[18px] bg-[#FFF8EC] shadow-[0_8px_14px_rgba(15,23,42,0.06)]" />
+        <div className="absolute bottom-[5%] left-[28%] h-20 w-4 rotate-[14deg] rounded-full bg-[#D2A255]" />
+        <div className="absolute bottom-[5%] right-[24%] h-20 w-4 rotate-[-14deg] rounded-full bg-[#D2A255]" />
       </div>
     </div>
   );
