@@ -1,18 +1,11 @@
 import "server-only";
 
-import path from "node:path";
-
 import type {
   ProviderRegistrationData,
   ProviderRegistrationRecord,
 } from "./provider-registration-types";
 
 const expectedOtp = "123456";
-const registrationsFile = path.join(
-  process.cwd(),
-  "data",
-  "provider-registrations.json",
-);
 
 declare global {
   // eslint-disable-next-line no-var
@@ -26,7 +19,13 @@ function isWorkerdRuntime() {
 }
 
 async function ensureNodeDataFile() {
+  const path = await import("node:path");
   const { mkdir, readFile, writeFile } = await import("node:fs/promises");
+  const registrationsFile = path.join(
+    process.cwd(),
+    "data",
+    "provider-registrations.json",
+  );
   const dataDir = path.dirname(registrationsFile);
 
   await mkdir(dataDir, { recursive: true });
@@ -39,14 +38,26 @@ async function ensureNodeDataFile() {
 }
 
 async function readNodeRegistrations() {
+  const path = await import("node:path");
   const { readFile } = await import("node:fs/promises");
+  const registrationsFile = path.join(
+    process.cwd(),
+    "data",
+    "provider-registrations.json",
+  );
   await ensureNodeDataFile();
   const raw = await readFile(registrationsFile, "utf8");
   return JSON.parse(raw) as ProviderRegistrationRecord[];
 }
 
 async function writeNodeRegistrations(records: ProviderRegistrationRecord[]) {
+  const path = await import("node:path");
   const { writeFile } = await import("node:fs/promises");
+  const registrationsFile = path.join(
+    process.cwd(),
+    "data",
+    "provider-registrations.json",
+  );
   await ensureNodeDataFile();
   await writeFile(registrationsFile, JSON.stringify(records, null, 2), "utf8");
 }
