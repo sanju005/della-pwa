@@ -34,8 +34,8 @@ export function OnboardingShell({
 }: ShellProps) {
   return (
     <main className="min-h-[100dvh] overflow-x-hidden bg-[radial-gradient(circle_at_top,_rgba(190,242,198,0.4),_transparent_36%),linear-gradient(180deg,#fbfffb_0%,#eef8ef_100%)]">
-      <div className="mx-auto flex min-h-[100dvh] w-full max-w-[430px] flex-col px-3 py-3 sm:justify-center">
-        <section className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-[34px] border border-[#dfeadf] bg-[linear-gradient(180deg,#ffffff_0%,#f8fcf8_100%)] shadow-[0_24px_60px_rgba(15,139,61,0.12)] sm:min-h-[900px]">
+      <div className="mx-auto flex min-h-[100dvh] w-full max-w-[430px] flex-col bg-[linear-gradient(180deg,#ffffff_0%,#f8fcf8_100%)] px-5 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
+        <section className="relative flex min-h-[100dvh] flex-1 flex-col overflow-hidden">
           {accentBlob ? (
             <>
               <div className="pointer-events-none absolute right-[-10%] top-[-4%] h-40 w-40 rounded-full bg-[radial-gradient(circle,_rgba(220,252,231,0.95),_rgba(220,252,231,0.4)_58%,_transparent_72%)]" />
@@ -43,34 +43,13 @@ export function OnboardingShell({
             </>
           ) : null}
 
-          <div className="safe-top safe-bottom relative z-10 flex h-full flex-col px-5 pb-[calc(1.35rem+env(safe-area-inset-bottom))]">
-            <StatusBar />
+          <div className="relative z-10 flex h-full flex-1 flex-col py-5">
             <Header step={step} />
             <div className="flex flex-1 flex-col">{children}</div>
           </div>
         </section>
       </div>
     </main>
-  );
-}
-
-function StatusBar() {
-  return (
-    <div className="mb-6 flex items-center justify-between text-[13px] font-bold text-[#0f172a]">
-      <span>9:41</span>
-      <div className="flex items-center gap-1.5">
-        <span className="flex gap-0.5">
-          <span className="h-1 w-1 rounded-full bg-[#0f172a]" />
-          <span className="h-1.5 w-1 rounded-full bg-[#0f172a]" />
-          <span className="h-2 w-1 rounded-full bg-[#0f172a]" />
-          <span className="h-2.5 w-1 rounded-full bg-[#0f172a]" />
-        </span>
-        <span className="h-2 w-3 rounded-sm border border-[#0f172a]" />
-        <span className="h-2.5 w-4 rounded-[4px] border border-[#0f172a] px-[1px] py-[1px]">
-          <span className="block h-full w-[70%] rounded-[2px] bg-[#0f172a]" />
-        </span>
-      </div>
-    </div>
   );
 }
 

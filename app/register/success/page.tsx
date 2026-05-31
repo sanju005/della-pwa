@@ -1,7 +1,6 @@
 import {
   PrimaryLinkButton,
   RegisterShell,
-  StatusBar,
   SuccessCard,
   SuccessHero,
 } from "../_components/register-ui";
@@ -11,8 +10,6 @@ export default function RegisterSuccessPage() {
     <RegisterShell>
       <div className="flex min-h-full flex-col">
         <div className="flex-1 pt-10">
-          <StatusBar />
-
           <SuccessHero />
 
           <div className="text-center">

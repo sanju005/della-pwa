@@ -51,10 +51,9 @@ export function ProfileShell({
 }: ShellProps) {
   return (
     <main className="min-h-[100dvh] overflow-x-hidden bg-[#f6fff8]">
-      <div className="mx-auto flex min-h-[100dvh] w-full max-w-[430px] flex-col px-4 py-4 sm:justify-center">
-        <div className="safe-top safe-bottom relative min-h-[calc(100dvh-2rem)] overflow-hidden rounded-[34px] border border-[#dbe8df] bg-white shadow-[0_20px_60px_rgba(22,163,74,0.08)]">
-          <div className="rounded-t-[34px] bg-[#16a34a] px-5 pb-4 pt-3 text-white">
-            <StatusBar inverted />
+      <div className="mx-auto flex min-h-[100dvh] w-full max-w-[430px] flex-col bg-white px-5 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
+        <div className="relative min-h-[100dvh] overflow-hidden bg-white">
+          <div className="bg-[#16a34a] px-5 pb-4 pt-5 text-white">
             <div className="mt-4 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 {showBack ? (
@@ -88,28 +87,6 @@ export function ProfileShell({
         </div>
       </div>
     </main>
-  );
-}
-
-export function StatusBar({ inverted = false }: { inverted?: boolean }) {
-  const textTone = inverted ? "text-white" : "text-[#111827]";
-
-  return (
-    <div className={`flex items-center justify-between text-[15px] font-semibold ${textTone}`}>
-      <span>9:41</span>
-      <div className="flex items-center gap-1.5">
-        <span className="flex gap-0.5">
-          <span className={inverted ? "h-2 w-1 rounded-full bg-white/65" : "h-2 w-1 rounded-full bg-[#111827]/65"} />
-          <span className={inverted ? "h-2.5 w-1 rounded-full bg-white/75" : "h-2.5 w-1 rounded-full bg-[#111827]/75"} />
-          <span className={inverted ? "h-3 w-1 rounded-full bg-white/85" : "h-3 w-1 rounded-full bg-[#111827]/85"} />
-          <span className={inverted ? "h-3.5 w-1 rounded-full bg-white" : "h-3.5 w-1 rounded-full bg-[#111827]"} />
-        </span>
-        <WifiIcon className="h-4 w-4" />
-        <span className={`h-3.5 w-6 rounded-[4px] border ${inverted ? "border-white" : "border-[#111827]"} p-[1px]`}>
-          <span className={inverted ? "block h-full w-[72%] rounded-[2px] bg-white" : "block h-full w-[72%] rounded-[2px] bg-[#111827]"} />
-        </span>
-      </div>
-    </div>
   );
 }
 
@@ -977,16 +954,6 @@ function WalletIcon({ className }: { className?: string }) {
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={iconClass(className)}>
       <rect x="3" y="6" width="18" height="12" rx="2" />
       <path d="M16 12h3" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function WifiIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={iconClass(className)}>
-      <path d="M5 9a12 12 0 0 1 14 0" strokeLinecap="round" />
-      <path d="M8 12.5a7 7 0 0 1 8 0" strokeLinecap="round" />
-      <path d="M11 16a2 2 0 0 1 2 0" strokeLinecap="round" />
     </svg>
   );
 }

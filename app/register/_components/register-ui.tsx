@@ -35,32 +35,12 @@ type OtpBoxProps = {
 export function RegisterShell({ children }: ShellProps) {
   return (
     <main className="min-h-[100dvh] overflow-x-hidden bg-[#f6fff8]">
-      <div className="mx-auto flex min-h-[100dvh] w-full max-w-[430px] flex-col px-4 py-4 sm:justify-center">
-        <div className="safe-top safe-bottom-lg min-h-[calc(100dvh-2rem)] rounded-[34px] border border-[#dbe8df] bg-white px-5 py-4 shadow-[0_20px_60px_rgba(22,163,74,0.08)]">
+      <div className="mx-auto flex min-h-[100dvh] w-full max-w-[430px] flex-col bg-white px-5 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
+        <div className="min-h-[100dvh] bg-white py-5">
           {children}
         </div>
       </div>
     </main>
-  );
-}
-
-export function StatusBar() {
-  return (
-    <div className="flex items-center justify-between text-[15px] font-semibold text-[#111827]">
-      <span>9:41</span>
-      <div className="flex items-center gap-1.5">
-        <span className="flex gap-0.5">
-          <span className="h-2 w-1 rounded-full bg-[#111827]/65" />
-          <span className="h-2.5 w-1 rounded-full bg-[#111827]/75" />
-          <span className="h-3 w-1 rounded-full bg-[#111827]/85" />
-          <span className="h-3.5 w-1 rounded-full bg-[#111827]" />
-        </span>
-        <WifiIcon className="h-4 w-4 text-[#111827]" />
-        <span className="h-3.5 w-6 rounded-[4px] border border-[#111827] p-[1px]">
-          <span className="block h-full w-[72%] rounded-[2px] bg-[#111827]" />
-        </span>
-      </div>
-    </div>
   );
 }
 
@@ -70,9 +50,7 @@ export function RegisterHeader({
 }: HeaderProps) {
   return (
     <div className="mb-5">
-      <StatusBar />
-
-      <div className="mt-5 flex items-start justify-between">
+      <div className="flex items-start justify-between">
         <div className="flex items-start gap-2">
           {showBack ? (
             <Link
@@ -612,21 +590,6 @@ function PhoneShieldIcon({ className }: { className?: string }) {
   );
 }
 
-function WifiIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      className={className}
-    >
-      <path d="M5 9a12 12 0 0 1 14 0" strokeLinecap="round" />
-      <path d="M8 12.5a7 7 0 0 1 8 0" strokeLinecap="round" />
-      <path d="M11 16a2 2 0 0 1 2 0" strokeLinecap="round" />
-    </svg>
-  );
-}
 
 function SparkleIcon({ className }: { className?: string }) {
   return (

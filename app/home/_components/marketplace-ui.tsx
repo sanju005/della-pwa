@@ -21,13 +21,12 @@ export function MarketplaceScreen({
 }: MarketplaceShellProps) {
   return (
     <main className="min-h-[100dvh] overflow-x-hidden bg-[#f6fff8]">
-      <div className="mx-auto flex min-h-[100dvh] w-full max-w-[430px] flex-col px-4 py-4 sm:justify-center">
-        <div className="safe-top safe-bottom relative min-h-[calc(100dvh-2rem)] overflow-hidden rounded-[34px] border border-[#dbe8df] bg-[linear-gradient(180deg,#ffffff_0%,#f7fdf8_100%)] shadow-[0_20px_60px_rgba(22,163,74,0.08)]">
+      <div className="mx-auto flex min-h-[100dvh] w-full max-w-[430px] flex-col bg-[linear-gradient(180deg,#ffffff_0%,#f7fdf8_100%)] px-5 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
+        <div className="relative min-h-[100dvh] overflow-hidden">
           <div className="pointer-events-none absolute right-[-18%] top-[-10%] h-44 w-44 rounded-full bg-[radial-gradient(circle,_rgba(187,247,208,0.9),_transparent_70%)]" />
           <div className="pointer-events-none absolute inset-x-[-10%] bottom-[-12%] h-40 rounded-full bg-[radial-gradient(circle,_rgba(22,163,74,0.12),_transparent_68%)]" />
 
-          <div className="relative z-10 flex h-full min-h-[calc(100dvh-2rem)] flex-col px-5 pb-[calc(1rem+env(safe-area-inset-bottom))]">
-            <StatusBar />
+          <div className="relative z-10 flex h-full min-h-[100dvh] flex-col py-5">
             <header className="mb-6 flex items-start justify-between gap-4">
               <div>
                 <p className="text-[20px] font-extrabold tracking-[-0.05em] text-[#16a34a]">
@@ -200,26 +199,6 @@ export function MarketplaceScreen({
   );
 }
 
-function StatusBar() {
-  return (
-    <div className="mb-6 flex items-center justify-between pt-1 text-[15px] font-semibold text-[#111827]">
-      <span>9:41</span>
-      <div className="flex items-center gap-1.5">
-        <span className="flex gap-0.5">
-          <span className="h-2 w-1 rounded-full bg-[#111827]/65" />
-          <span className="h-2.5 w-1 rounded-full bg-[#111827]/75" />
-          <span className="h-3 w-1 rounded-full bg-[#111827]/85" />
-          <span className="h-3.5 w-1 rounded-full bg-[#111827]" />
-        </span>
-        <WifiIcon className="h-4 w-4" />
-        <span className="h-3.5 w-6 rounded-[4px] border border-[#111827] p-[1px]">
-          <span className="block h-full w-[72%] rounded-[2px] bg-[#111827]" />
-        </span>
-      </div>
-    </div>
-  );
-}
-
 function AvatarTile({ label }: { label: string }) {
   const letter = label.charAt(0);
 
@@ -277,22 +256,6 @@ function CheckIcon({ className }: { className?: string }) {
       className={className}
     >
       <path d="m5 13 4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function WifiIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      className={className}
-    >
-      <path d="M5 9a12 12 0 0 1 14 0" strokeLinecap="round" />
-      <path d="M8 12.5a7 7 0 0 1 8 0" strokeLinecap="round" />
-      <path d="M11 16a2 2 0 0 1 2 0" strokeLinecap="round" />
     </svg>
   );
 }
