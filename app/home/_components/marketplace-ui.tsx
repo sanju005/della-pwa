@@ -31,7 +31,9 @@ export function MarketplaceScreen({
   greetingName,
   locationLabel,
   categories,
-  popularProviders,
+  popularChefProviders,
+  popularElectricianProviders,
+  popularMaidProviders,
   upcomingBooking,
   errorMessage,
 }: HomeFeedData) {
@@ -88,124 +90,29 @@ export function MarketplaceScreen({
               </div>
             </section>
 
-          <section className="mt-6 overflow-hidden rounded-[24px] bg-[#16A34A] px-4 py-6 text-white shadow-[0_18px_36px_rgba(22,163,74,0.18)]">
-            <div className="relative">
-              <div className="max-w-[12.5rem]">
-                <h2 className="text-[24px] font-extrabold leading-[1.08] tracking-[-0.05em]">
-                  Book trusted home services near you
-                </h2>
-                <p className="mt-4 text-[15px] leading-7 text-white/88">
-                  Verified providers, clear prices, easy booking
-                </p>
-                <Link
-                  href="/providers"
-                  className="mt-6 inline-flex h-14 items-center gap-3 rounded-[16px] bg-white px-6 text-[16px] font-extrabold text-[#16A34A]"
-                >
-                  Book Now
-                  <ChevronRight className="h-5 w-5" />
-                </Link>
-              </div>
-
-              <div className="pointer-events-none absolute bottom-[-2.5rem] right-[-0.5rem] h-52 w-44">
-                <div className="absolute right-2 top-3 h-44 w-32 rounded-t-[90px] rounded-b-[18px] bg-[#1AA84C]" />
-                <div className="absolute right-0 top-10 h-36 w-24 rotate-[18deg] rounded-[14px] bg-[#1C8E46]" />
-                <div className="absolute bottom-0 right-4 h-42 w-20 rounded-t-[48px] bg-[#0F7F38]" />
-                <div className="absolute right-12 top-2 h-11 w-11 rounded-full bg-[#F3D7C1]" />
-                <div className="absolute right-10 top-16 h-18 w-15 rounded-[18px] bg-[#1E5F35]" />
-                <div className="absolute right-9 top-23 h-14 w-17 rounded-[16px] bg-[#145B2E]" />
-                <div className="absolute right-[5.25rem] top-[4.85rem] h-12 w-1.5 rounded-full bg-[#F3D7C1]" />
-                <div className="absolute right-[4.65rem] top-[5.65rem] h-12 w-1.5 rounded-full bg-[#F3D7C1]" />
-                <div className="absolute right-[3.2rem] top-[5.8rem] h-12 w-1.5 rounded-full bg-[#F3D7C1]" />
-                <div className="absolute right-[2.6rem] top-[6.2rem] h-12 w-1.5 rounded-full bg-[#F3D7C1]" />
-                <div className="absolute right-[4.2rem] top-[4.4rem] h-2.5 w-6 rounded-full bg-[#ffffff] text-center text-[7px] font-extrabold leading-[10px] text-[#0F7F38]">
-                  DELLA
-                </div>
-                <div className="absolute bottom-6 right-0 h-20 w-10">
-                  <div className="absolute bottom-0 left-3 h-11 w-4 rounded-t-full bg-[#3CA452]" />
-                  <div className="absolute bottom-7 left-0 h-7 w-4 rotate-[-28deg] rounded-full bg-[#67C66E]" />
-                  <div className="absolute bottom-9 left-4 h-7 w-4 rotate-[24deg] rounded-full bg-[#58B85F]" />
-                </div>
-              </div>
+          {errorMessage ? (
+            <div className="mt-6 rounded-[18px] border border-[#F3C7C7] bg-[#FFF4F4] px-4 py-3 text-[13px] font-semibold text-[#B42318]">
+              {errorMessage}
             </div>
-          </section>
+          ) : null}
 
-          <section className="mt-7">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-[18px] font-extrabold tracking-[-0.04em] text-[#0F172A]">
-                Popular near you
-              </h2>
-              <Link href="/providers" className="text-[14px] font-extrabold text-[#16A34A]">
-                See all
-              </Link>
-            </div>
+          <ProviderSliderSection
+            title="Popular chef nearby you"
+            href="/providers?service=chef"
+            providers={popularChefProviders}
+          />
 
-            {errorMessage ? (
-              <div className="mb-4 rounded-[18px] border border-[#F3C7C7] bg-[#FFF4F4] px-4 py-3 text-[13px] font-semibold text-[#B42318]">
-                {errorMessage}
-              </div>
-            ) : null}
+          <ProviderSliderSection
+            title="Popular electrician nearby you"
+            href="/providers?service=electrician"
+            providers={popularElectricianProviders}
+          />
 
-            <div className="-mx-5 overflow-x-auto px-5 pb-2">
-              <div className="flex gap-4">
-                {popularProviders.map((provider, index) => (
-                  <article
-                    key={provider.id}
-                    className="w-[15.8rem] shrink-0 overflow-hidden rounded-[20px] border border-[#E5EBE6] bg-white shadow-[0_12px_28px_rgba(15,23,42,0.06)]"
-                  >
-                    <div className={`relative h-36 ${cardPhotoTone(index)}`}>
-                      <div className="absolute left-3 top-3 rounded-[8px] bg-[#16A34A] px-2.5 py-1 text-[11px] font-bold text-white">
-                        {provider.statusLabel}
-                      </div>
-                      <button
-                        type="button"
-                        aria-label="Save provider"
-                        className="absolute right-3 top-3 text-white"
-                      >
-                        <Heart className="h-7 w-7" />
-                      </button>
-                      <div className="absolute bottom-0 right-2 h-32 w-24 rounded-t-[30px] bg-white/14" />
-                    </div>
-
-                    <div className="px-4 py-3">
-                      <h3 className="text-[16px] font-extrabold tracking-[-0.03em] text-[#0F172A]">
-                        {provider.name}
-                      </h3>
-                      <p className="mt-1 text-[14px] text-[#0F172A]">{provider.service}</p>
-
-                      <div className="mt-2 flex items-center gap-1 text-[14px] text-[#0F172A]">
-                        <Star className="h-4 w-4 fill-[#F59E0B] text-[#F59E0B]" />
-                        <span className="font-semibold">{provider.rating.toFixed(1)}</span>
-                        <span className="text-[#475467]">({provider.reviews})</span>
-                      </div>
-
-                      <div className="mt-2 flex items-center gap-1 text-[14px] text-[#475467]">
-                        <MapPin className="h-4 w-4 text-[#16A34A]" />
-                        <span>{provider.distanceKm} km away</span>
-                      </div>
-
-                      <div className="mt-3 border-t border-[#E8ECE8] pt-3">
-                        <p className="text-[14px] text-[#475467]">From</p>
-                        <div className="mt-1 flex items-center justify-between gap-3">
-                          <p className="text-[18px] font-extrabold text-[#16A34A]">
-                            {provider.priceLabel}
-                          </p>
-                          <Link
-                            href={buildProviderDetailHref({
-                              id: provider.id,
-                              serviceKey: provider.serviceKey,
-                            })}
-                            className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-[#16A34A] text-white"
-                          >
-                            <ChevronRight className="h-5 w-5" />
-                          </Link>
-                        </div>
-                      </div>
-                    </div>
-                  </article>
-                ))}
-              </div>
-            </div>
-          </section>
+          <ProviderSliderSection
+            title="Popular maids nearby you"
+            href="/providers?service=maid"
+            providers={popularMaidProviders}
+          />
 
           <section className="mt-8">
             <div className="mb-4 flex items-center justify-between">
@@ -278,6 +185,94 @@ export function MarketplaceScreen({
         </div>
       </div>
     </main>
+  );
+}
+
+function ProviderSliderSection({
+  title,
+  href,
+  providers,
+}: {
+  title: string;
+  href: string;
+  providers: HomeFeedData["popularProviders"];
+}) {
+  if (providers.length === 0) {
+    return null;
+  }
+
+  return (
+    <section className="mt-7">
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="text-[18px] font-extrabold tracking-[-0.04em] text-[#0F172A]">
+          {title}
+        </h2>
+        <Link href={href} className="text-[14px] font-extrabold text-[#16A34A]">
+          See all
+        </Link>
+      </div>
+
+      <div className="-mx-5 overflow-x-auto px-5 pb-2">
+        <div className="flex gap-4">
+          {providers.map((provider, index) => (
+            <article
+              key={`${title}-${provider.id}`}
+              className="w-[15.8rem] shrink-0 overflow-hidden rounded-[20px] border border-[#E5EBE6] bg-white shadow-[0_12px_28px_rgba(15,23,42,0.06)]"
+            >
+              <div className={`relative h-36 ${cardPhotoTone(index)}`}>
+                <div className="absolute left-3 top-3 rounded-[8px] bg-[#16A34A] px-2.5 py-1 text-[11px] font-bold text-white">
+                  {provider.statusLabel}
+                </div>
+                <button
+                  type="button"
+                  aria-label="Save provider"
+                  className="absolute right-3 top-3 text-white"
+                >
+                  <Heart className="h-7 w-7" />
+                </button>
+                <div className="absolute bottom-0 right-2 h-32 w-24 rounded-t-[30px] bg-white/14" />
+              </div>
+
+              <div className="px-4 py-3">
+                <h3 className="text-[16px] font-extrabold tracking-[-0.03em] text-[#0F172A]">
+                  {provider.name}
+                </h3>
+                <p className="mt-1 text-[14px] text-[#0F172A]">{provider.service}</p>
+
+                <div className="mt-2 flex items-center gap-1 text-[14px] text-[#0F172A]">
+                  <Star className="h-4 w-4 fill-[#F59E0B] text-[#F59E0B]" />
+                  <span className="font-semibold">{provider.rating.toFixed(1)}</span>
+                  <span className="text-[#475467]">({provider.reviews})</span>
+                </div>
+
+                <div className="mt-2 flex items-center gap-1 text-[14px] text-[#475467]">
+                  <MapPin className="h-4 w-4 text-[#16A34A]" />
+                  <span>{provider.distanceKm} km away</span>
+                </div>
+
+                <div className="mt-3 border-t border-[#E8ECE8] pt-3">
+                  <p className="text-[14px] text-[#475467]">From</p>
+                  <div className="mt-1 flex items-center justify-between gap-3">
+                    <p className="text-[18px] font-extrabold text-[#16A34A]">
+                      {provider.priceLabel}
+                    </p>
+                    <Link
+                      href={buildProviderDetailHref({
+                        id: provider.id,
+                        serviceKey: provider.serviceKey,
+                      })}
+                      className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-[#16A34A] text-white"
+                    >
+                      <ChevronRight className="h-5 w-5" />
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
   );
 }
 

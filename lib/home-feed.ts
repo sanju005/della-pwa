@@ -8,7 +8,7 @@ import {
   getSupabaseUrl,
 } from "./supabase-env";
 import { getLatestCustomerBooking } from "./customer-booking-storage";
-import type { ProviderCategoryKey } from "./provider-catalog";
+import { getProviderCatalog, type ProviderCategoryKey } from "./provider-catalog";
 
 type HomeCustomerRow = {
   id: string;
@@ -98,6 +98,9 @@ export type HomeFeedData = {
   locationLabel: string;
   categories: HomeServiceCategory[];
   popularProviders: HomeProviderCard[];
+  popularChefProviders: HomeProviderCard[];
+  popularElectricianProviders: HomeProviderCard[];
+  popularMaidProviders: HomeProviderCard[];
   upcomingBooking: HomeUpcomingBooking | null;
   errorMessage: string | null;
 };
@@ -196,12 +199,23 @@ export const getHomeFeedData = cache(async (): Promise<HomeFeedData> => {
         label: humanizeService(key),
       })),
       popularProviders: [],
+      popularChefProviders: [],
+      popularElectricianProviders: [],
+      popularMaidProviders: [],
       upcomingBooking: null,
       errorMessage: "Supabase keys are not configured for the home feed yet.",
     };
   }
 
-  const [customerResult, providerResult, bookingResult, latestStoredBooking] =
+  const [
+    customerResult,
+    providerResult,
+    bookingResult,
+    latestStoredBooking,
+    chefCatalog,
+    electricianCatalog,
+    maidCatalog,
+  ] =
     await Promise.all([
     adminSupabase
       .from("profiles")
@@ -262,6 +276,9 @@ export const getHomeFeedData = cache(async (): Promise<HomeFeedData> => {
       .limit(1)
       .maybeSingle(),
     getLatestCustomerBooking(),
+    getProviderCatalog("chef"),
+    getProviderCatalog("electrician"),
+    getProviderCatalog("maid"),
   ]);
 
   const customerRow = customerResult.data as HomeCustomerRow | null;
@@ -297,6 +314,26 @@ export const getHomeFeedData = cache(async (): Promise<HomeFeedData> => {
   const bookingProvider = getProviderNode(bookingRow?.provider_profiles);
   const bookingService = getProviderNode(bookingRow?.provider_services);
 
+  const mapCatalogToHomeCards = (catalogListings: typeof chefCatalog.listings) =>
+    catalogListings.slice(0, 5).map((listing) => ({
+      id: listing.id,
+      serviceKey: listing.serviceKey,
+      name: listing.name,
+      service: listing.serviceLabel,
+      rating: listing.rating,
+      reviews: listing.reviews,
+      distanceKm: listing.distanceKm,
+      priceLabel: `RM${listing.hourlyRate}/hr`,
+      statusLabel: listing.availabilityLabel,
+      specialties: listing.specialties,
+    }));
+
+  const popularChefProviders = mapCatalogToHomeCards(chefCatalog.listings);
+  const popularElectricianProviders = mapCatalogToHomeCards(
+    electricianCatalog.listings
+  );
+  const popularMaidProviders = mapCatalogToHomeCards(maidCatalog.listings);
+
   const latestBooking = latestStoredBooking
     ? {
         id: latestStoredBooking.id,
@@ -319,6 +356,9 @@ export const getHomeFeedData = cache(async (): Promise<HomeFeedData> => {
       label: humanizeService(key),
     })),
     popularProviders: providers,
+    popularChefProviders,
+    popularElectricianProviders,
+    popularMaidProviders,
     upcomingBooking:
       latestBooking ??
       (bookingRow
