@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import Link from "next/link";
 import {
   Bell,
@@ -80,11 +81,11 @@ export function MarketplaceScreen({
 
           <section className="mt-8 rounded-[26px] border border-[#E8EEE9] bg-white px-4 py-5 shadow-[0_14px_32px_rgba(15,23,42,0.05)]">
             <div className="grid grid-cols-4 gap-y-6">
-              {categories.map((category) => (
-                <CategoryItem key={category.key} category={category} />
-              ))}
-            </div>
-          </section>
+                {categories.map((category) => (
+                  <CategoryItem key={category.key} category={category} />
+                ))}
+              </div>
+            </section>
 
           <section className="mt-6 overflow-hidden rounded-[24px] bg-[#16A34A] px-4 py-6 text-white shadow-[0_18px_36px_rgba(22,163,74,0.18)]">
             <div className="relative">
@@ -276,14 +277,17 @@ export function MarketplaceScreen({
 
 function CategoryItem({ category }: { category: HomeServiceCategory }) {
   return (
-    <div className="flex flex-col items-center text-center">
+    <Link
+      href={`/providers?service=${category.key}`}
+      className="flex flex-col items-center text-center"
+    >
       <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#EEF9F1] text-[#0F172A]">
         <CategoryIcon kind={category.key} />
       </div>
       <p className="mt-3 text-[14px] font-bold tracking-[-0.03em] text-[#0F172A]">
         {category.label}
       </p>
-    </div>
+    </Link>
   );
 }
 
@@ -318,7 +322,7 @@ function BottomNavLink({
 }: {
   href: string;
   label: string;
-  icon: React.ReactNode;
+  icon: ReactNode;
   active?: boolean;
 }) {
   return (
