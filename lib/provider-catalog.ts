@@ -45,6 +45,7 @@ export type ProviderListing = {
   serviceKey: ProviderCategoryKey;
   serviceLabel: string;
   title: string;
+  workMode: "Live-in" | "Part-time" | "Full-time";
   location: string;
   distanceKm: number;
   rating: number;
@@ -147,6 +148,12 @@ export function buildProviderDetailHref(listing: Pick<ProviderListing, "id" | "s
   return `/providers/${encodeURIComponent(listing.id)}?service=${listing.serviceKey}`;
 }
 
+export function buildProviderPortraitSrc(
+  listing: Pick<ProviderListing, "serviceKey">
+) {
+  return `/api/provider-media/${listing.serviceKey}/portrait`;
+}
+
 function buildSupabasePublicClient() {
   const url = getSupabaseUrl();
   const publishableKey = getSupabasePublishableKey();
@@ -185,6 +192,10 @@ function mock(
     serviceKey,
     serviceLabel: serviceLabels[serviceKey],
     title,
+    workMode: ["Live-in", "Part-time", "Full-time"][imageToneIndex % 3] as
+      | "Live-in"
+      | "Part-time"
+      | "Full-time",
     location,
     distanceKm,
     rating,
@@ -267,6 +278,8 @@ export const getProviderCatalog = cache(
               serviceKey: serviceRow.service_type,
               serviceLabel: humanizeService(serviceRow.service_type),
               title: humanizeService(serviceRow.service_type),
+              workMode: (["Live-in", "Part-time", "Full-time"][rowIndex % 3] ??
+                "Full-time") as "Live-in" | "Part-time" | "Full-time",
               location: row.service_location ?? "Kuala Lumpur",
               distanceKm: [2.4, 1.8, 3.1, 2.7, 2.2, 4.0, 3.6, 2.9][rowIndex] ?? 2.5,
               rating: Number(row.average_rating ?? 4.8),

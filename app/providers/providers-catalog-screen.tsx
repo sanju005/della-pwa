@@ -1,0 +1,399 @@
+"use client";
+
+import type { ComponentType, ReactNode } from "react";
+import { useMemo, useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import {
+  ArrowLeft,
+  BriefcaseBusiness,
+  ChevronDown,
+  Filter,
+  Heart,
+  MapPin,
+  Search,
+  ShieldCheck,
+  Star,
+  UserRound,
+  BadgeCheck,
+} from "lucide-react";
+
+type TabKey = "all" | "live-in" | "part-time" | "full-time";
+type SortKey = "popular" | "nearest" | "price-low";
+
+type ServiceKey =
+  | "chef"
+  | "maid"
+  | "babysitter"
+  | "driver"
+  | "cleaner"
+  | "tutor"
+  | "plumber"
+  | "electrician"
+  | null;
+
+type CatalogScreenListing = {
+  id: string;
+  name: string;
+  serviceKey: Exclude<ServiceKey, null>;
+  serviceLabel: string;
+  workMode: "Live-in" | "Part-time" | "Full-time";
+  bio: string;
+  specialties: string[];
+  distanceKm: number;
+  rating: number;
+  reviews: number;
+  hourlyRate: number;
+  yearsExperience: string;
+  availabilityLabel: string;
+  href: string;
+  portraitSrc: string;
+};
+
+type CatalogScreenData = {
+  service: ServiceKey;
+  serviceLabel: string;
+  listings: CatalogScreenListing[];
+  errorMessage: string | null;
+};
+
+const serviceIcons: Partial<Record<Exclude<ServiceKey, null>, ComponentType<{ className?: string }>>> = {
+  chef: BriefcaseBusiness,
+  maid: UserRound,
+  babysitter: UserRound,
+  driver: BriefcaseBusiness,
+  cleaner: UserRound,
+  tutor: BriefcaseBusiness,
+  plumber: BriefcaseBusiness,
+  electrician: BriefcaseBusiness,
+};
+
+export function ProvidersCatalogScreen({ data }: { data: CatalogScreenData }) {
+  const [query, setQuery] = useState("");
+  const [activeTab, setActiveTab] = useState<TabKey>("all");
+  const [sortBy, setSortBy] = useState<SortKey>("popular");
+
+  const counts = useMemo(
+    () => ({
+      all: data.listings.length,
+      "live-in": data.listings.filter((item) => item.workMode === "Live-in").length,
+      "part-time": data.listings.filter((item) => item.workMode === "Part-time").length,
+      "full-time": data.listings.filter((item) => item.workMode === "Full-time").length,
+    }),
+    [data.listings]
+  );
+
+  const filteredListings = useMemo(() => {
+    const loweredQuery = query.trim().toLowerCase();
+
+    let items = data.listings.filter((listing) => {
+      const matchesQuery =
+        loweredQuery.length === 0 ||
+        listing.name.toLowerCase().includes(loweredQuery) ||
+        listing.bio.toLowerCase().includes(loweredQuery) ||
+        listing.specialties.some((specialty) =>
+          specialty.toLowerCase().includes(loweredQuery)
+        );
+
+      const matchesTab =
+        activeTab === "all" ||
+        (activeTab === "live-in" && listing.workMode === "Live-in") ||
+        (activeTab === "part-time" && listing.workMode === "Part-time") ||
+        (activeTab === "full-time" && listing.workMode === "Full-time");
+
+      return matchesQuery && matchesTab;
+    });
+
+    items = [...items].sort((left, right) => {
+      if (sortBy === "nearest") {
+        return left.distanceKm - right.distanceKm;
+      }
+
+      if (sortBy === "price-low") {
+        return left.hourlyRate - right.hourlyRate;
+      }
+
+      if (right.rating !== left.rating) {
+        return right.rating - left.rating;
+      }
+
+      return right.reviews - left.reviews;
+    });
+
+    return items;
+  }, [activeTab, data.listings, query, sortBy]);
+
+  const Icon = data.service ? serviceIcons[data.service] ?? BriefcaseBusiness : BriefcaseBusiness;
+  const serviceLower = (data.serviceLabel || "service").toLowerCase();
+  const headingCount = filteredListings.length;
+
+  return (
+    <main className="min-h-[100dvh] bg-[#f6fff8]">
+      <div className="mx-auto min-h-[100dvh] w-full max-w-[430px] bg-white px-5 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
+        <div className="py-5">
+          <div className="flex items-center justify-between">
+            <Link
+              href="/home"
+              className="inline-flex h-11 w-11 items-center justify-center rounded-full text-[#0F172A]"
+            >
+              <ArrowLeft className="h-7 w-7" />
+            </Link>
+            <div className="flex items-center gap-2 text-[15px] font-semibold text-[#0F172A]">
+              <MapPin className="h-5 w-5 fill-[#16A34A] text-[#16A34A]" />
+              <span>Setapak, Kuala Lumpur</span>
+            </div>
+          </div>
+
+          <section className="mt-7">
+            <div className="flex items-start gap-4">
+              <div className="inline-flex h-28 w-28 items-center justify-center rounded-[24px] bg-[#EEF9F1] text-[#0F172A]">
+                <Icon className="h-14 w-14 stroke-[1.8]" />
+              </div>
+              <div className="flex-1 pt-1">
+                <h1 className="text-[28px] font-extrabold tracking-[-0.05em] text-[#0F172A]">
+                  {data.serviceLabel}
+                </h1>
+                <p className="mt-3 text-[16px] leading-7 text-[#344054]">
+                  Find trusted {serviceLower} services near you
+                </p>
+                <div className="mt-4 flex flex-wrap gap-x-5 gap-y-3 text-[13px] leading-5 text-[#344054]">
+                  <TrustPill icon={<ShieldCheck className="h-4.5 w-4.5 text-[#16A34A]" />}>
+                    Verified &amp; Background Checked
+                  </TrustPill>
+                  <TrustPill icon={<Star className="h-4.5 w-4.5 fill-[#16A34A] text-[#16A34A]" />}>
+                    Rating &amp; Reviews
+                  </TrustPill>
+                  <TrustPill icon={<BadgeCheck className="h-4.5 w-4.5 text-[#16A34A]" />}>
+                    Secure Booking
+                  </TrustPill>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section className="mt-7 flex gap-3">
+            <div className="flex h-[58px] flex-1 items-center rounded-[20px] border border-[#E5ECE7] px-5 shadow-[0_8px_22px_rgba(15,23,42,0.05)]">
+              <Search className="h-6 w-6 text-[#0F172A]" />
+              <input
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder={`Search ${serviceLower} services...`}
+                className="ml-4 h-full w-full border-0 bg-transparent text-[16px] text-[#0F172A] outline-none placeholder:text-[#667085]"
+              />
+            </div>
+            <button
+              type="button"
+              className="inline-flex h-[58px] items-center gap-2 rounded-[16px] bg-[#16A34A] px-5 text-[16px] font-extrabold text-white"
+            >
+              <Filter className="h-5 w-5" />
+              Filter
+            </button>
+          </section>
+
+          <section className="mt-6 rounded-[22px] border border-[#E5ECE7] bg-white p-2 shadow-[0_8px_20px_rgba(15,23,42,0.04)]">
+            <div className="grid grid-cols-4 gap-1.5">
+              <TabButton
+                active={activeTab === "all"}
+                onClick={() => setActiveTab("all")}
+                label={`All ${data.serviceLabel}s`}
+                count={counts.all}
+              />
+              <TabButton
+                active={activeTab === "live-in"}
+                onClick={() => setActiveTab("live-in")}
+                label="Live-in"
+                count={counts["live-in"]}
+              />
+              <TabButton
+                active={activeTab === "part-time"}
+                onClick={() => setActiveTab("part-time")}
+                label="Part-time"
+                count={counts["part-time"]}
+              />
+              <TabButton
+                active={activeTab === "full-time"}
+                onClick={() => setActiveTab("full-time")}
+                label="Full-time"
+                count={counts["full-time"]}
+              />
+            </div>
+          </section>
+
+          <section className="mt-6 overflow-hidden rounded-[24px] bg-[linear-gradient(90deg,#F5FFF8_0%,#F0FFF5_48%,#E3F8EA_100%)] px-5 py-5 shadow-[0_12px_26px_rgba(15,23,42,0.05)]">
+            <div className="flex items-center gap-4">
+              <div className="inline-flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-[#DFF6E7] text-[#16A34A]">
+                <ShieldCheck className="h-8 w-8" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <h2 className="text-[17px] font-extrabold tracking-[-0.03em] text-[#17803D]">
+                  All {serviceLower}s are verified
+                </h2>
+                <p className="mt-2 text-[15px] leading-6 text-[#475467]">
+                  Background checked, experienced, and highly rated.
+                </p>
+              </div>
+              <div className="hidden h-28 w-24 shrink-0 rounded-[18px] bg-[#16A34A]/10 sm:block" />
+            </div>
+          </section>
+
+          <section className="mt-8">
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-[18px] font-extrabold tracking-[-0.04em] text-[#0F172A]">
+                {headingCount} {data.serviceLabel} services found
+              </h2>
+              <label className="flex items-center gap-3 text-[14px] text-[#475467]">
+                <span>Sort by</span>
+                <span className="relative">
+                  <select
+                    value={sortBy}
+                    onChange={(event) => setSortBy(event.target.value as SortKey)}
+                    className="h-12 appearance-none rounded-[16px] border border-[#E5ECE7] bg-white pl-4 pr-10 text-[15px] font-semibold text-[#344054] outline-none"
+                  >
+                    <option value="popular">Popular</option>
+                    <option value="nearest">Nearest</option>
+                    <option value="price-low">Lowest price</option>
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#475467]" />
+                </span>
+              </label>
+            </div>
+
+            <div className="mt-5 space-y-4">
+              {filteredListings.map((listing) => (
+                <ProviderCard key={listing.id} listing={listing} />
+              ))}
+            </div>
+          </section>
+        </div>
+      </div>
+    </main>
+  );
+}
+
+function TrustPill({
+  icon,
+  children,
+}: {
+  icon: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <span className="inline-flex items-start gap-2">
+      <span className="mt-0.5">{icon}</span>
+      <span>{children}</span>
+    </span>
+  );
+}
+
+function TabButton({
+  active,
+  onClick,
+  label,
+  count,
+}: {
+  active: boolean;
+  onClick: () => void;
+  label: string;
+  count: number;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-[16px] px-3 py-4 text-left transition ${
+        active ? "bg-white shadow-[inset_0_-3px_0_#16A34A]" : "bg-transparent"
+      }`}
+    >
+      <div className="flex items-center gap-2">
+        <span
+          className={`text-[14px] font-extrabold ${
+            active ? "text-[#16A34A]" : "text-[#0F172A]"
+          }`}
+        >
+          {label}
+        </span>
+        <span
+          className={`inline-flex min-w-8 items-center justify-center rounded-full px-2 py-1 text-[12px] font-bold ${
+            active ? "bg-[#16A34A] text-white" : "bg-[#F1F4F2] text-[#667085]"
+          }`}
+        >
+          {count}
+        </span>
+      </div>
+    </button>
+  );
+}
+
+function ProviderCard({ listing }: { listing: CatalogScreenListing }) {
+  return (
+    <article className="rounded-[24px] border border-[#E5ECE7] bg-white p-4 shadow-[0_12px_26px_rgba(15,23,42,0.05)]">
+      <div className="flex gap-4">
+        <div className="relative h-[11rem] w-[10rem] shrink-0 overflow-hidden rounded-[18px]">
+          <Image
+            src={listing.portraitSrc}
+            alt={listing.name}
+            width={320}
+            height={352}
+            unoptimized
+            className="h-full w-full object-cover"
+          />
+          <div className="absolute bottom-3 left-3 rounded-[10px] bg-[#16A34A] px-3 py-1.5 text-[12px] font-bold text-white">
+            {listing.availabilityLabel}
+          </div>
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h3 className="inline-flex items-center gap-2 text-[18px] font-extrabold tracking-[-0.04em] text-[#0F172A]">
+                <span className="truncate">{listing.name}</span>
+                <BadgeCheck className="h-5 w-5 shrink-0 fill-[#16A34A] text-[#16A34A]" />
+              </h3>
+              <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[15px] text-[#475467]">
+                <span className="inline-flex items-center gap-1">
+                  <Star className="h-4.5 w-4.5 fill-[#F59E0B] text-[#F59E0B]" />
+                  <span className="font-semibold text-[#0F172A]">
+                    {listing.rating.toFixed(1)}
+                  </span>
+                  <span>({listing.reviews})</span>
+                </span>
+                <span>•</span>
+                <span className="inline-flex items-center gap-1">
+                  <MapPin className="h-4 w-4 text-[#16A34A]" />
+                  {listing.distanceKm} km away
+                </span>
+              </div>
+            </div>
+            <button type="button" aria-label="Save provider" className="text-[#667085]">
+              <Heart className="h-7 w-7" />
+            </button>
+          </div>
+
+          <div className="mt-4 flex flex-wrap gap-2">
+            <span className="rounded-full bg-[#EEF9F1] px-3 py-1.5 text-[13px] font-semibold text-[#16A34A]">
+              {listing.yearsExperience} Experience
+            </span>
+            <span className="rounded-full bg-[#F4F5F7] px-3 py-1.5 text-[13px] font-semibold text-[#667085]">
+              {listing.workMode}
+            </span>
+          </div>
+
+          <div className="mt-5 flex items-end justify-between gap-4">
+            <div>
+              <p className="text-[15px] text-[#475467]">From</p>
+              <p className="mt-1 text-[20px] font-extrabold text-[#16A34A]">
+                RM{listing.hourlyRate}/hr
+              </p>
+            </div>
+            <Link
+              href={listing.href}
+              className="inline-flex h-12 items-center justify-center rounded-[14px] bg-[#16A34A] px-6 text-[15px] font-extrabold text-white"
+            >
+              View Profile
+            </Link>
+          </div>
+        </div>
+      </div>
+    </article>
+  );
+}
