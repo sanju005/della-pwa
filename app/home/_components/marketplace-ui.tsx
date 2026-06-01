@@ -287,10 +287,10 @@ function CategoryItem({ category }: { category: HomeServiceCategory }) {
       href={`/providers?service=${category.key}`}
       className="flex flex-col items-center text-center"
     >
-      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#EEF9F1] text-[#0F172A]">
+      <div className="flex h-[3.7rem] w-[3.7rem] items-center justify-center rounded-full bg-[#EEF9F1] text-[#0F172A]">
         <CategoryIcon kind={category.key} />
       </div>
-      <p className="mt-3 text-[14px] font-bold tracking-[-0.03em] text-[#0F172A]">
+      <p className="mt-3 text-[13px] font-semibold tracking-[-0.02em] text-[#0F172A]">
         {category.label}
       </p>
     </Link>
@@ -300,23 +300,23 @@ function CategoryItem({ category }: { category: HomeServiceCategory }) {
 function CategoryIcon({ kind }: { kind: string }) {
   switch (kind) {
     case "chef":
-      return <CookingPot className="h-8 w-8 stroke-[2]" />;
+      return <CookingPot className="h-[1.55rem] w-[1.55rem] stroke-[1.8]" />;
     case "maid":
-      return <BriefcaseBusiness className="h-8 w-8 stroke-[2]" />;
+      return <BriefcaseBusiness className="h-[1.55rem] w-[1.55rem] stroke-[1.8]" />;
     case "babysitter":
-      return <Baby className="h-8 w-8 stroke-[2]" />;
+      return <Baby className="h-[1.55rem] w-[1.55rem] stroke-[1.8]" />;
     case "driver":
-      return <CarFront className="h-8 w-8 stroke-[2]" />;
+      return <CarFront className="h-[1.55rem] w-[1.55rem] stroke-[1.8]" />;
     case "cleaner":
-      return <SprayCan className="h-8 w-8 stroke-[2]" />;
+      return <SprayCan className="h-[1.55rem] w-[1.55rem] stroke-[1.8]" />;
     case "tutor":
-      return <BookOpen className="h-8 w-8 stroke-[2]" />;
+      return <BookOpen className="h-[1.55rem] w-[1.55rem] stroke-[1.8]" />;
     case "plumber":
-      return <Wrench className="h-8 w-8 stroke-[2]" />;
+      return <Wrench className="h-[1.55rem] w-[1.55rem] stroke-[1.8]" />;
     case "electrician":
-      return <Bolt className="h-8 w-8 stroke-[2]" />;
+      return <Bolt className="h-[1.55rem] w-[1.55rem] stroke-[1.8]" />;
     default:
-      return <UserRound className="h-8 w-8 stroke-[2]" />;
+      return <UserRound className="h-[1.55rem] w-[1.55rem] stroke-[1.8]" />;
   }
 }
 
