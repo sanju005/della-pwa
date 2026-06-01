@@ -617,8 +617,8 @@ function BottomNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-[430px] border-t border-[#E8ECE8] bg-white/96 px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3 backdrop-blur">
-      <div className="flex items-center justify-between text-[11px] font-medium text-[#6b7280]">
+    <nav className="fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-[430px] border-t border-[#E8ECE8] bg-white/97 px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-2.5 backdrop-blur">
+      <div className="flex items-center justify-between gap-1 text-[10.5px] font-medium text-[#8A94A6]">
         <NavItem href="/home" label="Home" icon={<HomeIcon className="h-5 w-5" />} active={pathname === "/home"} />
         <NavItem href="/profile/bookings" label="Bookings" icon={<CalendarIcon className="h-5 w-5" />} active={pathname.startsWith("/profile/bookings")} />
         <NavItem href="/profile/messages" label="Messages" icon={<MessageIcon className="h-5 w-5" />} active={pathname.startsWith("/profile/messages")} />
@@ -643,15 +643,19 @@ function NavItem({
   return (
     <Link
       href={href}
-      className={`flex min-w-[3.5rem] flex-col items-center gap-1.5 ${active ? "text-[#16a34a]" : ""}`}
+      className={`flex min-w-[3.1rem] flex-col items-center gap-1 ${
+        active ? "text-[#16A34A]" : "text-[#8A94A6]"
+      }`}
     >
       {icon}
       <span>{label}</span>
-      <span
-        className={`h-0.5 w-12 rounded-full ${
-          active ? "bg-[#16A34A]" : "bg-transparent"
-        }`}
-      />
+      <span className="flex h-3 items-end">
+        <span
+          className={`rounded-full transition-all ${
+            active ? "h-[3px] w-10 bg-[#16A34A]" : "h-[3px] w-6 bg-transparent"
+          }`}
+        />
+      </span>
     </Link>
   );
 }
