@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import {
+  getAppBaseUrl,
   getSupabasePublishableKey,
   getSupabaseServiceKey,
   getSupabaseUrl,
@@ -103,7 +104,11 @@ export async function POST(request: Request) {
     );
   }
 
-  const emailRedirectTo = new URL("/login", request.url).toString();
+  const appBaseUrl = getAppBaseUrl();
+  const emailRedirectTo = new URL(
+    "/login",
+    appBaseUrl ?? request.url
+  ).toString();
 
   const { data, error } = await publicClient.auth.signUp({
     email,
