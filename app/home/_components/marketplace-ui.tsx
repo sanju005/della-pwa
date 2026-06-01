@@ -1,261 +1,365 @@
 import Link from "next/link";
+import {
+  Bell,
+  BookOpen,
+  BriefcaseBusiness,
+  ChevronDown,
+  ChevronRight,
+  CircleUserRound,
+  CookingPot,
+  House,
+  MapPin,
+  MessageCircleMore,
+  Search,
+  SprayCan,
+  Star,
+  UserRound,
+  WalletCards,
+  Wrench,
+  Baby,
+  CarFront,
+  Bolt,
+  Heart,
+  CalendarDays,
+} from "lucide-react";
 
-import type { MarketplaceProvider } from "@/lib/provider-marketplace";
-
-type MarketplaceShellProps = {
-  providers: MarketplaceProvider[];
-  totalProviders: number;
-  services: string[];
-  errorMessage: string | null;
-  title?: string;
-  subtitle?: string;
-};
+import type { HomeFeedData, HomeServiceCategory } from "@/lib/home-feed";
 
 export function MarketplaceScreen({
-  providers,
-  totalProviders,
-  services,
+  greetingName,
+  locationLabel,
+  categories,
+  popularProviders,
+  upcomingBooking,
   errorMessage,
-  title = "Find trusted services near you",
-  subtitle = "Browse approved DELLA providers for home and lifestyle needs.",
-}: MarketplaceShellProps) {
+}: HomeFeedData) {
   return (
     <main className="min-h-[100dvh] overflow-x-hidden bg-[#f6fff8]">
-      <div className="mx-auto flex min-h-[100dvh] w-full max-w-[430px] flex-col bg-[linear-gradient(180deg,#ffffff_0%,#f7fdf8_100%)] px-5 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
-        <div className="relative min-h-[100dvh] overflow-hidden">
-          <div className="pointer-events-none absolute right-[-18%] top-[-10%] h-44 w-44 rounded-full bg-[radial-gradient(circle,_rgba(187,247,208,0.9),_transparent_70%)]" />
-          <div className="pointer-events-none absolute inset-x-[-10%] bottom-[-12%] h-40 rounded-full bg-[radial-gradient(circle,_rgba(22,163,74,0.12),_transparent_68%)]" />
+      <div className="mx-auto min-h-[100dvh] w-full max-w-[430px] bg-white px-5 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
+        <div className="relative min-h-[100dvh] bg-white py-5">
+          <div className="pointer-events-none absolute right-[-12%] top-[-2%] h-40 w-40 rounded-full bg-[radial-gradient(circle,_rgba(187,247,208,0.7),_transparent_68%)]" />
 
-          <div className="relative z-10 flex h-full min-h-[100dvh] flex-col py-5">
-            <header className="mb-6 flex items-start justify-between gap-4">
+          <header className="relative z-10">
+            <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-[20px] font-extrabold tracking-[-0.05em] text-[#16a34a]">
+                <p className="text-[28px] font-extrabold leading-none tracking-[-0.06em] text-[#16A34A]">
                   DELLA
                 </p>
-                <p className="mt-1 text-[13px] leading-5 text-[#475569]">
-                  Home and lifestyle marketplace
-                </p>
+                <h1 className="mt-7 text-[28px] font-extrabold leading-[1.12] tracking-[-0.05em] text-[#0F172A]">
+                  {timePrefix()}{" "}
+                  <span className="inline-flex items-center gap-1">
+                    {greetingName} <span aria-hidden>👋</span>
+                  </span>
+                </h1>
+                <div className="mt-3 flex items-center gap-2 text-[15px] font-semibold text-[#0F172A]">
+                  <MapPin className="h-5 w-5 text-[#16A34A]" />
+                  <span>{locationLabel}</span>
+                  <ChevronDown className="h-4 w-4" />
+                </div>
               </div>
-              <Link
-                href="/profile"
-                className="inline-flex h-11 items-center rounded-full border border-[#dce8df] bg-white px-4 text-[13px] font-bold text-[#111827] shadow-[0_8px_18px_rgba(15,23,42,0.04)]"
+
+              <button
+                type="button"
+                aria-label="Notifications"
+                className="relative mt-1 inline-flex h-11 w-11 items-center justify-center rounded-full bg-white text-[#0F172A]"
               >
-                Profile
-              </Link>
-            </header>
+                <Bell className="h-7 w-7 stroke-[2.2]" />
+                <span className="absolute right-1 top-1 h-2.5 w-2.5 rounded-full bg-[#16A34A]" />
+              </button>
+            </div>
 
-            <section className="rounded-[28px] bg-[linear-gradient(135deg,#0f7b32_0%,#16a34a_48%,#1cab54_100%)] p-5 text-white shadow-[0_22px_40px_rgba(22,163,74,0.24)]">
-              <p className="text-[13px] font-semibold uppercase tracking-[0.24em] text-white/70">
-                Live Marketplace
-              </p>
-              <h1 className="mt-3 max-w-[16rem] text-[34px] font-extrabold leading-[1.02] tracking-[-0.06em]">
-                {title}
-              </h1>
-              <p className="mt-4 max-w-[18rem] text-[14px] leading-7 text-white/84">
-                {subtitle}
-              </p>
+            <div className="mt-6 flex h-[58px] items-center rounded-[20px] border border-[#DFE7E2] bg-white px-5 shadow-[0_8px_20px_rgba(15,23,42,0.04)]">
+              <Search className="h-6 w-6 text-[#0F172A]" />
+              <input
+                type="text"
+                placeholder="What service do you need today?"
+                className="ml-4 h-full flex-1 border-0 bg-transparent text-[16px] text-[#0F172A] outline-none placeholder:text-[#667085]"
+              />
+            </div>
+          </header>
 
-              <div className="mt-5 grid grid-cols-2 gap-3">
-                <div className="rounded-[22px] bg-white/12 px-4 py-3 backdrop-blur">
-                  <p className="text-[11px] uppercase tracking-[0.2em] text-white/70">
-                    Approved Providers
-                  </p>
-                  <p className="mt-2 text-[24px] font-extrabold">{totalProviders}</p>
-                </div>
-                <div className="rounded-[22px] bg-white/12 px-4 py-3 backdrop-blur">
-                  <p className="text-[11px] uppercase tracking-[0.2em] text-white/70">
-                    Service Types
-                  </p>
-                  <p className="mt-2 text-[24px] font-extrabold">{services.length}</p>
-                </div>
-              </div>
-            </section>
+          <section className="mt-8 rounded-[26px] border border-[#E8EEE9] bg-white px-4 py-5 shadow-[0_14px_32px_rgba(15,23,42,0.05)]">
+            <div className="grid grid-cols-4 gap-y-6">
+              {categories.map((category) => (
+                <CategoryItem key={category.key} category={category} />
+              ))}
+            </div>
+          </section>
 
-            <section className="mt-5">
-              <div className="mb-3 flex items-center justify-between gap-3">
-                <h2 className="text-[15px] font-extrabold text-[#111827]">
-                  Popular Services
+          <section className="mt-6 overflow-hidden rounded-[24px] bg-[#16A34A] px-4 py-6 text-white shadow-[0_18px_36px_rgba(22,163,74,0.18)]">
+            <div className="relative">
+              <div className="max-w-[12.5rem]">
+                <h2 className="text-[24px] font-extrabold leading-[1.08] tracking-[-0.05em]">
+                  Book trusted home services near you
                 </h2>
+                <p className="mt-4 text-[15px] leading-7 text-white/88">
+                  Verified providers, clear prices, easy booking
+                </p>
                 <Link
                   href="/providers"
-                  className="text-[13px] font-bold text-[#16a34a]"
+                  className="mt-6 inline-flex h-14 items-center gap-3 rounded-[16px] bg-white px-6 text-[16px] font-extrabold text-[#16A34A]"
                 >
-                  View all
+                  Book Now
+                  <ChevronRight className="h-5 w-5" />
                 </Link>
               </div>
 
-              <div className="flex gap-2 overflow-x-auto pb-1">
-                {services.map((service) => (
-                  <div
-                    key={service}
-                    className="shrink-0 rounded-full border border-[#dce8df] bg-white px-4 py-2 text-[13px] font-semibold text-[#111827] shadow-[0_6px_12px_rgba(15,23,42,0.03)]"
-                  >
-                    {service}
-                  </div>
-                ))}
-              </div>
-            </section>
-
-            <section className="mt-5 flex-1">
-              <div className="mb-3 flex items-center justify-between gap-3">
-                <h2 className="text-[15px] font-extrabold text-[#111827]">
-                  Top Providers
-                </h2>
-                <Link
-                  href="/profile/bookings"
-                  className="text-[13px] font-bold text-[#16a34a]"
-                >
-                  My bookings
-                </Link>
-              </div>
-
-              {errorMessage ? (
-                <div className="rounded-[20px] border border-[#f1d2d2] bg-[#fff6f6] px-4 py-4 text-[13px] leading-6 text-[#991b1b]">
-                  {errorMessage}
+              <div className="pointer-events-none absolute bottom-[-2.5rem] right-[-0.5rem] h-52 w-44">
+                <div className="absolute right-2 top-3 h-44 w-32 rounded-t-[90px] rounded-b-[18px] bg-[#1AA84C]" />
+                <div className="absolute right-0 top-10 h-36 w-24 rotate-[18deg] rounded-[14px] bg-[#1C8E46]" />
+                <div className="absolute bottom-0 right-4 h-42 w-20 rounded-t-[48px] bg-[#0F7F38]" />
+                <div className="absolute right-12 top-2 h-11 w-11 rounded-full bg-[#F3D7C1]" />
+                <div className="absolute right-10 top-16 h-18 w-15 rounded-[18px] bg-[#1E5F35]" />
+                <div className="absolute right-9 top-23 h-14 w-17 rounded-[16px] bg-[#145B2E]" />
+                <div className="absolute right-[5.25rem] top-[4.85rem] h-12 w-1.5 rounded-full bg-[#F3D7C1]" />
+                <div className="absolute right-[4.65rem] top-[5.65rem] h-12 w-1.5 rounded-full bg-[#F3D7C1]" />
+                <div className="absolute right-[3.2rem] top-[5.8rem] h-12 w-1.5 rounded-full bg-[#F3D7C1]" />
+                <div className="absolute right-[2.6rem] top-[6.2rem] h-12 w-1.5 rounded-full bg-[#F3D7C1]" />
+                <div className="absolute right-[4.2rem] top-[4.4rem] h-2.5 w-6 rounded-full bg-[#ffffff] text-center text-[7px] font-extrabold leading-[10px] text-[#0F7F38]">
+                  DELLA
                 </div>
-              ) : null}
+                <div className="absolute bottom-6 right-0 h-20 w-10">
+                  <div className="absolute bottom-0 left-3 h-11 w-4 rounded-t-full bg-[#3CA452]" />
+                  <div className="absolute bottom-7 left-0 h-7 w-4 rotate-[-28deg] rounded-full bg-[#67C66E]" />
+                  <div className="absolute bottom-9 left-4 h-7 w-4 rotate-[24deg] rounded-full bg-[#58B85F]" />
+                </div>
+              </div>
+            </div>
+          </section>
 
-              <div className="space-y-4">
-                {providers.map((provider) => (
+          <section className="mt-7">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-[18px] font-extrabold tracking-[-0.04em] text-[#0F172A]">
+                Popular near you
+              </h2>
+              <Link href="/providers" className="text-[14px] font-extrabold text-[#16A34A]">
+                See all
+              </Link>
+            </div>
+
+            {errorMessage ? (
+              <div className="mb-4 rounded-[18px] border border-[#F3C7C7] bg-[#FFF4F4] px-4 py-3 text-[13px] font-semibold text-[#B42318]">
+                {errorMessage}
+              </div>
+            ) : null}
+
+            <div className="-mx-5 overflow-x-auto px-5 pb-2">
+              <div className="flex gap-4">
+                {popularProviders.map((provider, index) => (
                   <article
                     key={provider.id}
-                    className="rounded-[22px] border border-[#e3ece6] bg-white p-4 shadow-[0_14px_28px_rgba(15,23,42,0.05)]"
+                    className="w-[15.8rem] shrink-0 overflow-hidden rounded-[20px] border border-[#E5EBE6] bg-white shadow-[0_12px_28px_rgba(15,23,42,0.06)]"
                   >
-                    <div className="flex items-start gap-3">
-                      <AvatarTile label={provider.serviceLabel} />
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <h3 className="text-[17px] font-extrabold tracking-[-0.03em] text-[#111827]">
-                              {provider.name}
-                            </h3>
-                            <p className="mt-1 text-[14px] font-semibold text-[#16a34a]">
-                              {provider.serviceLabel}
-                            </p>
-                          </div>
-                          <div className="rounded-full bg-[#f4fbf5] px-2.5 py-1 text-[12px] font-bold text-[#15803d]">
-                            {provider.rating.toFixed(1)}
-                          </div>
-                        </div>
+                    <div className={`relative h-36 ${cardPhotoTone(index)}`}>
+                      <div className="absolute left-3 top-3 rounded-[8px] bg-[#16A34A] px-2.5 py-1 text-[11px] font-bold text-white">
+                        {provider.statusLabel}
+                      </div>
+                      <button
+                        type="button"
+                        aria-label="Save provider"
+                        className="absolute right-3 top-3 text-white"
+                      >
+                        <Heart className="h-7 w-7" />
+                      </button>
+                      <div className="absolute bottom-0 right-2 h-32 w-24 rounded-t-[30px] bg-white/14" />
+                    </div>
 
-                        <p className="mt-3 text-[13px] leading-6 text-[#475569]">
-                          {provider.bio}
-                        </p>
+                    <div className="px-4 py-3">
+                      <h3 className="text-[16px] font-extrabold tracking-[-0.03em] text-[#0F172A]">
+                        {provider.name}
+                      </h3>
+                      <p className="mt-1 text-[14px] text-[#0F172A]">{provider.service}</p>
 
-                        <div className="mt-3 flex flex-wrap items-center gap-2 text-[12px] text-[#64748b]">
-                          <MetaPill>{provider.location}</MetaPill>
-                          <MetaPill>{provider.radiusKm} KM radius</MetaPill>
-                          <MetaPill>{provider.yearsExperience}</MetaPill>
-                          <MetaPill>{provider.reviews} reviews</MetaPill>
-                        </div>
+                      <div className="mt-2 flex items-center gap-1 text-[14px] text-[#0F172A]">
+                        <Star className="h-4 w-4 fill-[#F59E0B] text-[#F59E0B]" />
+                        <span className="font-semibold">{provider.rating.toFixed(1)}</span>
+                        <span className="text-[#475467]">({provider.reviews})</span>
+                      </div>
 
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          {provider.specialties.map((specialty) => (
-                            <span
-                              key={specialty}
-                              className="rounded-full bg-[#eff9f0] px-3 py-1 text-[12px] font-semibold text-[#15803d]"
-                            >
-                              {specialty}
-                            </span>
-                          ))}
-                        </div>
+                      <div className="mt-2 flex items-center gap-1 text-[14px] text-[#475467]">
+                        <MapPin className="h-4 w-4 text-[#16A34A]" />
+                        <span>{provider.distanceKm} km away</span>
+                      </div>
 
-                        <div className="mt-4 flex items-center justify-between gap-3">
-                          <div>
-                            <p className="text-[12px] text-[#64748b]">Rates</p>
-                            <p className="mt-1 text-[15px] font-extrabold text-[#111827]">
-                              RM{provider.hourlyRate}/hr
-                            </p>
-                            <p className="text-[12px] text-[#64748b]">
-                              RM{provider.dailyRate}/day
-                            </p>
-                          </div>
-                          <div className="flex flex-col items-end gap-2">
-                            {provider.phoneVerified ? (
-                              <VerificationBadge label="Phone verified" />
-                            ) : null}
-                            {provider.identityVerified ? (
-                              <VerificationBadge label="ID verified" />
-                            ) : null}
-                          </div>
+                      <div className="mt-3 border-t border-[#E8ECE8] pt-3">
+                        <p className="text-[14px] text-[#475467]">From</p>
+                        <div className="mt-1 flex items-center justify-between gap-3">
+                          <p className="text-[18px] font-extrabold text-[#16A34A]">
+                            {provider.priceLabel}
+                          </p>
+                          <Link
+                            href="/providers"
+                            className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-[#16A34A] text-white"
+                          >
+                            <ChevronRight className="h-5 w-5" />
+                          </Link>
                         </div>
                       </div>
                     </div>
                   </article>
                 ))}
               </div>
-            </section>
+            </div>
+          </section>
 
-            <nav className="mt-5 flex items-center justify-between border-t border-[#e5ebe7] pt-3 text-[11px] font-medium text-[#6b7280]">
-              <BottomNavLink href="/home" label="Home" active />
-              <BottomNavLink href="/providers" label="Providers" />
-              <BottomNavLink href="/profile/bookings" label="Bookings" />
-              <BottomNavLink href="/profile" label="Profile" />
-            </nav>
-          </div>
+          <section className="mt-8">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-[18px] font-extrabold tracking-[-0.04em] text-[#0F172A]">
+                Upcoming booking
+              </h2>
+              <Link
+                href="/profile/bookings"
+                className="text-[14px] font-extrabold text-[#16A34A]"
+              >
+                See all bookings
+              </Link>
+            </div>
+
+            <div className="rounded-[22px] border border-[#E5EBE6] bg-white p-4 shadow-[0_12px_28px_rgba(15,23,42,0.05)]">
+              {upcomingBooking ? (
+                <div className="flex items-center gap-4">
+                  <div className="flex h-[6.5rem] w-[6.5rem] items-center justify-center rounded-[18px] bg-[#EEF9F1] text-[#0F172A]">
+                    <House className="h-12 w-12 stroke-[1.6]" />
+                  </div>
+
+                  <div className="min-w-0 flex-1">
+                    <h3 className="text-[16px] font-extrabold tracking-[-0.03em] text-[#0F172A]">
+                      {upcomingBooking.title}
+                    </h3>
+                    <p className="mt-1 text-[15px] font-semibold text-[#0F172A]">
+                      {upcomingBooking.provider}
+                    </p>
+
+                    <div className="mt-3 flex items-center gap-2 text-[14px] text-[#475467]">
+                      <CalendarDays className="h-4 w-4 text-[#16A34A]" />
+                      <span>{upcomingBooking.scheduleLabel}</span>
+                    </div>
+                    <div className="mt-2 flex items-center gap-2 text-[14px] text-[#475467]">
+                      <span className="h-2.5 w-2.5 rounded-full bg-[#86EFAC]" />
+                      <span>
+                        Status:{" "}
+                        <span className="font-bold text-[#F59E0B]">
+                          {upcomingBooking.statusLabel}
+                        </span>
+                      </span>
+                    </div>
+                  </div>
+
+                  <Link
+                    href="/profile/bookings"
+                    className="inline-flex h-13 shrink-0 items-center gap-3 rounded-[16px] border border-[#16A34A] px-6 text-[15px] font-extrabold text-[#16A34A]"
+                  >
+                    View Details
+                    <ChevronRight className="h-5 w-5" />
+                  </Link>
+                </div>
+              ) : (
+                <div className="text-[14px] leading-7 text-[#475467]">
+                  No upcoming booking yet.
+                </div>
+              )}
+            </div>
+          </section>
+
+          <nav className="mt-8 flex items-center justify-between border-t border-[#E8ECE8] px-2 pt-4">
+            <BottomNavLink href="/home" label="Home" active icon={<House className="h-7 w-7" />} />
+            <BottomNavLink href="/profile/bookings" label="Bookings" icon={<BookOpen className="h-7 w-7" />} />
+            <BottomNavLink href="/profile/messages" label="Messages" icon={<MessageCircleMore className="h-7 w-7" />} />
+            <BottomNavLink href="/profile/wallet" label="Wallet" icon={<WalletCards className="h-7 w-7" />} />
+            <BottomNavLink href="/profile" label="Profile" icon={<CircleUserRound className="h-7 w-7" />} />
+          </nav>
         </div>
       </div>
     </main>
   );
 }
 
-function AvatarTile({ label }: { label: string }) {
-  const letter = label.charAt(0);
-
+function CategoryItem({ category }: { category: HomeServiceCategory }) {
   return (
-    <div className="inline-flex h-[4.4rem] w-[4.4rem] shrink-0 items-center justify-center rounded-[20px] bg-[linear-gradient(135deg,#16a34a_0%,#0f7b32_100%)] text-[28px] font-extrabold text-white shadow-[0_12px_22px_rgba(22,163,74,0.25)]">
-      {letter}
+    <div className="flex flex-col items-center text-center">
+      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#EEF9F1] text-[#0F172A]">
+        <CategoryIcon kind={category.key} />
+      </div>
+      <p className="mt-3 text-[14px] font-bold tracking-[-0.03em] text-[#0F172A]">
+        {category.label}
+      </p>
     </div>
   );
 }
 
-function MetaPill({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="rounded-full border border-[#e1ebe4] bg-[#fbfffb] px-2.5 py-1">
-      {children}
-    </span>
-  );
-}
-
-function VerificationBadge({ label }: { label: string }) {
-  return (
-    <span className="inline-flex items-center gap-1 rounded-full bg-[#e9f9ec] px-2.5 py-1 text-[11px] font-bold text-[#15803d]">
-      <CheckIcon className="h-3.5 w-3.5" />
-      {label}
-    </span>
-  );
+function CategoryIcon({ kind }: { kind: string }) {
+  switch (kind) {
+    case "chef":
+      return <CookingPot className="h-8 w-8 stroke-[2]" />;
+    case "maid":
+      return <BriefcaseBusiness className="h-8 w-8 stroke-[2]" />;
+    case "babysitter":
+      return <Baby className="h-8 w-8 stroke-[2]" />;
+    case "driver":
+      return <CarFront className="h-8 w-8 stroke-[2]" />;
+    case "cleaner":
+      return <SprayCan className="h-8 w-8 stroke-[2]" />;
+    case "tutor":
+      return <BookOpen className="h-8 w-8 stroke-[2]" />;
+    case "plumber":
+      return <Wrench className="h-8 w-8 stroke-[2]" />;
+    case "electrician":
+      return <Bolt className="h-8 w-8 stroke-[2]" />;
+    default:
+      return <UserRound className="h-8 w-8 stroke-[2]" />;
+  }
 }
 
 function BottomNavLink({
   href,
   label,
+  icon,
   active = false,
 }: {
   href: string;
   label: string;
+  icon: React.ReactNode;
   active?: boolean;
 }) {
   return (
     <Link
       href={href}
-      className={`flex min-w-14 flex-col items-center gap-1 ${active ? "text-[#16a34a]" : ""}`}
+      className={`flex min-w-[3.8rem] flex-col items-center gap-2 text-[12px] font-medium ${
+        active ? "text-[#16A34A]" : "text-[#667085]"
+      }`}
     >
-      <span className={`h-2 w-2 rounded-full ${active ? "bg-[#16a34a]" : "bg-[#cfd8d1]"}`} />
+      {icon}
       <span>{label}</span>
+      <span
+        className={`h-1 w-14 rounded-full ${
+          active ? "bg-[#16A34A]" : "bg-transparent"
+        }`}
+      />
     </Link>
   );
 }
 
-function CheckIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      className={className}
-    >
-      <path d="m5 13 4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
+function timePrefix() {
+  const hour = new Date().getHours();
+
+  if (hour < 12) {
+    return "Good morning,";
+  }
+
+  if (hour < 18) {
+    return "Good afternoon,";
+  }
+
+  return "Good evening,";
+}
+
+function cardPhotoTone(index: number) {
+  const tones = [
+    "bg-[linear-gradient(135deg,#3a2417_0%,#8f5a35_40%,#d6b089_100%)]",
+    "bg-[linear-gradient(135deg,#d7c0a9_0%,#f2e7d9_45%,#8cb39a_100%)]",
+    "bg-[linear-gradient(135deg,#d6c7b2_0%,#f0e3d7_45%,#9e8a72_100%)]",
+    "bg-[linear-gradient(135deg,#d8e6db_0%,#f0f6ef_45%,#7aa884_100%)]",
+  ];
+
+  return tones[index % tones.length];
 }
