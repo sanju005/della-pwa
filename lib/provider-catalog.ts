@@ -88,10 +88,10 @@ const imageTones = [
 const mockListings: Record<ProviderCategoryKey, ProviderListing[]> = {
   chef: [
     mock("chef", "Chef Amina", "Private Chef", "Kajang, Selangor", 2.4, 4.9, 128, 35, 220, "6 Years", ["Malay", "Arabic"], "Experienced home chef for family dining and events.", "Available Today", 0),
-    mock("chef", "Chef Raj", "Home Chef", "Mont Kiara, Kuala Lumpur", 3.1, 4.8, 96, 42, 260, "8 Years", ["Indian", "Western"], "Private chef for home dining, parties, and weekly meal prep.", "Available Today", 1),
-    mock("chef", "Chef Nadia", "Event Chef", "Ampang, Selangor", 4.3, 4.7, 84, 38, 240, "5 Years", ["Vegetarian", "Malay"], "Trusted DELLA chef for family gatherings and event catering.", "Available Today", 2),
-    mock("chef", "Chef Imran", "Personal Chef", "Setapak, Kuala Lumpur", 2.8, 4.8, 73, 40, 250, "7 Years", ["Western", "Arabic"], "Flexible chef for home service, healthy menus, and dinner events.", "Available Today", 3),
-    mock("chef", "Chef Salma", "Family Chef", "Shah Alam, Selangor", 3.5, 4.6, 67, 34, 210, "4 Years", ["Malay", "Indian"], "Affordable family chef focused on daily meals and weekend events.", "Available Today", 4),
+    mock("chef", "Chef Daniel", "Home Chef", "Mont Kiara, Kuala Lumpur", 3.1, 4.8, 96, 42, 260, "8 Years", ["Italian", "Western"], "Private chef for home dining, parties, and weekly meal prep.", "Available Today", 1),
+    mock("chef", "Chef Mei Ling", "Event Chef", "Ampang, Selangor", 4.3, 4.7, 84, 38, 240, "5 Years", ["Chinese", "Asian"], "Trusted DELLA chef for family gatherings and event catering.", "Available Today", 2),
+    mock("chef", "Chef Hikaru", "Personal Chef", "Setapak, Kuala Lumpur", 2.8, 4.8, 73, 40, 250, "7 Years", ["Japanese", "Healthy"], "Flexible chef for home service, healthy menus, and dinner events.", "Available Today", 3),
+    mock("chef", "Chef Sofia", "Family Chef", "Shah Alam, Selangor", 3.5, 4.6, 67, 34, 210, "4 Years", ["Malay", "Indian"], "Affordable family chef focused on daily meals and weekend events.", "Available Today", 4),
   ],
   maid: [
     mock("maid", "Siti Maid Service", "Maid", "Setapak, Kuala Lumpur", 1.8, 4.8, 96, 25, 180, "5 Years", ["Cleaning", "Laundry"], "Reliable maid service for daily home care and deep cleaning.", "Available Today", 1),
@@ -149,9 +149,26 @@ export function buildProviderDetailHref(listing: Pick<ProviderListing, "id" | "s
 }
 
 export function buildProviderPortraitSrc(
-  listing: Pick<ProviderListing, "serviceKey">
+  listing: Pick<ProviderListing, "serviceKey" | "name">
 ) {
+  const slug = listing.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  if (listing.serviceKey === "chef") {
+    return `/images/mock/${slug}.jpg`;
+  }
+
   return `/api/provider-media/${listing.serviceKey}/portrait`;
+}
+
+export function buildCategoryBannerSrc(serviceKey: ProviderCategoryKey | null) {
+  if (serviceKey === "chef") {
+    return "/images/mock/chef-banner.png";
+  }
+
+  if (!serviceKey) {
+    return "/images/mock/chef-banner.png";
+  }
+
+  return `/api/provider-media/${serviceKey}/gallery-2`;
 }
 
 function buildSupabasePublicClient() {

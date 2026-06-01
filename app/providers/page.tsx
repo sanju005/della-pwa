@@ -1,5 +1,6 @@
 import { ProvidersCatalogScreen } from "./providers-catalog-screen";
 import {
+  buildCategoryBannerSrc,
   buildProviderDetailHref,
   buildProviderPortraitSrc,
   getProviderCatalog,
@@ -14,6 +15,7 @@ export default async function ProvidersPage(props: {
   const data = await getProviderCatalog(searchParams.service ?? null);
   const screenData = {
     ...data,
+    bannerSrc: buildCategoryBannerSrc(data.service),
     listings: data.listings.map((listing) => ({
       ...listing,
       href: buildProviderDetailHref(listing),

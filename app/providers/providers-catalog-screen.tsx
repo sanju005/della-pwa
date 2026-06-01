@@ -6,6 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowLeft,
+  BadgeCheck,
   BriefcaseBusiness,
   ChevronDown,
   Filter,
@@ -15,12 +16,11 @@ import {
   ShieldCheck,
   Star,
   UserRound,
-  BadgeCheck,
 } from "lucide-react";
 
 type TabKey = "all" | "live-in" | "part-time" | "full-time";
 type SortKey = "popular" | "nearest" | "price-low";
-
+type WorkMode = "Live-in" | "Part-time" | "Full-time";
 type ServiceKey =
   | "chef"
   | "maid"
@@ -37,7 +37,7 @@ type CatalogScreenListing = {
   name: string;
   serviceKey: Exclude<ServiceKey, null>;
   serviceLabel: string;
-  workMode: "Live-in" | "Part-time" | "Full-time";
+  workMode: WorkMode;
   bio: string;
   specialties: string[];
   distanceKm: number;
@@ -53,11 +53,14 @@ type CatalogScreenListing = {
 type CatalogScreenData = {
   service: ServiceKey;
   serviceLabel: string;
+  bannerSrc: string;
   listings: CatalogScreenListing[];
   errorMessage: string | null;
 };
 
-const serviceIcons: Partial<Record<Exclude<ServiceKey, null>, ComponentType<{ className?: string }>>> = {
+const serviceIcons: Partial<
+  Record<Exclude<ServiceKey, null>, ComponentType<{ className?: string }>>
+> = {
   chef: BriefcaseBusiness,
   maid: UserRound,
   babysitter: UserRound,
@@ -105,33 +108,25 @@ export function ProvidersCatalogScreen({ data }: { data: CatalogScreenData }) {
     });
 
     items = [...items].sort((left, right) => {
-      if (sortBy === "nearest") {
-        return left.distanceKm - right.distanceKm;
-      }
-
-      if (sortBy === "price-low") {
-        return left.hourlyRate - right.hourlyRate;
-      }
-
-      if (right.rating !== left.rating) {
-        return right.rating - left.rating;
-      }
-
+      if (sortBy === "nearest") return left.distanceKm - right.distanceKm;
+      if (sortBy === "price-low") return left.hourlyRate - right.hourlyRate;
+      if (right.rating !== left.rating) return right.rating - left.rating;
       return right.reviews - left.reviews;
     });
 
     return items;
   }, [activeTab, data.listings, query, sortBy]);
 
-  const Icon = data.service ? serviceIcons[data.service] ?? BriefcaseBusiness : BriefcaseBusiness;
+  const Icon = data.service
+    ? serviceIcons[data.service] ?? BriefcaseBusiness
+    : BriefcaseBusiness;
   const serviceLower = (data.serviceLabel || "service").toLowerCase();
-  const headingCount = filteredListings.length;
 
   return (
     <main className="min-h-[100dvh] bg-[#f6fff8]">
-      <div className="mx-auto min-h-[100dvh] w-full max-w-[430px] bg-white px-5 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
-        <div className="py-5">
-          <div className="flex items-center justify-between">
+      <div className="mx-auto min-h-[100dvh] w-full max-w-[430px] bg-white px-6 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
+        <div className="py-6">
+          <header className="flex items-center justify-between">
             <Link
               href="/home"
               className="inline-flex h-11 w-11 items-center justify-center rounded-full text-[#0F172A]"
@@ -142,37 +137,40 @@ export function ProvidersCatalogScreen({ data }: { data: CatalogScreenData }) {
               <MapPin className="h-5 w-5 fill-[#16A34A] text-[#16A34A]" />
               <span>Setapak, Kuala Lumpur</span>
             </div>
-          </div>
+          </header>
 
-          <section className="mt-7">
+          <section className="mt-8">
             <div className="flex items-start gap-4">
-              <div className="inline-flex h-28 w-28 items-center justify-center rounded-[24px] bg-[#EEF9F1] text-[#0F172A]">
+              <div className="inline-flex h-28 w-28 shrink-0 items-center justify-center rounded-[24px] bg-[#EEF9F1] text-[#0F172A] shadow-[0_10px_24px_rgba(15,23,42,0.04)]">
                 <Icon className="h-14 w-14 stroke-[1.8]" />
               </div>
-              <div className="flex-1 pt-1">
-                <h1 className="text-[28px] font-extrabold tracking-[-0.05em] text-[#0F172A]">
+              <div className="min-w-0 flex-1 pt-1">
+                <h1 className="text-[30px] font-extrabold tracking-[-0.05em] text-[#0F172A]">
                   {data.serviceLabel}
                 </h1>
                 <p className="mt-3 text-[16px] leading-7 text-[#344054]">
                   Find trusted {serviceLower} services near you
                 </p>
-                <div className="mt-4 flex flex-wrap gap-x-5 gap-y-3 text-[13px] leading-5 text-[#344054]">
-                  <TrustPill icon={<ShieldCheck className="h-4.5 w-4.5 text-[#16A34A]" />}>
-                    Verified &amp; Background Checked
-                  </TrustPill>
-                  <TrustPill icon={<Star className="h-4.5 w-4.5 fill-[#16A34A] text-[#16A34A]" />}>
-                    Rating &amp; Reviews
-                  </TrustPill>
-                  <TrustPill icon={<BadgeCheck className="h-4.5 w-4.5 text-[#16A34A]" />}>
-                    Secure Booking
-                  </TrustPill>
+                <div className="mt-4 grid grid-cols-3 gap-3 text-[12px] leading-5 text-[#344054]">
+                  <TrustBadge
+                    icon={<ShieldCheck className="h-4.5 w-4.5 text-[#16A34A]" />}
+                    label="Verified & Background Checked"
+                  />
+                  <TrustBadge
+                    icon={<Star className="h-4.5 w-4.5 fill-[#16A34A] text-[#16A34A]" />}
+                    label="Rating & Reviews"
+                  />
+                  <TrustBadge
+                    icon={<BadgeCheck className="h-4.5 w-4.5 text-[#16A34A]" />}
+                    label="Secure Booking"
+                  />
                 </div>
               </div>
             </div>
           </section>
 
-          <section className="mt-7 flex gap-3">
-            <div className="flex h-[58px] flex-1 items-center rounded-[20px] border border-[#E5ECE7] px-5 shadow-[0_8px_22px_rgba(15,23,42,0.05)]">
+          <section className="mt-8 flex items-center gap-3">
+            <div className="flex h-[58px] basis-[70%] items-center rounded-[20px] border border-[#E5ECE7] px-5 shadow-[0_8px_22px_rgba(15,23,42,0.05)]">
               <Search className="h-6 w-6 text-[#0F172A]" />
               <input
                 value={query}
@@ -183,15 +181,15 @@ export function ProvidersCatalogScreen({ data }: { data: CatalogScreenData }) {
             </div>
             <button
               type="button"
-              className="inline-flex h-[58px] items-center gap-2 rounded-[16px] bg-[#16A34A] px-5 text-[16px] font-extrabold text-white"
+              className="inline-flex h-[58px] basis-[30%] items-center justify-center gap-2 rounded-[16px] bg-[#16A34A] px-4 text-[16px] font-extrabold text-white"
             >
               <Filter className="h-5 w-5" />
               Filter
             </button>
           </section>
 
-          <section className="mt-6 rounded-[22px] border border-[#E5ECE7] bg-white p-2 shadow-[0_8px_20px_rgba(15,23,42,0.04)]">
-            <div className="grid grid-cols-4 gap-1.5">
+          <section className="mt-6 overflow-hidden rounded-[20px] border border-[#E5ECE7] bg-white shadow-[0_8px_20px_rgba(15,23,42,0.04)]">
+            <div className="grid grid-cols-4">
               <TabButton
                 active={activeTab === "all"}
                 onClick={() => setActiveTab("all")}
@@ -219,7 +217,7 @@ export function ProvidersCatalogScreen({ data }: { data: CatalogScreenData }) {
             </div>
           </section>
 
-          <section className="mt-6 overflow-hidden rounded-[24px] bg-[linear-gradient(90deg,#F5FFF8_0%,#F0FFF5_48%,#E3F8EA_100%)] px-5 py-5 shadow-[0_12px_26px_rgba(15,23,42,0.05)]">
+          <section className="mt-6 overflow-hidden rounded-[20px] bg-[linear-gradient(90deg,#F5FFF8_0%,#F0FFF5_50%,#E3F8EA_100%)] px-5 py-5 shadow-[0_12px_26px_rgba(15,23,42,0.05)]">
             <div className="flex items-center gap-4">
               <div className="inline-flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-[#DFF6E7] text-[#16A34A]">
                 <ShieldCheck className="h-8 w-8" />
@@ -232,14 +230,29 @@ export function ProvidersCatalogScreen({ data }: { data: CatalogScreenData }) {
                   Background checked, experienced, and highly rated.
                 </p>
               </div>
-              <div className="hidden h-28 w-24 shrink-0 rounded-[18px] bg-[#16A34A]/10 sm:block" />
+              <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-[18px]">
+                <Image
+                  src={data.bannerSrc}
+                  alt={`${data.serviceLabel} banner`}
+                  width={192}
+                  height={192}
+                  unoptimized
+                  className="h-full w-full object-cover"
+                />
+              </div>
             </div>
           </section>
+
+          {data.errorMessage ? (
+            <div className="mt-5 rounded-[18px] border border-[#F3C7C7] bg-[#FFF4F4] px-4 py-3 text-[13px] font-semibold text-[#B42318]">
+              {data.errorMessage}
+            </div>
+          ) : null}
 
           <section className="mt-8">
             <div className="flex items-center justify-between gap-3">
               <h2 className="text-[18px] font-extrabold tracking-[-0.04em] text-[#0F172A]">
-                {headingCount} {data.serviceLabel} services found
+                {filteredListings.length} {data.serviceLabel} services found
               </h2>
               <label className="flex items-center gap-3 text-[14px] text-[#475467]">
                 <span>Sort by</span>
@@ -247,7 +260,7 @@ export function ProvidersCatalogScreen({ data }: { data: CatalogScreenData }) {
                   <select
                     value={sortBy}
                     onChange={(event) => setSortBy(event.target.value as SortKey)}
-                    className="h-12 appearance-none rounded-[16px] border border-[#E5ECE7] bg-white pl-4 pr-10 text-[15px] font-semibold text-[#344054] outline-none"
+                    className="h-12 appearance-none rounded-[14px] border border-[#E5ECE7] bg-white pl-4 pr-10 text-[15px] font-semibold text-[#344054] outline-none"
                   >
                     <option value="popular">Popular</option>
                     <option value="nearest">Nearest</option>
@@ -270,18 +283,12 @@ export function ProvidersCatalogScreen({ data }: { data: CatalogScreenData }) {
   );
 }
 
-function TrustPill({
-  icon,
-  children,
-}: {
-  icon: ReactNode;
-  children: ReactNode;
-}) {
+function TrustBadge({ icon, label }: { icon: ReactNode; label: string }) {
   return (
-    <span className="inline-flex items-start gap-2">
-      <span className="mt-0.5">{icon}</span>
-      <span>{children}</span>
-    </span>
+    <div className="inline-flex min-w-0 items-start gap-2">
+      <span className="mt-0.5 shrink-0">{icon}</span>
+      <span>{label}</span>
+    </div>
   );
 }
 
@@ -300,13 +307,13 @@ function TabButton({
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-[16px] px-3 py-4 text-left transition ${
-        active ? "bg-white shadow-[inset_0_-3px_0_#16A34A]" : "bg-transparent"
+      className={`min-w-0 px-2 py-4 text-center ${
+        active ? "shadow-[inset_0_-3px_0_#16A34A]" : ""
       }`}
     >
-      <div className="flex items-center gap-2">
+      <div className="flex items-center justify-center gap-2 whitespace-nowrap">
         <span
-          className={`text-[14px] font-extrabold ${
+          className={`truncate text-[13px] font-extrabold ${
             active ? "text-[#16A34A]" : "text-[#0F172A]"
           }`}
         >
@@ -326,9 +333,9 @@ function TabButton({
 
 function ProviderCard({ listing }: { listing: CatalogScreenListing }) {
   return (
-    <article className="rounded-[24px] border border-[#E5ECE7] bg-white p-4 shadow-[0_12px_26px_rgba(15,23,42,0.05)]">
+    <article className="rounded-[20px] border border-[#E5ECE7] bg-white p-4 shadow-[0_12px_24px_rgba(15,23,42,0.05)]">
       <div className="flex gap-4">
-        <div className="relative h-[11rem] w-[10rem] shrink-0 overflow-hidden rounded-[18px]">
+        <div className="relative h-[11.2rem] w-[9.7rem] shrink-0 overflow-hidden rounded-[18px]">
           <Image
             src={listing.portraitSrc}
             alt={listing.name}
@@ -345,7 +352,7 @@ function ProviderCard({ listing }: { listing: CatalogScreenListing }) {
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <h3 className="inline-flex items-center gap-2 text-[18px] font-extrabold tracking-[-0.04em] text-[#0F172A]">
+              <h3 className="inline-flex max-w-full items-center gap-2 text-[18px] font-extrabold tracking-[-0.04em] text-[#0F172A]">
                 <span className="truncate">{listing.name}</span>
                 <BadgeCheck className="h-5 w-5 shrink-0 fill-[#16A34A] text-[#16A34A]" />
               </h3>
@@ -364,7 +371,11 @@ function ProviderCard({ listing }: { listing: CatalogScreenListing }) {
                 </span>
               </div>
             </div>
-            <button type="button" aria-label="Save provider" className="text-[#667085]">
+            <button
+              type="button"
+              aria-label="Save provider"
+              className="shrink-0 text-[#667085]"
+            >
               <Heart className="h-7 w-7" />
             </button>
           </div>
@@ -374,7 +385,7 @@ function ProviderCard({ listing }: { listing: CatalogScreenListing }) {
               {listing.yearsExperience} Experience
             </span>
             <span className="rounded-full bg-[#F4F5F7] px-3 py-1.5 text-[13px] font-semibold text-[#667085]">
-              {listing.workMode}
+              {listing.specialties[0] ?? listing.workMode}
             </span>
           </div>
 
