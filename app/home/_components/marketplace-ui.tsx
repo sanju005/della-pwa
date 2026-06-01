@@ -129,22 +129,22 @@ export function MarketplaceScreen({
 
             <div className="rounded-[22px] border border-[#E5EBE6] bg-white p-4 shadow-[0_12px_28px_rgba(15,23,42,0.05)]">
               {upcomingBooking ? (
-                <div className="flex items-center gap-4">
-                  <div className="flex h-[6.5rem] w-[6.5rem] items-center justify-center rounded-[18px] bg-[#EEF9F1] text-[#0F172A]">
-                    <House className="h-12 w-12 stroke-[1.6]" />
+                <div className="flex items-center gap-3">
+                  <div className="flex h-[5.4rem] w-[5.4rem] shrink-0 items-center justify-center rounded-[18px] bg-[#EEF9F1] text-[#0F172A]">
+                    <House className="h-10 w-10 stroke-[1.7]" />
                   </div>
 
                   <div className="min-w-0 flex-1">
-                    <h3 className="text-[16px] font-extrabold tracking-[-0.03em] text-[#0F172A]">
+                    <h3 className="truncate text-[18px] font-extrabold tracking-[-0.03em] text-[#0F172A]">
                       {upcomingBooking.title}
                     </h3>
-                    <p className="mt-1 text-[15px] font-semibold text-[#0F172A]">
+                    <p className="mt-1 truncate text-[15px] font-semibold text-[#344054]">
                       {upcomingBooking.provider}
                     </p>
 
                     <div className="mt-3 flex items-center gap-2 text-[14px] text-[#475467]">
                       <CalendarDays className="h-4 w-4 text-[#16A34A]" />
-                      <span>{upcomingBooking.scheduleLabel}</span>
+                      <span className="truncate">{upcomingBooking.scheduleLabel}</span>
                     </div>
                     <div className="mt-2 flex items-center gap-2 text-[14px] text-[#475467]">
                       <span className="h-2.5 w-2.5 rounded-full bg-[#86EFAC]" />
@@ -159,10 +159,10 @@ export function MarketplaceScreen({
 
                   <Link
                     href="/profile/bookings"
-                    className="inline-flex h-13 shrink-0 items-center gap-3 rounded-[16px] border border-[#16A34A] px-6 text-[15px] font-extrabold text-[#16A34A]"
+                    className="inline-flex h-12 shrink-0 items-center gap-2 rounded-[16px] border border-[#16A34A] px-5 text-[15px] font-extrabold text-[#16A34A]"
                   >
                     View Details
-                    <ChevronRight className="h-5 w-5" />
+                    <ChevronRight className="h-4.5 w-4.5" />
                   </Link>
                 </div>
               ) : (
