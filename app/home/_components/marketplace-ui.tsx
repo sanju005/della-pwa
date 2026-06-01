@@ -38,7 +38,7 @@ export function MarketplaceScreen({
   return (
     <main className="min-h-[100dvh] overflow-x-hidden bg-[#f6fff8]">
       <div className="mx-auto min-h-[100dvh] w-full max-w-[430px] bg-white px-5 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
-        <div className="relative min-h-[100dvh] bg-white py-5">
+        <div className="relative min-h-[100dvh] bg-white py-5 pb-28">
           <div className="pointer-events-none absolute right-[-12%] top-[-2%] h-40 w-40 rounded-full bg-[radial-gradient(circle,_rgba(187,247,208,0.7),_transparent_68%)]" />
 
           <header className="relative z-10">
@@ -266,12 +266,14 @@ export function MarketplaceScreen({
             </div>
           </section>
 
-          <nav className="mt-8 flex items-center justify-between border-t border-[#E8ECE8] px-2 pt-4">
-            <BottomNavLink href="/home" label="Home" active icon={<House className="h-7 w-7" />} />
-            <BottomNavLink href="/profile/bookings" label="Bookings" icon={<BookOpen className="h-7 w-7" />} />
-            <BottomNavLink href="/profile/messages" label="Messages" icon={<MessageCircleMore className="h-7 w-7" />} />
-            <BottomNavLink href="/profile/wallet" label="Wallet" icon={<WalletCards className="h-7 w-7" />} />
-            <BottomNavLink href="/profile" label="Profile" icon={<CircleUserRound className="h-7 w-7" />} />
+          <nav className="fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-[430px] border-t border-[#E8ECE8] bg-white/96 px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3 backdrop-blur">
+            <div className="flex items-center justify-between">
+              <BottomNavLink href="/home" label="Home" active icon={<House className="h-5 w-5 stroke-[1.9]" />} />
+              <BottomNavLink href="/profile/bookings" label="Bookings" icon={<BookOpen className="h-5 w-5 stroke-[1.9]" />} />
+              <BottomNavLink href="/profile/messages" label="Messages" icon={<MessageCircleMore className="h-5 w-5 stroke-[1.9]" />} />
+              <BottomNavLink href="/profile/wallet" label="Wallet" icon={<WalletCards className="h-5 w-5 stroke-[1.9]" />} />
+              <BottomNavLink href="/profile" label="Profile" icon={<CircleUserRound className="h-5 w-5 stroke-[1.9]" />} />
+            </div>
           </nav>
         </div>
       </div>
@@ -332,14 +334,14 @@ function BottomNavLink({
   return (
     <Link
       href={href}
-      className={`flex min-w-[3.8rem] flex-col items-center gap-2 text-[12px] font-medium ${
+      className={`flex min-w-[3.5rem] flex-col items-center gap-1.5 text-[11px] font-medium ${
         active ? "text-[#16A34A]" : "text-[#667085]"
       }`}
     >
       {icon}
       <span>{label}</span>
       <span
-        className={`h-1 w-14 rounded-full ${
+        className={`h-0.5 w-12 rounded-full ${
           active ? "bg-[#16A34A]" : "bg-transparent"
         }`}
       />

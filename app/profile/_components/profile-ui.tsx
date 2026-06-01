@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 import { loadStoredCustomerProfile, saveCustomerProfile } from "@/lib/profile-browser";
 import type {
@@ -47,7 +47,7 @@ export function ProfileShell({
   title,
   showBack = false,
   backHref = "/profile",
-  showBottomNav = false,
+  showBottomNav = true,
 }: ShellProps) {
   return (
     <main className="min-h-[100dvh] overflow-x-hidden bg-[#f6fff8]">
@@ -79,7 +79,7 @@ export function ProfileShell({
             </div>
           </div>
 
-          <div className={showBottomNav ? "px-4 pb-24 pt-4" : "px-4 pb-6 pt-4"}>
+          <div className={showBottomNav ? "px-4 pb-28 pt-4" : "px-4 pb-6 pt-4"}>
             {children}
           </div>
 
@@ -614,13 +614,16 @@ function AvatarCircle({
 }
 
 function BottomNav() {
+  const pathname = usePathname();
+
   return (
-    <nav className="absolute inset-x-0 bottom-0 border-t border-[#e5ebe7] bg-white/96 px-5 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3 backdrop-blur">
+    <nav className="fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-[430px] border-t border-[#E8ECE8] bg-white/96 px-4 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-3 backdrop-blur">
       <div className="flex items-center justify-between text-[11px] font-medium text-[#6b7280]">
-        <NavItem href="/home" label="Home" icon={<HomeIcon className="h-5 w-5" />} />
-        <NavItem href="/profile/bookings" label="Bookings" icon={<CalendarIcon className="h-5 w-5" />} />
-        <NavItem href="/home" label="Messages" icon={<MessageIcon className="h-5 w-5" />} />
-        <NavItem href="/profile" label="Profile" icon={<UserIcon className="h-5 w-5" />} active />
+        <NavItem href="/home" label="Home" icon={<HomeIcon className="h-5 w-5" />} active={pathname === "/home"} />
+        <NavItem href="/profile/bookings" label="Bookings" icon={<CalendarIcon className="h-5 w-5" />} active={pathname.startsWith("/profile/bookings")} />
+        <NavItem href="/profile/messages" label="Messages" icon={<MessageIcon className="h-5 w-5" />} active={pathname.startsWith("/profile/messages")} />
+        <NavItem href="/profile/wallet" label="Wallet" icon={<WalletIcon className="h-5 w-5" />} active={pathname.startsWith("/profile/wallet")} />
+        <NavItem href="/profile" label="Profile" icon={<UserIcon className="h-5 w-5" />} active={pathname === "/profile" || pathname.startsWith("/profile/edit") || pathname.startsWith("/profile/addresses") || pathname.startsWith("/profile/settings")} />
       </div>
     </nav>
   );
@@ -640,10 +643,15 @@ function NavItem({
   return (
     <Link
       href={href}
-      className={`flex min-w-14 flex-col items-center gap-1 ${active ? "text-[#16a34a]" : ""}`}
+      className={`flex min-w-[3.5rem] flex-col items-center gap-1.5 ${active ? "text-[#16a34a]" : ""}`}
     >
       {icon}
       <span>{label}</span>
+      <span
+        className={`h-0.5 w-12 rounded-full ${
+          active ? "bg-[#16A34A]" : "bg-transparent"
+        }`}
+      />
     </Link>
   );
 }
@@ -723,7 +731,7 @@ function AddressKindIcon({
 }
 
 function iconClass(className?: string) {
-  return className ?? "h-5 w-5";
+  return className ?? "h-5 w-5 stroke-[1.9]";
 }
 
 function ArrowLeftIcon({ className }: { className?: string }) {
