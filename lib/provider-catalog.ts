@@ -153,7 +153,7 @@ export function buildProviderPortraitSrc(
 ) {
   const slug = listing.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
   if (listing.serviceKey === "chef") {
-    return `/images/mock/${slug}.jpg`;
+    return `/Images/Providers/Chef/${slug}.jpg`;
   }
 
   return `/api/provider-media/${listing.serviceKey}/portrait`;
