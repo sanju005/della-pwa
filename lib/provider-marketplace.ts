@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { createClient } from "@supabase/supabase-js";
+import { getSupabasePublishableKey, getSupabaseUrl } from "./supabase-env";
 
 type ProviderServiceRow = {
   id: string;
@@ -72,8 +73,8 @@ function humanizeService(type: string) {
 }
 
 function buildSupabasePublicClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const url = getSupabaseUrl();
+  const anonKey = getSupabasePublishableKey();
 
   if (!url || !anonKey) {
     return null;
