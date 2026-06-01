@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   Bell,
   BookOpen,
@@ -25,7 +26,10 @@ import {
 } from "lucide-react";
 
 import type { HomeFeedData, HomeServiceCategory } from "@/lib/home-feed";
-import { buildProviderDetailHref } from "@/lib/provider-catalog";
+import {
+  buildProviderDetailHref,
+  buildProviderPortraitSrc,
+} from "@/lib/provider-catalog";
 
 export function MarketplaceScreen({
   greetingName,
@@ -214,23 +218,33 @@ function ProviderSliderSection({
 
       <div className="-mx-5 overflow-x-auto px-5 pb-2">
         <div className="flex gap-4">
-          {providers.map((provider, index) => (
+          {providers.map((provider) => (
             <article
               key={`${title}-${provider.id}`}
               className="w-[15.8rem] shrink-0 overflow-hidden rounded-[20px] border border-[#E5EBE6] bg-white shadow-[0_12px_28px_rgba(15,23,42,0.06)]"
             >
-              <div className={`relative h-36 ${cardPhotoTone(index)}`}>
+              <div className="relative h-36 overflow-hidden bg-[#EEF4EF]">
+                <Image
+                  src={buildProviderPortraitSrc({
+                    name: provider.name,
+                    serviceKey: provider.serviceKey,
+                  })}
+                  alt={provider.name}
+                  fill
+                  sizes="252px"
+                  className="object-cover"
+                />
+                <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[#0F172A]/28 to-transparent" />
                 <div className="absolute left-3 top-3 rounded-[8px] bg-[#16A34A] px-2.5 py-1 text-[11px] font-bold text-white">
                   {provider.statusLabel}
                 </div>
                 <button
                   type="button"
                   aria-label="Save provider"
-                  className="absolute right-3 top-3 text-white"
+                  className="absolute right-3 top-3 text-white drop-shadow-[0_2px_8px_rgba(15,23,42,0.22)]"
                 >
                   <Heart className="h-7 w-7" />
                 </button>
-                <div className="absolute bottom-0 right-2 h-32 w-24 rounded-t-[30px] bg-white/14" />
               </div>
 
               <div className="px-4 py-3">
@@ -358,15 +372,4 @@ function timePrefix() {
   }
 
   return "Good evening,";
-}
-
-function cardPhotoTone(index: number) {
-  const tones = [
-    "bg-[linear-gradient(135deg,#3a2417_0%,#8f5a35_40%,#d6b089_100%)]",
-    "bg-[linear-gradient(135deg,#d7c0a9_0%,#f2e7d9_45%,#8cb39a_100%)]",
-    "bg-[linear-gradient(135deg,#d6c7b2_0%,#f0e3d7_45%,#9e8a72_100%)]",
-    "bg-[linear-gradient(135deg,#d8e6db_0%,#f0f6ef_45%,#7aa884_100%)]",
-  ];
-
-  return tones[index % tones.length];
 }
