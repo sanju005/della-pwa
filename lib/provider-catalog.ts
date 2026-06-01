@@ -143,6 +143,10 @@ const mockListings: Record<ProviderCategoryKey, ProviderListing[]> = {
   ],
 };
 
+export function buildProviderDetailHref(listing: Pick<ProviderListing, "id" | "serviceKey">) {
+  return `/providers/${encodeURIComponent(listing.id)}?service=${listing.serviceKey}`;
+}
+
 function buildSupabasePublicClient() {
   const url = getSupabaseUrl();
   const publishableKey = getSupabasePublishableKey();

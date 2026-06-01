@@ -7,6 +7,8 @@ import {
   getSupabaseServiceKey,
   getSupabaseUrl,
 } from "./supabase-env";
+import { getLatestCustomerBooking } from "./customer-booking-storage";
+import type { ProviderCategoryKey } from "./provider-catalog";
 
 type HomeCustomerRow = {
   id: string;
@@ -72,6 +74,7 @@ export type HomeServiceCategory = {
 
 export type HomeProviderCard = {
   id: string;
+  serviceKey: ProviderCategoryKey;
   name: string;
   service: string;
   rating: number;
@@ -198,7 +201,8 @@ export const getHomeFeedData = cache(async (): Promise<HomeFeedData> => {
     };
   }
 
-  const [customerResult, providerResult, bookingResult] = await Promise.all([
+  const [customerResult, providerResult, bookingResult, latestStoredBooking] =
+    await Promise.all([
     adminSupabase
       .from("profiles")
       .select(
@@ -257,6 +261,7 @@ export const getHomeFeedData = cache(async (): Promise<HomeFeedData> => {
       .order("scheduled_date", { ascending: true })
       .limit(1)
       .maybeSingle(),
+    getLatestCustomerBooking(),
   ]);
 
   const customerRow = customerResult.data as HomeCustomerRow | null;
@@ -275,6 +280,7 @@ export const getHomeFeedData = cache(async (): Promise<HomeFeedData> => {
 
       return {
         id: provider.id,
+        serviceKey: (firstService?.service_type ?? "chef") as ProviderCategoryKey,
         name: provider.marketing_name ?? "DELLA Provider",
         service: humanizeService(firstService?.service_type ?? "other"),
         rating: Number(provider.average_rating ?? 4.8),
@@ -291,6 +297,17 @@ export const getHomeFeedData = cache(async (): Promise<HomeFeedData> => {
   const bookingProvider = getProviderNode(bookingRow?.provider_profiles);
   const bookingService = getProviderNode(bookingRow?.provider_services);
 
+  const latestBooking = latestStoredBooking
+    ? {
+        id: latestStoredBooking.id,
+        title: latestStoredBooking.serviceLabel,
+        provider: latestStoredBooking.providerName,
+        scheduleLabel: `${latestStoredBooking.dateLabel}, ${latestStoredBooking.timeLabel}`,
+        statusLabel:
+          latestStoredBooking.status === "pending" ? "Pending" : "Confirmed",
+      }
+    : null;
+
   return {
     greetingName: customerRow?.full_name ?? "Rajeeethan",
     locationLabel:
@@ -302,19 +319,21 @@ export const getHomeFeedData = cache(async (): Promise<HomeFeedData> => {
       label: humanizeService(key),
     })),
     popularProviders: providers,
-    upcomingBooking: bookingRow
-      ? {
-          id: bookingRow.id,
-          title: humanizeService(bookingService?.service_type ?? "other"),
-          provider: bookingProvider?.marketing_name ?? "DELLA Provider",
-          scheduleLabel: formatSchedule(
-            bookingRow.scheduled_date,
-            bookingRow.scheduled_start_time
-          ),
-          statusLabel:
-            bookingRow.booking_status === "pending" ? "Pending" : "Confirmed",
-        }
-      : null,
+    upcomingBooking:
+      latestBooking ??
+      (bookingRow
+        ? {
+            id: bookingRow.id,
+            title: humanizeService(bookingService?.service_type ?? "other"),
+            provider: bookingProvider?.marketing_name ?? "DELLA Provider",
+            scheduleLabel: formatSchedule(
+              bookingRow.scheduled_date,
+              bookingRow.scheduled_start_time
+            ),
+            statusLabel:
+              bookingRow.booking_status === "pending" ? "Pending" : "Confirmed",
+          }
+        : null),
     errorMessage:
       customerResult.error?.message ??
       providerResult.error?.message ??

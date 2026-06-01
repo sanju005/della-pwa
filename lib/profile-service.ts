@@ -7,6 +7,7 @@ import type {
   ProfileOverviewData,
   SettingGroup,
 } from "./profile-types";
+import { listCustomerBookings } from "./customer-booking-storage";
 
 const mockProfile: CustomerProfile = {
   firstName: "Sanju",
@@ -145,12 +146,14 @@ const settings: SettingGroup[] = [
 ];
 
 export async function getProfileOverviewData(): Promise<ProfileOverviewData> {
+  const storedBookings = await listCustomerBookings();
+
   return {
     profile: structuredClone(mockProfile),
     favoriteProviders: structuredClone(favoriteProviders),
     paymentMethods: structuredClone(paymentMethods),
     bookingSummary: {
-      upcoming: 3,
+      upcoming: storedBookings.length || 3,
       completed: 12,
       cancelled: 2,
     },
@@ -166,7 +169,28 @@ export async function getSavedAddresses(): Promise<Address[]> {
 }
 
 export async function getBookings(): Promise<Booking[]> {
-  return structuredClone(bookings);
+  const storedBookings = await listCustomerBookings();
+
+  if (storedBookings.length === 0) {
+    return structuredClone(bookings);
+  }
+
+  return storedBookings.map((booking) => ({
+    id: booking.id,
+    service: `${booking.serviceLabel} Service`,
+    provider: booking.providerName,
+    schedule: `${booking.dateLabel}, ${booking.timeLabel}`,
+    location: booking.location,
+    status: booking.status === "pending" ? "upcoming" : "completed",
+    statusLabel: booking.status === "pending" ? "Pending" : "Confirmed",
+    badgeTone: booking.status === "pending" ? "amber" : "green",
+    thumbnail:
+      booking.serviceKey === "chef"
+        ? "food"
+        : booking.serviceKey === "driver"
+          ? "car"
+          : "cleaning",
+  }));
 }
 
 export async function getProfileSettings(): Promise<SettingGroup[]> {

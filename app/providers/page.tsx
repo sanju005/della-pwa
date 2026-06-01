@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, Heart, MapPin, Star } from "lucide-react";
 
-import { getProviderCatalog } from "@/lib/provider-catalog";
+import { buildProviderDetailHref, getProviderCatalog } from "@/lib/provider-catalog";
 
 export const dynamic = "force-dynamic";
 
@@ -118,7 +118,7 @@ export default async function ProvidersPage(props: {
                     </div>
 
                     <Link
-                      href="/home"
+                      href={buildProviderDetailHref(listing)}
                       className="inline-flex h-12 items-center gap-3 rounded-[16px] bg-[#16A34A] px-5 text-[15px] font-extrabold text-white"
                     >
                       Book now

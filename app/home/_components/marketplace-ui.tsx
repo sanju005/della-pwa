@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 
 import type { HomeFeedData, HomeServiceCategory } from "@/lib/home-feed";
+import { buildProviderDetailHref } from "@/lib/provider-catalog";
 
 export function MarketplaceScreen({
   greetingName,
@@ -189,7 +190,10 @@ export function MarketplaceScreen({
                             {provider.priceLabel}
                           </p>
                           <Link
-                            href="/providers"
+                            href={buildProviderDetailHref({
+                              id: provider.id,
+                              serviceKey: provider.serviceKey,
+                            })}
                             className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-[#16A34A] text-white"
                           >
                             <ChevronRight className="h-5 w-5" />
