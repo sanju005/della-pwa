@@ -34,10 +34,6 @@ export default async function ProviderDetailPage(props: {
     notFound();
   }
 
-  const firstAvailableSlot =
-    detail.availability.find((slot) => slot.state === "available") ??
-    detail.availability[0];
-
   return (
     <main className="min-h-[100dvh] bg-[#f6fff8]">
       <div className="mx-auto min-h-[100dvh] w-full max-w-[430px] bg-white px-5 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
@@ -278,17 +274,7 @@ export default async function ProviderDetailPage(props: {
             </div>
           </section>
 
-          <BookNowButton
-            providerId={detail.id}
-            providerName={detail.name}
-            serviceKey={detail.serviceKey}
-            serviceLabel={detail.serviceLabel}
-            location={detail.location}
-            dateLabel={`${firstAvailableSlot.dayLabel} ${firstAvailableSlot.dateLabel}`}
-            timeLabel={firstAvailableSlot.timeLabel}
-            hourlyRate={detail.hourlyRate}
-            dailyRate={detail.dailyRate}
-          />
+          <BookNowButton providerId={detail.id} />
         </div>
       </div>
     </main>

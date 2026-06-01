@@ -7,11 +7,17 @@ export type CustomerBookingRecord = {
   serviceKey: string;
   serviceLabel: string;
   location: string;
+  bookingMode: "hourly" | "daily";
   dateLabel: string;
+  startTimeLabel: string;
+  endTimeLabel: string;
   timeLabel: string;
+  durationHours: number;
+  notes: string;
   status: "pending" | "confirmed";
   hourlyRate: number;
   dailyRate: number;
+  totalAmount: number;
   createdAt: string;
 };
 

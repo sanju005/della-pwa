@@ -11,10 +11,16 @@ type BookingBody = {
   serviceKey?: string;
   serviceLabel?: string;
   location?: string;
+  bookingMode?: "hourly" | "daily";
   dateLabel?: string;
+  startTimeLabel?: string;
+  endTimeLabel?: string;
   timeLabel?: string;
+  durationHours?: number;
+  notes?: string;
   hourlyRate?: number;
   dailyRate?: number;
+  totalAmount?: number;
 };
 
 type CompleteBookingBody = {
@@ -23,10 +29,16 @@ type CompleteBookingBody = {
   serviceKey: string;
   serviceLabel: string;
   location: string;
+  bookingMode: "hourly" | "daily";
   dateLabel: string;
+  startTimeLabel: string;
+  endTimeLabel: string;
   timeLabel: string;
+  durationHours: number;
+  notes: string;
   hourlyRate: number;
   dailyRate: number;
+  totalAmount: number;
 };
 
 function isValidBody(value: BookingBody): value is CompleteBookingBody {
@@ -36,10 +48,16 @@ function isValidBody(value: BookingBody): value is CompleteBookingBody {
     typeof value.serviceKey === "string" &&
     typeof value.serviceLabel === "string" &&
     typeof value.location === "string" &&
+    (value.bookingMode === "hourly" || value.bookingMode === "daily") &&
     typeof value.dateLabel === "string" &&
+    typeof value.startTimeLabel === "string" &&
+    typeof value.endTimeLabel === "string" &&
     typeof value.timeLabel === "string" &&
+    typeof value.durationHours === "number" &&
+    typeof value.notes === "string" &&
     typeof value.hourlyRate === "number" &&
-    typeof value.dailyRate === "number"
+    typeof value.dailyRate === "number" &&
+    typeof value.totalAmount === "number"
   );
 }
 
@@ -64,11 +82,17 @@ export async function POST(request: Request) {
     serviceKey: payload.serviceKey,
     serviceLabel: payload.serviceLabel,
     location: payload.location,
+    bookingMode: payload.bookingMode,
     dateLabel: payload.dateLabel,
+    startTimeLabel: payload.startTimeLabel,
+    endTimeLabel: payload.endTimeLabel,
     timeLabel: payload.timeLabel,
+    durationHours: payload.durationHours,
+    notes: payload.notes,
     status: "pending",
     hourlyRate: payload.hourlyRate,
     dailyRate: payload.dailyRate,
+    totalAmount: payload.totalAmount,
   });
 
   return NextResponse.json({ booking }, { status: 201 });
