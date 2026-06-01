@@ -9,12 +9,16 @@ import {
   BadgeCheck,
   BriefcaseBusiness,
   ChevronDown,
+  ChevronRight,
   Filter,
   Heart,
+  IdCard,
   MapPin,
+  Phone,
   Search,
   ShieldCheck,
   Star,
+  ThumbsUp,
   UserRound,
 } from "lucide-react";
 
@@ -193,7 +197,7 @@ export function ProvidersCatalogScreen({ data }: { data: CatalogScreenData }) {
               <TabButton
                 active={activeTab === "all"}
                 onClick={() => setActiveTab("all")}
-                label={`All ${data.serviceLabel}s`}
+                label="All"
                 count={counts.all}
               />
               <TabButton
@@ -311,16 +315,16 @@ function TabButton({
         active ? "shadow-[inset_0_-3px_0_#16A34A]" : ""
       }`}
     >
-      <div className="flex items-center justify-center gap-2 whitespace-nowrap">
+      <div className="flex items-center justify-center gap-1.5 whitespace-nowrap">
         <span
-          className={`truncate text-[13px] font-extrabold ${
+          className={`text-[11px] font-extrabold tracking-[-0.02em] ${
             active ? "text-[#16A34A]" : "text-[#0F172A]"
           }`}
         >
           {label}
         </span>
         <span
-          className={`inline-flex min-w-8 items-center justify-center rounded-full px-2 py-1 text-[12px] font-bold ${
+          className={`inline-flex min-w-[1.7rem] items-center justify-center rounded-full px-1.5 py-1 text-[10px] font-bold leading-none ${
             active ? "bg-[#16A34A] text-white" : "bg-[#F1F4F2] text-[#667085]"
           }`}
         >
@@ -333,9 +337,9 @@ function TabButton({
 
 function ProviderCard({ listing }: { listing: CatalogScreenListing }) {
   return (
-    <article className="rounded-[20px] border border-[#E5ECE7] bg-white p-4 shadow-[0_12px_24px_rgba(15,23,42,0.05)]">
+    <article className="rounded-[22px] border border-[#E7ECE8] bg-white p-4 shadow-[0_14px_30px_rgba(15,23,42,0.06)]">
       <div className="flex gap-4">
-        <div className="relative h-[11.2rem] w-[9.7rem] shrink-0 overflow-hidden rounded-[18px]">
+        <div className="relative h-[11.6rem] w-[9.8rem] shrink-0 overflow-hidden rounded-[20px]">
           <Image
             src={listing.portraitSrc}
             alt={listing.name}
@@ -352,55 +356,98 @@ function ProviderCard({ listing }: { listing: CatalogScreenListing }) {
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <h3 className="inline-flex max-w-full items-center gap-2 text-[18px] font-extrabold tracking-[-0.04em] text-[#0F172A]">
+              <h3 className="inline-flex max-w-full items-center gap-2 text-[17px] font-extrabold tracking-[-0.04em] text-[#0F172A]">
                 <span className="truncate">{listing.name}</span>
                 <BadgeCheck className="h-5 w-5 shrink-0 fill-[#16A34A] text-[#16A34A]" />
               </h3>
-              <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[15px] text-[#475467]">
+
+              <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[14px] text-[#475467]">
                 <span className="inline-flex items-center gap-1">
                   <Star className="h-4.5 w-4.5 fill-[#F59E0B] text-[#F59E0B]" />
                   <span className="font-semibold text-[#0F172A]">
                     {listing.rating.toFixed(1)}
                   </span>
-                  <span>({listing.reviews})</span>
+                  <span>({listing.reviews} reviews)</span>
                 </span>
-                <span>•</span>
+                <span className="text-[#D0D5DD]">|</span>
                 <span className="inline-flex items-center gap-1">
-                  <MapPin className="h-4 w-4 text-[#16A34A]" />
-                  {listing.distanceKm} km away
+                  <ThumbsUp className="h-4 w-4 fill-[#16A34A] text-[#16A34A]" />
+                  <span className="font-semibold text-[#0F172A]">98%</span>
+                  <span>(On-time)</span>
                 </span>
               </div>
+
+              <div className="mt-2 flex items-center gap-1 text-[14px] text-[#475467]">
+                <MapPin className="h-4 w-4 text-[#16A34A]" />
+                <span>{listing.distanceKm} km away</span>
+              </div>
             </div>
+
             <button
               type="button"
               aria-label="Save provider"
-              className="shrink-0 text-[#667085]"
+              className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-[#EEF2EF] bg-white text-[#667085] shadow-[0_8px_18px_rgba(15,23,42,0.06)]"
             >
-              <Heart className="h-7 w-7" />
+              <Heart className="h-6 w-6" />
             </button>
           </div>
 
           <div className="mt-4 flex flex-wrap gap-2">
-            <span className="rounded-full bg-[#EEF9F1] px-3 py-1.5 text-[13px] font-semibold text-[#16A34A]">
+            <span className="rounded-full bg-[#EEF9F1] px-3.5 py-2 text-[13px] font-semibold text-[#16A34A]">
               {listing.yearsExperience} Experience
             </span>
-            <span className="rounded-full bg-[#F4F5F7] px-3 py-1.5 text-[13px] font-semibold text-[#667085]">
+            <span className="rounded-full bg-[#F4F5F7] px-3.5 py-2 text-[13px] font-semibold text-[#667085]">
               {listing.specialties[0] ?? listing.workMode}
             </span>
           </div>
 
-          <div className="mt-5 flex items-end justify-between gap-4">
-            <div>
-              <p className="text-[15px] text-[#475467]">From</p>
-              <p className="mt-1 text-[20px] font-extrabold text-[#16A34A]">
+          <div className="mt-5 border-t border-[#E9EEEA] pt-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex items-center gap-2 border-r border-[#E9EEEA] pr-3">
+                <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#EEF9F1] text-[#16A34A]">
+                  <IdCard className="h-5 w-5" />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.04em] text-[#98A2B3]">
+                    Verified
+                  </p>
+                  <p className="truncate text-[13px] font-semibold text-[#0F172A]">
+                    ID Verified
+                  </p>
+                </div>
+                <BadgeCheck className="ml-auto h-4.5 w-4.5 shrink-0 fill-[#16A34A] text-[#16A34A]" />
+              </div>
+
+              <div className="flex items-center gap-2 pl-1">
+                <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#EEF9F1] text-[#16A34A]">
+                  <Phone className="h-5 w-5" />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.04em] text-[#98A2B3]">
+                    Contact
+                  </p>
+                  <p className="truncate text-[13px] font-semibold text-[#0F172A]">
+                    Phone Verified
+                  </p>
+                </div>
+                <BadgeCheck className="ml-auto h-4.5 w-4.5 shrink-0 fill-[#16A34A] text-[#16A34A]" />
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-5 flex items-end justify-between gap-4 border-t border-[#E9EEEA] pt-4">
+            <div className="min-w-0">
+              <p className="text-[14px] text-[#667085]">From</p>
+              <p className="mt-1 text-[22px] font-extrabold tracking-[-0.03em] text-[#16A34A]">
                 RM{listing.hourlyRate}/hr
               </p>
             </div>
             <Link
               href={listing.href}
-              className="inline-flex h-12 items-center justify-center rounded-[14px] bg-[#16A34A] px-6 text-[15px] font-extrabold text-white"
+              className="inline-flex h-14 items-center justify-center gap-2 rounded-[16px] bg-[#16A34A] px-6 text-[15px] font-extrabold text-white shadow-[0_10px_24px_rgba(22,163,74,0.22)]"
             >
               View Profile
+              <ChevronRight className="h-5 w-5" />
             </Link>
           </div>
         </div>
