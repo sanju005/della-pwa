@@ -372,7 +372,7 @@ function LocationPickerModal({
 
           <div className="px-5">
             <div className="overflow-hidden rounded-[24px] border border-[#dcecdf]">
-              <div className="h-[22rem] w-full bg-[#eef9f0]">
+              <div className="h-[16rem] w-full bg-[#eef9f0] sm:h-[18rem]">
                 <DynamicLocationPickerMap
                   latitude={coords.latitude}
                   longitude={coords.longitude}
@@ -457,24 +457,27 @@ function LocationPickerModal({
                 </p>
               ) : null}
 
-              <div className="mt-4 flex gap-3">
-                <button
-                  type="button"
-                  onClick={handlePickCurrentLocation}
-                  disabled={isSaving}
-                  className="inline-flex h-11 flex-1 items-center justify-center rounded-[12px] border border-[#dcecdf] bg-white px-4 text-[14px] font-extrabold text-[#111827] disabled:opacity-70"
-                >
-                  {isSaving ? "Locating..." : "Use Current Location"}
-                </button>
-                <button
-                  type="button"
-                  onClick={handleSave}
-                  className="inline-flex h-11 flex-1 items-center justify-center rounded-[12px] bg-[#16a34a] px-4 text-[14px] font-extrabold text-white shadow-[0_12px_24px_rgba(22,163,74,0.18)]"
-                >
-                  Choose This Pickup
-                </button>
-              </div>
             </div>
+          </div>
+        </div>
+
+        <div className="border-t border-[#edf1ef] bg-white px-5 pb-5 pt-4 shadow-[0_-6px_18px_rgba(15,23,42,0.06)]">
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={handlePickCurrentLocation}
+              disabled={isSaving}
+              className="inline-flex h-11 flex-1 items-center justify-center rounded-[12px] border border-[#dcecdf] bg-white px-4 text-[14px] font-extrabold text-[#111827] disabled:opacity-70"
+            >
+              {isSaving ? "Locating..." : "Use Current Location"}
+            </button>
+            <button
+              type="button"
+              onClick={handleSave}
+              className="inline-flex h-11 flex-1 items-center justify-center rounded-[12px] bg-[#16a34a] px-4 text-[14px] font-extrabold text-white shadow-[0_12px_24px_rgba(22,163,74,0.18)]"
+            >
+              Choose This Pickup
+            </button>
           </div>
         </div>
       </div>
