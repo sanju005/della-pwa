@@ -223,20 +223,20 @@ export function ProvidersCatalogScreen({ data }: { data: CatalogScreenData }) {
             </div>
           </section>
 
-          <section className="mt-6 overflow-hidden rounded-[20px] bg-[linear-gradient(90deg,#F5FFF8_0%,#F0FFF5_50%,#E3F8EA_100%)] px-5 py-5 shadow-[0_12px_26px_rgba(15,23,42,0.05)]">
-            <div className="flex items-center gap-4">
-              <div className="inline-flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-[#DFF6E7] text-[#16A34A]">
-                <ShieldCheck className="h-8 w-8" />
+          <section className="mt-6 overflow-hidden rounded-[18px] bg-[linear-gradient(90deg,#F5FFF8_0%,#F0FFF5_50%,#E3F8EA_100%)] px-4 py-4 shadow-[0_10px_22px_rgba(15,23,42,0.05)]">
+            <div className="flex items-center gap-3">
+              <div className="inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#DFF6E7] text-[#16A34A]">
+                <ShieldCheck className="h-7 w-7" />
               </div>
               <div className="min-w-0 flex-1">
-                <h2 className="text-[17px] font-extrabold tracking-[-0.03em] text-[#17803D]">
+                <h2 className="text-[15px] font-extrabold tracking-[-0.03em] text-[#17803D]">
                   All {serviceLower}s are verified
                 </h2>
-                <p className="mt-2 text-[15px] leading-6 text-[#475467]">
+                <p className="mt-1.5 text-[13px] leading-5 text-[#475467]">
                   Background checked, experienced, and highly rated.
                 </p>
               </div>
-              <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-[18px]">
+              <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-[16px]">
                 <Image
                   src={data.bannerSrc}
                   alt={`${data.serviceLabel} banner`}
