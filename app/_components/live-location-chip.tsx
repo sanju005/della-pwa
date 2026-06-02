@@ -289,9 +289,9 @@ function LocationPickerModal({
       });
   };
 
-  const handleSave = () => {
+  const handleSave = (forceNewPlace = false) => {
     const nextLocation = {
-      id: draftId || undefined,
+      id: forceNewPlace ? undefined : draftId || undefined,
       latitude: coords.latitude,
       longitude: coords.longitude,
       label: selectedLabel || fallbackLabel,
@@ -498,43 +498,41 @@ function LocationPickerModal({
                 </p>
               ) : null}
 
-            </div>
-          </div>
-        </div>
+              <div className="mt-4 space-y-3">
+                <button
+                  type="button"
+                  onClick={handlePickCurrentLocation}
+                  disabled={isSaving}
+                  className="inline-flex h-11 w-full items-center justify-center rounded-[12px] border border-[#dcecdf] bg-white px-4 text-[14px] font-extrabold text-[#111827] disabled:opacity-70"
+                >
+                  {isSaving ? "Locating..." : "Use Current Location"}
+                </button>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => handleSave(true)}
+                    className="inline-flex h-11 items-center justify-center rounded-[12px] bg-[#16a34a] px-4 text-[14px] font-extrabold text-white shadow-[0_12px_24px_rgba(22,163,74,0.18)]"
+                  >
+                    Save
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleDelete}
+                    className="inline-flex h-11 items-center justify-center rounded-[12px] border border-[#f3c7c7] bg-[#fff4f4] px-4 text-[14px] font-extrabold text-[#b42318]"
+                  >
+                    Delete
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleSaveAnotherPlace}
+                  className="inline-flex h-11 w-full items-center justify-center rounded-[12px] border border-dashed border-[#16a34a] bg-[#fbfffc] px-4 text-[14px] font-extrabold text-[#16a34a]"
+                >
+                  Save Another Place
+                </button>
+              </div>
 
-        <div className="border-t border-[#edf1ef] bg-white px-5 pb-5 pt-4 shadow-[0_-6px_18px_rgba(15,23,42,0.06)]">
-          <div className="space-y-3">
-            <button
-              type="button"
-              onClick={handlePickCurrentLocation}
-              disabled={isSaving}
-              className="inline-flex h-11 w-full items-center justify-center rounded-[12px] border border-[#dcecdf] bg-white px-4 text-[14px] font-extrabold text-[#111827] disabled:opacity-70"
-            >
-              {isSaving ? "Locating..." : "Use Current Location"}
-            </button>
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={handleSave}
-                className="inline-flex h-11 items-center justify-center rounded-[12px] bg-[#16a34a] px-4 text-[14px] font-extrabold text-white shadow-[0_12px_24px_rgba(22,163,74,0.18)]"
-              >
-                Save
-              </button>
-              <button
-                type="button"
-                onClick={handleDelete}
-                className="inline-flex h-11 items-center justify-center rounded-[12px] border border-[#f3c7c7] bg-[#fff4f4] px-4 text-[14px] font-extrabold text-[#b42318]"
-              >
-                Delete
-              </button>
             </div>
-            <button
-              type="button"
-              onClick={handleSaveAnotherPlace}
-              className="inline-flex h-11 w-full items-center justify-center rounded-[12px] border border-dashed border-[#16a34a] bg-[#fbfffc] px-4 text-[14px] font-extrabold text-[#16a34a]"
-            >
-              Save Another Place
-            </button>
           </div>
         </div>
       </div>
