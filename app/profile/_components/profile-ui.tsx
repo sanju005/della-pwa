@@ -509,6 +509,47 @@ function LocationSettingsCard() {
           ) : null}
         </div>
 
+        {location ? (
+          <div className="mt-4 overflow-hidden rounded-[20px] border border-[#dcecdf] bg-white shadow-[0_10px_24px_rgba(15,23,42,0.04)]">
+            <div className="bg-[#eef9ff] px-4 py-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#6b7280]">
+                    {location.addressLabel ?? "Home"}
+                  </p>
+                  <p className="mt-1 text-[18px] font-extrabold text-[#111827]">
+                    {[location.houseNumber, location.buildingName || location.label]
+                      .filter(Boolean)
+                      .join(", ")}
+                  </p>
+                  <p className="mt-1 text-[13px] text-[#4b5563]">
+                    {location.latitude.toFixed(6)}, {location.longitude.toFixed(6)}
+                  </p>
+                </div>
+                <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-[#ef4444] shadow-[0_6px_16px_rgba(15,23,42,0.08)]">
+                  <PinIcon className="h-5 w-5 fill-current" />
+                </span>
+              </div>
+            </div>
+            <div className="space-y-2 px-4 py-4">
+              <p className="text-[14px] font-semibold text-[#111827]">
+                {location.formattedAddress ?? location.label}
+              </p>
+              <p className="text-[13px] text-[#4b5563]">
+                {[
+                  location.floor && `Floor ${location.floor}`,
+                  location.unitNumber && `Unit ${location.unitNumber}`,
+                ]
+                  .filter(Boolean)
+                  .join(" • ") || "No floor or unit details yet"}
+              </p>
+              <p className="text-[13px] text-[#2563eb]">
+                {location.pickupNote || "No pickup note added yet"}
+              </p>
+            </div>
+          </div>
+        ) : null}
+
         {statusMessage ? (
           <p className="mt-3 text-[12px] font-semibold text-[#16a34a]">
             {statusMessage}

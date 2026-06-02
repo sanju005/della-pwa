@@ -4,6 +4,8 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 type NominatimAddress = {
+  house_number?: string;
+  road?: string;
   suburb?: string;
   neighbourhood?: string;
   residential?: string;
@@ -13,6 +15,8 @@ type NominatimAddress = {
   town?: string;
   village?: string;
   state?: string;
+  postcode?: string;
+  country?: string;
 };
 
 type NominatimResponse = {
@@ -47,6 +51,31 @@ function buildLocationLabel(data: NominatimResponse) {
   return [area, city, state].filter(Boolean).join(", ") || data.display_name || "Current location";
 }
 
+function buildAddressParts(data: NominatimResponse) {
+  const address = data.address;
+
+  return {
+    formattedAddress: data.display_name ?? "Current location",
+    road: address?.road ?? "",
+    suburb:
+      address?.neighbourhood ??
+      address?.suburb ??
+      address?.residential ??
+      address?.quarter ??
+      "",
+    city:
+      address?.city_district ??
+      address?.city ??
+      address?.town ??
+      address?.village ??
+      "",
+    state: address?.state ?? "",
+    postcode: address?.postcode ?? "",
+    country: address?.country ?? "",
+    houseNumber: address?.house_number ?? "",
+  };
+}
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const latitude = Number(searchParams.get("lat"));
@@ -76,9 +105,11 @@ export async function GET(request: Request) {
     }
 
     const data = (await upstream.json()) as NominatimResponse;
+    const addressParts = buildAddressParts(data);
 
     return NextResponse.json({
       label: buildLocationLabel(data),
+      ...addressParts,
       coordinates: {
         latitude,
         longitude,
@@ -87,6 +118,14 @@ export async function GET(request: Request) {
   } catch {
     return NextResponse.json({
       label: "Current location",
+      formattedAddress: "Current location",
+      road: "",
+      suburb: "",
+      city: "",
+      state: "",
+      postcode: "",
+      country: "",
+      houseNumber: "",
       coordinates: {
         latitude,
         longitude,

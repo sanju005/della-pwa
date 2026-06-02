@@ -4,6 +4,19 @@ export type StoredLiveLocation = {
   latitude: number;
   longitude: number;
   label: string;
+  addressLabel?: string;
+  formattedAddress?: string;
+  road?: string;
+  suburb?: string;
+  city?: string;
+  state?: string;
+  postcode?: string;
+  country?: string;
+  houseNumber?: string;
+  buildingName?: string;
+  floor?: string;
+  unitNumber?: string;
+  pickupNote?: string;
   updatedAt: string;
 };
 
@@ -20,7 +33,23 @@ export function loadStoredLiveLocation() {
   }
 
   try {
-    return JSON.parse(raw) as StoredLiveLocation;
+    const parsed = JSON.parse(raw) as StoredLiveLocation;
+    return {
+      ...parsed,
+      addressLabel: parsed.addressLabel ?? "Home",
+      formattedAddress: parsed.formattedAddress ?? parsed.label,
+      road: parsed.road ?? "",
+      suburb: parsed.suburb ?? "",
+      city: parsed.city ?? "",
+      state: parsed.state ?? "",
+      postcode: parsed.postcode ?? "",
+      country: parsed.country ?? "",
+      houseNumber: parsed.houseNumber ?? "",
+      buildingName: parsed.buildingName ?? "",
+      floor: parsed.floor ?? "",
+      unitNumber: parsed.unitNumber ?? "",
+      pickupNote: parsed.pickupNote ?? "",
+    };
   } catch {
     return null;
   }
@@ -41,8 +70,16 @@ export function buildMapsHref(latitude: number, longitude: number) {
   return `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`;
 }
 
-type ReverseGeocodeResponse = {
+export type ReverseGeocodeResponse = {
   label: string;
+  formattedAddress?: string;
+  road?: string;
+  suburb?: string;
+  city?: string;
+  state?: string;
+  postcode?: string;
+  country?: string;
+  houseNumber?: string;
 };
 
 export async function resolveCurrentLiveLocation(fallbackLabel: string) {
@@ -72,6 +109,29 @@ export async function resolveCurrentLiveLocation(fallbackLabel: string) {
       if (data.label) {
         label = data.label;
       }
+
+      const nextLocation = {
+        latitude,
+        longitude,
+        label,
+        addressLabel: "Home",
+        formattedAddress: data.formattedAddress ?? label,
+        road: data.road ?? "",
+        suburb: data.suburb ?? "",
+        city: data.city ?? "",
+        state: data.state ?? "",
+        postcode: data.postcode ?? "",
+        country: data.country ?? "",
+        houseNumber: data.houseNumber ?? "",
+        buildingName: "",
+        floor: "",
+        unitNumber: "",
+        pickupNote: "",
+        updatedAt: new Date().toISOString(),
+      };
+
+      saveStoredLiveLocation(nextLocation);
+      return nextLocation;
     }
   } catch {
     label = fallbackLabel;
@@ -81,6 +141,19 @@ export async function resolveCurrentLiveLocation(fallbackLabel: string) {
     latitude,
     longitude,
     label,
+    addressLabel: "Home",
+    formattedAddress: label,
+    road: "",
+    suburb: "",
+    city: "",
+    state: "",
+    postcode: "",
+    country: "",
+    houseNumber: "",
+    buildingName: "",
+    floor: "",
+    unitNumber: "",
+    pickupNote: "",
     updatedAt: new Date().toISOString(),
   };
 

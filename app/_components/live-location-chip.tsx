@@ -13,6 +13,7 @@ import {
 
 import {
   loadStoredLiveLocation,
+  type ReverseGeocodeResponse,
   resolveCurrentLiveLocation,
   saveStoredLiveLocation,
   type StoredLiveLocation,
@@ -23,10 +24,6 @@ type SearchResult = {
   label: string;
   latitude: number;
   longitude: number;
-};
-
-type ReverseGeocodeResponse = {
-  label: string;
 };
 
 type SearchResponse = {
@@ -143,9 +140,23 @@ function LocationPickerModal({
     latitude: initialLocation?.latitude ?? 3.1274,
     longitude: initialLocation?.longitude ?? 101.7452,
   }));
-  const [selectedLabel, setSelectedLabel] = useState(
-    initialLocation?.label ?? fallbackLabel
+  const [selectedLabel, setSelectedLabel] = useState(initialLocation?.label ?? fallbackLabel);
+  const [addressLabel, setAddressLabel] = useState(initialLocation?.addressLabel ?? "Home");
+  const [formattedAddress, setFormattedAddress] = useState(
+    initialLocation?.formattedAddress ?? initialLocation?.label ?? fallbackLabel
   );
+  const [houseNumber, setHouseNumber] = useState(initialLocation?.houseNumber ?? "");
+  const [buildingName, setBuildingName] = useState(initialLocation?.buildingName ?? "");
+  const [floor, setFloor] = useState(initialLocation?.floor ?? "");
+  const [unitNumber, setUnitNumber] = useState(initialLocation?.unitNumber ?? "");
+  const [pickupNote, setPickupNote] = useState(initialLocation?.pickupNote ?? "");
+  const [road, setRoad] = useState(initialLocation?.road ?? "");
+  const [suburb, setSuburb] = useState(initialLocation?.suburb ?? "");
+  const [city, setCity] = useState(initialLocation?.city ?? "");
+  const [state, setState] = useState(initialLocation?.state ?? "");
+  const [postcode, setPostcode] = useState(initialLocation?.postcode ?? "");
+  const [country, setCountry] = useState(initialLocation?.country ?? "");
+  const [saveMessage, setSaveMessage] = useState("");
 
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
@@ -209,6 +220,16 @@ function LocationPickerModal({
       const nextLabel = data.label || fallbackLabel;
       setSelectedLabel(nextLabel);
       setQuery(nextLabel);
+      setFormattedAddress(data.formattedAddress ?? nextLabel);
+      setRoad(data.road ?? "");
+      setSuburb(data.suburb ?? "");
+      setCity(data.city ?? "");
+      setState(data.state ?? "");
+      setPostcode(data.postcode ?? "");
+      setCountry(data.country ?? "");
+      if (!houseNumber.trim()) {
+        setHouseNumber(data.houseNumber ?? "");
+      }
     } catch {
       setSelectedLabel(fallbackLabel);
     }
@@ -237,6 +258,14 @@ function LocationPickerModal({
         });
         setSelectedLabel(nextLocation.label);
         setQuery(nextLocation.label);
+        setFormattedAddress(nextLocation.formattedAddress ?? nextLocation.label);
+        setRoad(nextLocation.road ?? "");
+        setSuburb(nextLocation.suburb ?? "");
+        setCity(nextLocation.city ?? "");
+        setState(nextLocation.state ?? "");
+        setPostcode(nextLocation.postcode ?? "");
+        setCountry(nextLocation.country ?? "");
+        setHouseNumber(nextLocation.houseNumber ?? "");
       })
       .finally(() => {
         setIsSaving(false);
@@ -248,10 +277,24 @@ function LocationPickerModal({
       latitude: coords.latitude,
       longitude: coords.longitude,
       label: selectedLabel || fallbackLabel,
+      addressLabel,
+      formattedAddress: formattedAddress || selectedLabel || fallbackLabel,
+      road,
+      suburb,
+      city,
+      state,
+      postcode,
+      country,
+      houseNumber,
+      buildingName,
+      floor,
+      unitNumber,
+      pickupNote,
       updatedAt: new Date().toISOString(),
     };
 
     saveStoredLiveLocation(nextLocation);
+    setSaveMessage("Address saved successfully.");
     onSave(nextLocation);
   };
 
@@ -309,7 +352,9 @@ function LocationPickerModal({
                     });
                     setSelectedLabel(result.label);
                     setQuery(result.label);
+                    setFormattedAddress(result.label);
                     setResults([]);
+                    void updateLabelFromCoords(result.latitude, result.longitude);
                   }}
                   className={`w-full px-4 py-3 text-left ${
                     index > 0 ? "border-t border-[#edf1ef]" : ""
@@ -350,6 +395,67 @@ function LocationPickerModal({
               </div>
             </div>
 
+            <div className="mt-4 space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <LabeledField
+                  label="Address label"
+                  value={addressLabel}
+                  onChange={setAddressLabel}
+                  placeholder="Home"
+                />
+                <LabeledField
+                  label="House number"
+                  value={houseNumber}
+                  onChange={setHouseNumber}
+                  placeholder="28A"
+                />
+              </div>
+              <LabeledField
+                label="Building / Condo"
+                value={buildingName}
+                onChange={setBuildingName}
+                placeholder="Taman Million / Wisma..."
+              />
+              <div className="grid grid-cols-2 gap-3">
+                <LabeledField
+                  label="Floor"
+                  value={floor}
+                  onChange={setFloor}
+                  placeholder="8"
+                />
+                <LabeledField
+                  label="Unit number"
+                  value={unitNumber}
+                  onChange={setUnitNumber}
+                  placeholder="A-3-12"
+                />
+              </div>
+              <LabeledField
+                label="Pickup note"
+                value={pickupNote}
+                onChange={setPickupNote}
+                placeholder="Near gate, blue door, beside KFC"
+              />
+            </div>
+
+            <GrabAddressCard
+              addressLabel={addressLabel}
+              houseNumber={houseNumber}
+              buildingName={buildingName}
+              floor={floor}
+              unitNumber={unitNumber}
+              pickupNote={pickupNote}
+              selectedLabel={selectedLabel}
+              formattedAddress={formattedAddress}
+              distanceLabel={helperText}
+            />
+
+            {saveMessage ? (
+              <p className="mt-3 text-[12px] font-semibold text-[#16a34a]">
+                {saveMessage}
+              </p>
+            ) : null}
+
             <div className="mt-4 flex gap-3">
               <button
                 type="button"
@@ -364,11 +470,100 @@ function LocationPickerModal({
                 onClick={handleSave}
                 className="inline-flex h-11 flex-1 items-center justify-center rounded-[12px] bg-[#16a34a] px-4 text-[14px] font-extrabold text-white shadow-[0_12px_24px_rgba(22,163,74,0.18)]"
               >
-                Save Location
+                Choose This Pickup
               </button>
             </div>
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function LabeledField({
+  label,
+  value,
+  onChange,
+  placeholder,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-1.5 block text-[12px] font-bold uppercase tracking-[0.04em] text-[#6b7280]">
+        {label}
+      </span>
+      <input
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
+        className="h-11 w-full rounded-[12px] border border-[#dcecdf] bg-white px-3 text-[14px] text-[#111827] outline-none placeholder:text-[#98a2b3]"
+      />
+    </label>
+  );
+}
+
+function GrabAddressCard({
+  addressLabel,
+  houseNumber,
+  buildingName,
+  floor,
+  unitNumber,
+  pickupNote,
+  selectedLabel,
+  formattedAddress,
+  distanceLabel,
+}: {
+  addressLabel: string;
+  houseNumber: string;
+  buildingName: string;
+  floor: string;
+  unitNumber: string;
+  pickupNote: string;
+  selectedLabel: string;
+  formattedAddress: string;
+  distanceLabel: string;
+}) {
+  const mainLine =
+    [houseNumber, buildingName || selectedLabel].filter(Boolean).join(", ") ||
+    selectedLabel;
+  const detailLine = [floor && `Floor ${floor}`, unitNumber && `Unit ${unitNumber}`]
+    .filter(Boolean)
+    .join(" • ");
+
+  return (
+    <div className="mt-4 overflow-hidden rounded-[20px] border border-[#dcecdf] bg-white shadow-[0_10px_24px_rgba(15,23,42,0.04)]">
+      <div className="bg-[#eef9ff] px-4 py-3">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#6b7280]">
+              {addressLabel || "Saved address"}
+            </p>
+            <p className="mt-1 truncate text-[18px] font-extrabold text-[#111827]">
+              {mainLine}
+            </p>
+            <p className="mt-1 text-[13px] text-[#4b5563]">{distanceLabel}</p>
+          </div>
+          <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-[#ef4444] shadow-[0_6px_16px_rgba(15,23,42,0.08)]">
+            <MapPin className="h-5 w-5 fill-current" />
+          </span>
+        </div>
+      </div>
+      <div className="space-y-2 px-4 py-4">
+        <p className="text-[14px] font-semibold text-[#111827]">{formattedAddress}</p>
+        {detailLine ? (
+          <p className="text-[13px] text-[#4b5563]">{detailLine}</p>
+        ) : null}
+        {pickupNote ? (
+          <p className="text-[13px] text-[#2563eb]">{pickupNote}</p>
+        ) : (
+          <p className="text-[13px] text-[#98a2b3]">
+            Add pickup details like near the gate, lobby, or landmark.
+          </p>
+        )}
       </div>
     </div>
   );
