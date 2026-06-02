@@ -4,6 +4,12 @@ import Link from "next/link";
 import { useMemo, useState, useTransition } from "react";
 import { usePathname, useRouter } from "next/navigation";
 
+import {
+  buildMapsHref,
+  loadStoredLiveLocation,
+  resolveCurrentLiveLocation,
+  type StoredLiveLocation,
+} from "@/lib/live-location";
 import { loadStoredCustomerProfile, saveCustomerProfile } from "@/lib/profile-browser";
 import type {
   Address,
@@ -400,6 +406,7 @@ export function SettingsScreen({ groups }: SettingsProps) {
   return (
     <ProfileShell title="Settings" showBack backHref="/profile" showBottomNav>
       <div className="space-y-4">
+        <LocationSettingsCard />
         {groups.map((group) => (
           <SectionCard key={group.title} title={group.title}>
             {group.items.map((item, index) => (
@@ -434,6 +441,101 @@ export function SettingsScreen({ groups }: SettingsProps) {
         ))}
       </div>
     </ProfileShell>
+  );
+}
+
+function LocationSettingsCard() {
+  const [location, setLocation] = useState<StoredLiveLocation | null>(() =>
+    loadStoredLiveLocation()
+  );
+  const [isLocating, setIsLocating] = useState(false);
+  const [statusMessage, setStatusMessage] = useState("");
+
+  const mapsHref = location
+    ? buildMapsHref(location.latitude, location.longitude)
+    : null;
+
+  const handleUseCurrentLocation = () => {
+    setIsLocating(true);
+    setStatusMessage("");
+
+    void resolveCurrentLiveLocation("Current location")
+      .then((nextLocation) => {
+        if (!nextLocation) {
+          setStatusMessage("Location services are unavailable on this device.");
+          return;
+        }
+
+        setLocation(nextLocation);
+        setStatusMessage("Current location updated successfully.");
+      })
+      .catch(() => {
+        setStatusMessage("Location permission was denied or unavailable.");
+      })
+      .finally(() => {
+        setIsLocating(false);
+      });
+  };
+
+  return (
+    <SectionCard title="Live Location">
+      <div className="rounded-[16px] bg-[#f8fcf9] p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-[14px] font-extrabold text-[#111827]">
+              Use my current location
+            </p>
+            <p className="mt-1 text-[13px] leading-5 text-[#4b5563]">
+              Save your live GPS coordinates for accurate map-based service matching.
+            </p>
+          </div>
+          <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#eff9f0] text-[#16a34a]">
+            <PinIcon className="h-5 w-5" />
+          </span>
+        </div>
+
+        <div className="mt-4 rounded-[14px] border border-[#e4ece7] bg-white px-3 py-3">
+          <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#6b7280]">
+            Saved location
+          </p>
+          <p className="mt-1 text-[14px] font-semibold text-[#111827]">
+            {location?.label ?? "No live location saved yet"}
+          </p>
+          {location ? (
+            <p className="mt-1 text-[12px] text-[#6b7280]">
+              {location.latitude.toFixed(6)}, {location.longitude.toFixed(6)}
+            </p>
+          ) : null}
+        </div>
+
+        {statusMessage ? (
+          <p className="mt-3 text-[12px] font-semibold text-[#16a34a]">
+            {statusMessage}
+          </p>
+        ) : null}
+
+        <div className="mt-4 flex gap-3">
+          <button
+            type="button"
+            onClick={handleUseCurrentLocation}
+            disabled={isLocating}
+            className="inline-flex h-11 flex-1 items-center justify-center rounded-[12px] bg-[#16a34a] px-4 text-[14px] font-extrabold text-white shadow-[0_12px_24px_rgba(22,163,74,0.18)] disabled:opacity-70"
+          >
+            {isLocating ? "Getting location..." : "Use My Current Location"}
+          </button>
+          {mapsHref ? (
+            <a
+              href={mapsHref}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex h-11 items-center justify-center rounded-[12px] border border-[#d9e2dd] px-4 text-[14px] font-extrabold text-[#111827]"
+            >
+              Open Map
+            </a>
+          ) : null}
+        </div>
+      </div>
+    </SectionCard>
   );
 }
 

@@ -5,7 +5,6 @@ import {
   Bell,
   BookOpen,
   BriefcaseBusiness,
-  ChevronDown,
   ChevronRight,
   CircleUserRound,
   CookingPot,
@@ -25,6 +24,7 @@ import {
   CalendarDays,
 } from "lucide-react";
 
+import { LiveLocationChip } from "@/app/_components/live-location-chip";
 import type { HomeFeedData, HomeServiceCategory } from "@/lib/home-feed";
 import {
   buildProviderDetailHref,
@@ -59,10 +59,8 @@ export function MarketplaceScreen({
                     {greetingName} <span aria-hidden>👋</span>
                   </span>
                 </h1>
-                <div className="mt-3 flex items-center gap-2 text-[15px] font-semibold text-[#0F172A]">
-                  <MapPin className="h-5 w-5 text-[#16A34A]" />
-                  <span>{locationLabel}</span>
-                  <ChevronDown className="h-4 w-4" />
+                <div className="mt-3">
+                  <LiveLocationChip fallbackLabel={locationLabel} />
                 </div>
               </div>
 

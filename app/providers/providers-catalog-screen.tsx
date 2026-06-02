@@ -22,6 +22,8 @@ import {
   UserRound,
 } from "lucide-react";
 
+import { LiveLocationChip } from "@/app/_components/live-location-chip";
+
 type TabKey = "all" | "live-in" | "part-time" | "full-time";
 type SortKey = "popular" | "nearest" | "price-low";
 type WorkMode = "Live-in" | "Part-time" | "Full-time";
@@ -139,10 +141,7 @@ export function ProvidersCatalogScreen({ data }: { data: CatalogScreenData }) {
             >
               <ArrowLeft className="h-7 w-7" />
             </Link>
-            <div className="flex items-center gap-2 text-[15px] font-semibold text-[#0F172A]">
-              <MapPin className="h-5 w-5 fill-[#16A34A] text-[#16A34A]" />
-              <span>Setapak, Kuala Lumpur</span>
-            </div>
+            <LiveLocationChip fallbackLabel="Current location" />
           </header>
 
           <section className="mt-8">
