@@ -12,9 +12,12 @@ import {
 } from "lucide-react";
 
 import {
+  clearStoredLiveLocation,
+  deleteStoredPlace,
   loadStoredLiveLocation,
   type ReverseGeocodeResponse,
   resolveCurrentLiveLocation,
+  saveStoredPlace,
   saveStoredLiveLocation,
   type StoredLiveLocation,
 } from "@/lib/live-location";
@@ -34,6 +37,7 @@ type LiveLocationChipProps = {
   fallbackLabel: string;
   className?: string;
   onLocationChange?: (location: StoredLiveLocation) => void;
+  onLocationClear?: () => void;
 };
 
 const DynamicLocationPickerMap = dynamic(
@@ -55,6 +59,7 @@ export function LiveLocationChip({
   fallbackLabel,
   className = "",
   onLocationChange,
+  onLocationClear,
 }: LiveLocationChipProps) {
   const [location, setLocation] = useState<StoredLiveLocation | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -115,6 +120,11 @@ export function LiveLocationChip({
             onLocationChange?.(nextLocation);
             setIsPickerOpen(false);
           }}
+          onDelete={() => {
+            setLocation(null);
+            onLocationClear?.();
+            setIsPickerOpen(false);
+          }}
         />
       ) : null}
     </>
@@ -126,11 +136,13 @@ function LocationPickerModal({
   initialLocation,
   onClose,
   onSave,
+  onDelete,
 }: {
   fallbackLabel: string;
   initialLocation: StoredLiveLocation | null;
   onClose: () => void;
   onSave: (location: StoredLiveLocation) => void;
+  onDelete: () => void;
 }) {
   const [query, setQuery] = useState(initialLocation?.label ?? "");
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -157,6 +169,7 @@ function LocationPickerModal({
   const [postcode, setPostcode] = useState(initialLocation?.postcode ?? "");
   const [country, setCountry] = useState(initialLocation?.country ?? "");
   const [saveMessage, setSaveMessage] = useState("");
+  const [draftId, setDraftId] = useState(initialLocation?.id ?? "");
 
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
@@ -218,9 +231,10 @@ function LocationPickerModal({
 
       const data = (await response.json()) as ReverseGeocodeResponse;
       const nextLabel = data.label || fallbackLabel;
+      const nextFormattedAddress = data.formattedAddress ?? nextLabel;
       setSelectedLabel(nextLabel);
-      setQuery(nextLabel);
-      setFormattedAddress(data.formattedAddress ?? nextLabel);
+      setQuery(nextFormattedAddress);
+      setFormattedAddress(nextFormattedAddress);
       setRoad(data.road ?? "");
       setSuburb(data.suburb ?? "");
       setCity(data.city ?? "");
@@ -240,6 +254,9 @@ function LocationPickerModal({
     longitude: number;
   }) => {
     setCoords(nextCoords);
+    setQuery("Loading exact address...");
+    setSelectedLabel("Loading exact address...");
+    setFormattedAddress("Loading exact address...");
     void updateLabelFromCoords(nextCoords.latitude, nextCoords.longitude);
   };
 
@@ -274,6 +291,7 @@ function LocationPickerModal({
 
   const handleSave = () => {
     const nextLocation = {
+      id: draftId || undefined,
       latitude: coords.latitude,
       longitude: coords.longitude,
       label: selectedLabel || fallbackLabel,
@@ -293,9 +311,32 @@ function LocationPickerModal({
       updatedAt: new Date().toISOString(),
     };
 
-    saveStoredLiveLocation(nextLocation);
+    const activeLocation = saveStoredLiveLocation(nextLocation);
+    const savedPlace = saveStoredPlace(activeLocation);
+    setDraftId(savedPlace.id ?? "");
     setSaveMessage("Address saved successfully.");
-    onSave(nextLocation);
+    onSave(savedPlace);
+  };
+
+  const handleDelete = () => {
+    if (draftId) {
+      deleteStoredPlace(draftId);
+    }
+
+    clearStoredLiveLocation();
+    setSaveMessage("Address deleted.");
+    onDelete();
+  };
+
+  const handleSaveAnotherPlace = () => {
+    setDraftId("");
+    setAddressLabel("Other");
+    setHouseNumber("");
+    setBuildingName("");
+    setFloor("");
+    setUnitNumber("");
+    setPickupNote("");
+    setSaveMessage("Ready to save another place.");
   };
 
   const helperText = useMemo(
@@ -432,7 +473,7 @@ function LocationPickerModal({
                   />
                 </div>
                 <LabeledField
-                  label="Pickup note"
+                  label="Note"
                   value={pickupNote}
                   onChange={setPickupNote}
                   placeholder="Near gate, blue door, beside KFC"
@@ -462,21 +503,37 @@ function LocationPickerModal({
         </div>
 
         <div className="border-t border-[#edf1ef] bg-white px-5 pb-5 pt-4 shadow-[0_-6px_18px_rgba(15,23,42,0.06)]">
-          <div className="flex gap-3">
+          <div className="space-y-3">
             <button
               type="button"
               onClick={handlePickCurrentLocation}
               disabled={isSaving}
-              className="inline-flex h-11 flex-1 items-center justify-center rounded-[12px] border border-[#dcecdf] bg-white px-4 text-[14px] font-extrabold text-[#111827] disabled:opacity-70"
+              className="inline-flex h-11 w-full items-center justify-center rounded-[12px] border border-[#dcecdf] bg-white px-4 text-[14px] font-extrabold text-[#111827] disabled:opacity-70"
             >
               {isSaving ? "Locating..." : "Use Current Location"}
             </button>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={handleSave}
+                className="inline-flex h-11 items-center justify-center rounded-[12px] bg-[#16a34a] px-4 text-[14px] font-extrabold text-white shadow-[0_12px_24px_rgba(22,163,74,0.18)]"
+              >
+                Save
+              </button>
+              <button
+                type="button"
+                onClick={handleDelete}
+                className="inline-flex h-11 items-center justify-center rounded-[12px] border border-[#f3c7c7] bg-[#fff4f4] px-4 text-[14px] font-extrabold text-[#b42318]"
+              >
+                Delete
+              </button>
+            </div>
             <button
               type="button"
-              onClick={handleSave}
-              className="inline-flex h-11 flex-1 items-center justify-center rounded-[12px] bg-[#16a34a] px-4 text-[14px] font-extrabold text-white shadow-[0_12px_24px_rgba(22,163,74,0.18)]"
+              onClick={handleSaveAnotherPlace}
+              className="inline-flex h-11 w-full items-center justify-center rounded-[12px] border border-dashed border-[#16a34a] bg-[#fbfffc] px-4 text-[14px] font-extrabold text-[#16a34a]"
             >
-              Choose This Pickup
+              Save Another Place
             </button>
           </div>
         </div>
@@ -535,6 +592,9 @@ function GrabAddressCard({
   const mainLine =
     [houseNumber, buildingName || selectedLabel].filter(Boolean).join(", ") ||
     selectedLabel;
+  const fullAddressLine = [houseNumber, buildingName, formattedAddress]
+    .filter(Boolean)
+    .join(", ");
   const detailLine = [floor && `Floor ${floor}`, unitNumber && `Unit ${unitNumber}`]
     .filter(Boolean)
     .join(" • ");
@@ -558,7 +618,9 @@ function GrabAddressCard({
         </div>
       </div>
       <div className="space-y-2 px-4 py-4">
-        <p className="text-[14px] font-semibold text-[#111827]">{formattedAddress}</p>
+        <p className="text-[14px] font-semibold text-[#111827]">
+          {fullAddressLine || formattedAddress}
+        </p>
         {detailLine ? (
           <p className="text-[13px] text-[#4b5563]">{detailLine}</p>
         ) : null}

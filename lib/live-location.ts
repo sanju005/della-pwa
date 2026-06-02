@@ -1,6 +1,7 @@
 "use client";
 
 export type StoredLiveLocation = {
+  id?: string;
   latitude: number;
   longitude: number;
   label: string;
@@ -21,6 +22,35 @@ export type StoredLiveLocation = {
 };
 
 const LIVE_LOCATION_STORAGE_KEY = "della.live.location";
+const SAVED_PLACES_STORAGE_KEY = "della.saved.places";
+
+function buildLocationId() {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+
+  return `place-${Date.now()}`;
+}
+
+function normalizeStoredLocation(parsed: StoredLiveLocation) {
+  return {
+    ...parsed,
+    id: parsed.id ?? buildLocationId(),
+    addressLabel: parsed.addressLabel ?? "Home",
+    formattedAddress: parsed.formattedAddress ?? parsed.label,
+    road: parsed.road ?? "",
+    suburb: parsed.suburb ?? "",
+    city: parsed.city ?? "",
+    state: parsed.state ?? "",
+    postcode: parsed.postcode ?? "",
+    country: parsed.country ?? "",
+    houseNumber: parsed.houseNumber ?? "",
+    buildingName: parsed.buildingName ?? "",
+    floor: parsed.floor ?? "",
+    unitNumber: parsed.unitNumber ?? "",
+    pickupNote: parsed.pickupNote ?? "",
+  };
+}
 
 export function loadStoredLiveLocation() {
   if (typeof window === "undefined") {
@@ -34,36 +64,76 @@ export function loadStoredLiveLocation() {
 
   try {
     const parsed = JSON.parse(raw) as StoredLiveLocation;
-    return {
-      ...parsed,
-      addressLabel: parsed.addressLabel ?? "Home",
-      formattedAddress: parsed.formattedAddress ?? parsed.label,
-      road: parsed.road ?? "",
-      suburb: parsed.suburb ?? "",
-      city: parsed.city ?? "",
-      state: parsed.state ?? "",
-      postcode: parsed.postcode ?? "",
-      country: parsed.country ?? "",
-      houseNumber: parsed.houseNumber ?? "",
-      buildingName: parsed.buildingName ?? "",
-      floor: parsed.floor ?? "",
-      unitNumber: parsed.unitNumber ?? "",
-      pickupNote: parsed.pickupNote ?? "",
-    };
+    return normalizeStoredLocation(parsed);
   } catch {
     return null;
   }
 }
 
 export function saveStoredLiveLocation(location: StoredLiveLocation) {
+  const normalized = normalizeStoredLocation(location);
+
   if (typeof window === "undefined") {
-    return;
+    return normalized;
   }
 
   window.localStorage.setItem(
     LIVE_LOCATION_STORAGE_KEY,
-    JSON.stringify(location)
+    JSON.stringify(normalized)
   );
+
+  return normalized;
+}
+
+export function clearStoredLiveLocation() {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.localStorage.removeItem(LIVE_LOCATION_STORAGE_KEY);
+}
+
+export function loadSavedPlaces() {
+  if (typeof window === "undefined") {
+    return [] as StoredLiveLocation[];
+  }
+
+  const raw = window.localStorage.getItem(SAVED_PLACES_STORAGE_KEY);
+  if (!raw) {
+    return [] as StoredLiveLocation[];
+  }
+
+  try {
+    const parsed = JSON.parse(raw) as StoredLiveLocation[];
+    return parsed.map(normalizeStoredLocation);
+  } catch {
+    return [] as StoredLiveLocation[];
+  }
+}
+
+export function saveStoredPlace(location: StoredLiveLocation) {
+  if (typeof window === "undefined") {
+    return normalizeStoredLocation(location);
+  }
+
+  const normalized = normalizeStoredLocation(location);
+  const places = loadSavedPlaces();
+  const nextPlaces = [
+    normalized,
+    ...places.filter((item) => item.id !== normalized.id),
+  ];
+
+  window.localStorage.setItem(SAVED_PLACES_STORAGE_KEY, JSON.stringify(nextPlaces));
+  return normalized;
+}
+
+export function deleteStoredPlace(placeId?: string) {
+  if (typeof window === "undefined" || !placeId) {
+    return;
+  }
+
+  const nextPlaces = loadSavedPlaces().filter((item) => item.id !== placeId);
+  window.localStorage.setItem(SAVED_PLACES_STORAGE_KEY, JSON.stringify(nextPlaces));
 }
 
 export function buildMapsHref(latitude: number, longitude: number) {
@@ -130,8 +200,7 @@ export async function resolveCurrentLiveLocation(fallbackLabel: string) {
         updatedAt: new Date().toISOString(),
       };
 
-      saveStoredLiveLocation(nextLocation);
-      return nextLocation;
+      return saveStoredLiveLocation(nextLocation);
     }
   } catch {
     label = fallbackLabel;
@@ -157,6 +226,5 @@ export async function resolveCurrentLiveLocation(fallbackLabel: string) {
     updatedAt: new Date().toISOString(),
   };
 
-  saveStoredLiveLocation(nextLocation);
-  return nextLocation;
+  return saveStoredLiveLocation(nextLocation);
 }
