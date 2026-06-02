@@ -42,6 +42,7 @@ type ProviderCatalogRow = {
 export type ProviderListing = {
   id: string;
   name: string;
+  providerName?: string;
   serviceKey: ProviderCategoryKey;
   serviceLabel: string;
   title: string;
@@ -275,6 +276,69 @@ function buildSupabasePublicClient() {
   });
 }
 
+function inferProviderName(serviceKey: ProviderCategoryKey, name: string) {
+  const providerNamesByService: Record<ProviderCategoryKey, Record<string, string>> = {
+    chef: {
+      "Chef Amina": "Amina",
+      "Chef Daniel": "Daniel",
+      "Chef Mei Ling": "Mei Ling",
+      "Chef Hikaru": "Hikaru",
+      "Chef Sofia": "Sofia",
+    },
+    maid: {
+      "Siti Maid Service": "Siti",
+      "Devi Maid Care": "Devi",
+      "Nora Home Help": "Nora",
+      "Lina Maid Assist": "Lina",
+      "Maya Home Service": "Maya",
+    },
+    babysitter: {
+      "Aisyah Babysitter": "Aisyah",
+      "Nur Babysitting": "Nur",
+      "Lina Child Care": "Lina",
+      "Sara Baby Care": "Sara",
+      "Mina Kids Support": "Mina",
+    },
+    driver: {
+      "Driver Kumar": "Kumar",
+      "Azlan Driver Service": "Azlan",
+      "Ravi Transport": "Ravi",
+      "Hakim Private Driver": "Hakim",
+      "Muthu Driver Link": "Muthu",
+    },
+    cleaner: {
+      "Nora Cleaner": "Nora",
+      "Fresh Home Cleaner": "Fresha",
+      "Spark Clean Service": "Indra",
+      "EcoClean Nora": "Nimmin",
+      "Daily Shine Cleaner": "Rani",
+    },
+    tutor: {
+      "Tutor Farah": "Farah",
+      "Teacher Aiman": "Aiman",
+      "Ms Priya Tutor": "Priya",
+      "BM Learning Coach": "Erina",
+      "Math Mentor Lee": "Nadiya",
+    },
+    plumber: {
+      "Plumber Hafiz": "Hafiz",
+      "WaterFix Plumber": "Guna",
+      "KL Pipe Service": "Karim",
+      "Rapid Plumb Care": "Lim",
+      "Home Pipe Expert": "Murugan",
+    },
+    electrician: {
+      "Electrician Azmi": "Azmi",
+      "BrightFix Electric": "Aweiz",
+      "Power Home Azhar": "Shukri",
+      "Rapid Volt Care": "Ilango",
+      "Home Current Pro": "Asai",
+    },
+  };
+
+  return providerNamesByService[serviceKey][name];
+}
+
 function mock(
   serviceKey: ProviderCategoryKey,
   name: string,
@@ -294,6 +358,7 @@ function mock(
   return {
     id: `mock-${serviceKey}-${name.toLowerCase().replace(/\s+/g, "-")}`,
     name,
+    providerName: inferProviderName(serviceKey, name),
     serviceKey,
     serviceLabel: serviceLabels[serviceKey],
     title,

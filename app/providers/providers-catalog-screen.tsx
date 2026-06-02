@@ -39,6 +39,7 @@ type ServiceKey =
 type CatalogScreenListing = {
   id: string;
   name: string;
+  providerName?: string;
   serviceKey: Exclude<ServiceKey, null>;
   serviceLabel: string;
   workMode: WorkMode;
@@ -97,6 +98,7 @@ export function ProvidersCatalogScreen({ data }: { data: CatalogScreenData }) {
       const matchesQuery =
         loweredQuery.length === 0 ||
         listing.name.toLowerCase().includes(loweredQuery) ||
+        listing.providerName?.toLowerCase().includes(loweredQuery) ||
         listing.bio.toLowerCase().includes(loweredQuery) ||
         listing.specialties.some((specialty) =>
           specialty.toLowerCase().includes(loweredQuery)
@@ -360,6 +362,11 @@ function ProviderCard({ listing }: { listing: CatalogScreenListing }) {
                 <span className="truncate">{listing.name}</span>
                 <BadgeCheck className="h-4.5 w-4.5 shrink-0 fill-[#16A34A] text-[#16A34A]" />
               </h3>
+              {listing.providerName && listing.providerName !== listing.name ? (
+                <p className="mt-1 truncate text-[12px] font-semibold text-[#16A34A]">
+                  {listing.providerName}
+                </p>
+              ) : null}
 
               <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] text-[#475467]">
                 <span className="inline-flex items-center gap-1">
