@@ -325,153 +325,155 @@ function LocationPickerModal({
           </button>
         </div>
 
-        <div className="px-5 py-4">
-          <div className="flex items-center gap-3 rounded-[18px] border border-[#dfe7e2] px-4 py-3 shadow-[0_8px_20px_rgba(15,23,42,0.04)]">
-            <Search className="h-5 w-5 shrink-0 text-[#16A34A]" />
-            <input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search area, street, or address"
-              className="w-full border-0 bg-transparent text-[15px] text-[#111827] outline-none placeholder:text-[#667085]"
-            />
-            {isSearching ? (
-              <LoaderCircle className="h-4 w-4 shrink-0 animate-spin text-[#16A34A]" />
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          <div className="px-5 py-4">
+            <div className="flex items-center gap-3 rounded-[18px] border border-[#dfe7e2] px-4 py-3 shadow-[0_8px_20px_rgba(15,23,42,0.04)]">
+              <Search className="h-5 w-5 shrink-0 text-[#16A34A]" />
+              <input
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search area, street, or address"
+                className="w-full border-0 bg-transparent text-[15px] text-[#111827] outline-none placeholder:text-[#667085]"
+              />
+              {isSearching ? (
+                <LoaderCircle className="h-4 w-4 shrink-0 animate-spin text-[#16A34A]" />
+              ) : null}
+            </div>
+
+            {results.length > 0 ? (
+              <div className="mt-3 overflow-hidden rounded-[18px] border border-[#e4ece7] bg-white">
+                {results.map((result, index) => (
+                  <button
+                    key={result.id}
+                    type="button"
+                    onClick={() => {
+                      setCoords({
+                        latitude: result.latitude,
+                        longitude: result.longitude,
+                      });
+                      setSelectedLabel(result.label);
+                      setQuery(result.label);
+                      setFormattedAddress(result.label);
+                      setResults([]);
+                      void updateLabelFromCoords(result.latitude, result.longitude);
+                    }}
+                    className={`w-full px-4 py-3 text-left ${
+                      index > 0 ? "border-t border-[#edf1ef]" : ""
+                    }`}
+                  >
+                    <p className="text-[14px] font-semibold text-[#111827]">
+                      {result.label}
+                    </p>
+                  </button>
+                ))}
+              </div>
             ) : null}
           </div>
 
-          {results.length > 0 ? (
-            <div className="mt-3 overflow-hidden rounded-[18px] border border-[#e4ece7] bg-white">
-              {results.map((result, index) => (
-                <button
-                  key={result.id}
-                  type="button"
-                  onClick={() => {
-                    setCoords({
-                      latitude: result.latitude,
-                      longitude: result.longitude,
-                    });
-                    setSelectedLabel(result.label);
-                    setQuery(result.label);
-                    setFormattedAddress(result.label);
-                    setResults([]);
-                    void updateLabelFromCoords(result.latitude, result.longitude);
-                  }}
-                  className={`w-full px-4 py-3 text-left ${
-                    index > 0 ? "border-t border-[#edf1ef]" : ""
-                  }`}
-                >
-                  <p className="text-[14px] font-semibold text-[#111827]">
-                    {result.label}
+          <div className="px-5">
+            <div className="overflow-hidden rounded-[24px] border border-[#dcecdf]">
+              <div className="h-[22rem] w-full bg-[#eef9f0]">
+                <DynamicLocationPickerMap
+                  latitude={coords.latitude}
+                  longitude={coords.longitude}
+                  onChange={handleMapChange}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-4 px-5 pb-5">
+            <div className="rounded-[18px] bg-[#f8fcf9] p-4">
+              <div className="flex items-start gap-3">
+                <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#e9f9ec] text-[#16a34a]">
+                  <Navigation className="h-5 w-5" />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-[14px] font-extrabold text-[#111827]">
+                    {selectedLabel || fallbackLabel}
                   </p>
-                </button>
-              ))}
-            </div>
-          ) : null}
-        </div>
+                  <p className="mt-1 text-[12px] text-[#6b7280]">{helperText}</p>
+                </div>
+              </div>
 
-        <div className="px-5">
-          <div className="overflow-hidden rounded-[24px] border border-[#dcecdf]">
-            <div className="h-[22rem] w-full bg-[#eef9f0]">
-              <DynamicLocationPickerMap
-                latitude={coords.latitude}
-                longitude={coords.longitude}
-                onChange={handleMapChange}
+              <div className="mt-4 space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <LabeledField
+                    label="Address label"
+                    value={addressLabel}
+                    onChange={setAddressLabel}
+                    placeholder="Home"
+                  />
+                  <LabeledField
+                    label="House number"
+                    value={houseNumber}
+                    onChange={setHouseNumber}
+                    placeholder="28A"
+                  />
+                </div>
+                <LabeledField
+                  label="Building / Condo"
+                  value={buildingName}
+                  onChange={setBuildingName}
+                  placeholder="Taman Million / Wisma..."
+                />
+                <div className="grid grid-cols-2 gap-3">
+                  <LabeledField
+                    label="Floor"
+                    value={floor}
+                    onChange={setFloor}
+                    placeholder="8"
+                  />
+                  <LabeledField
+                    label="Unit number"
+                    value={unitNumber}
+                    onChange={setUnitNumber}
+                    placeholder="A-3-12"
+                  />
+                </div>
+                <LabeledField
+                  label="Pickup note"
+                  value={pickupNote}
+                  onChange={setPickupNote}
+                  placeholder="Near gate, blue door, beside KFC"
+                />
+              </div>
+
+              <GrabAddressCard
+                addressLabel={addressLabel}
+                houseNumber={houseNumber}
+                buildingName={buildingName}
+                floor={floor}
+                unitNumber={unitNumber}
+                pickupNote={pickupNote}
+                selectedLabel={selectedLabel}
+                formattedAddress={formattedAddress}
+                distanceLabel={helperText}
               />
-            </div>
-          </div>
-        </div>
 
-        <div className="mt-4 px-5 pb-5">
-          <div className="rounded-[18px] bg-[#f8fcf9] p-4">
-            <div className="flex items-start gap-3">
-              <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#e9f9ec] text-[#16a34a]">
-                <Navigation className="h-5 w-5" />
-              </span>
-              <div className="min-w-0">
-                <p className="text-[14px] font-extrabold text-[#111827]">
-                  {selectedLabel || fallbackLabel}
+              {saveMessage ? (
+                <p className="mt-3 text-[12px] font-semibold text-[#16a34a]">
+                  {saveMessage}
                 </p>
-                <p className="mt-1 text-[12px] text-[#6b7280]">{helperText}</p>
+              ) : null}
+
+              <div className="mt-4 flex gap-3">
+                <button
+                  type="button"
+                  onClick={handlePickCurrentLocation}
+                  disabled={isSaving}
+                  className="inline-flex h-11 flex-1 items-center justify-center rounded-[12px] border border-[#dcecdf] bg-white px-4 text-[14px] font-extrabold text-[#111827] disabled:opacity-70"
+                >
+                  {isSaving ? "Locating..." : "Use Current Location"}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSave}
+                  className="inline-flex h-11 flex-1 items-center justify-center rounded-[12px] bg-[#16a34a] px-4 text-[14px] font-extrabold text-white shadow-[0_12px_24px_rgba(22,163,74,0.18)]"
+                >
+                  Choose This Pickup
+                </button>
               </div>
-            </div>
-
-            <div className="mt-4 space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-                <LabeledField
-                  label="Address label"
-                  value={addressLabel}
-                  onChange={setAddressLabel}
-                  placeholder="Home"
-                />
-                <LabeledField
-                  label="House number"
-                  value={houseNumber}
-                  onChange={setHouseNumber}
-                  placeholder="28A"
-                />
-              </div>
-              <LabeledField
-                label="Building / Condo"
-                value={buildingName}
-                onChange={setBuildingName}
-                placeholder="Taman Million / Wisma..."
-              />
-              <div className="grid grid-cols-2 gap-3">
-                <LabeledField
-                  label="Floor"
-                  value={floor}
-                  onChange={setFloor}
-                  placeholder="8"
-                />
-                <LabeledField
-                  label="Unit number"
-                  value={unitNumber}
-                  onChange={setUnitNumber}
-                  placeholder="A-3-12"
-                />
-              </div>
-              <LabeledField
-                label="Pickup note"
-                value={pickupNote}
-                onChange={setPickupNote}
-                placeholder="Near gate, blue door, beside KFC"
-              />
-            </div>
-
-            <GrabAddressCard
-              addressLabel={addressLabel}
-              houseNumber={houseNumber}
-              buildingName={buildingName}
-              floor={floor}
-              unitNumber={unitNumber}
-              pickupNote={pickupNote}
-              selectedLabel={selectedLabel}
-              formattedAddress={formattedAddress}
-              distanceLabel={helperText}
-            />
-
-            {saveMessage ? (
-              <p className="mt-3 text-[12px] font-semibold text-[#16a34a]">
-                {saveMessage}
-              </p>
-            ) : null}
-
-            <div className="mt-4 flex gap-3">
-              <button
-                type="button"
-                onClick={handlePickCurrentLocation}
-                disabled={isSaving}
-                className="inline-flex h-11 flex-1 items-center justify-center rounded-[12px] border border-[#dcecdf] bg-white px-4 text-[14px] font-extrabold text-[#111827] disabled:opacity-70"
-              >
-                {isSaving ? "Locating..." : "Use Current Location"}
-              </button>
-              <button
-                type="button"
-                onClick={handleSave}
-                className="inline-flex h-11 flex-1 items-center justify-center rounded-[12px] bg-[#16a34a] px-4 text-[14px] font-extrabold text-white shadow-[0_12px_24px_rgba(22,163,74,0.18)]"
-              >
-                Choose This Pickup
-              </button>
             </div>
           </div>
         </div>
