@@ -26,6 +26,17 @@ export type PaymentMethod = {
   isDefault?: boolean;
 };
 
+export type PaymentHistoryItem = {
+  id: string;
+  serviceCategory: string;
+  serviceTitle: string;
+  provider: string;
+  amount: number;
+  paidAt: string;
+  paymentMethod: string;
+  status: "paid" | "refunded";
+};
+
 export type Address = {
   id: string;
   label: string;
@@ -67,6 +78,10 @@ export type ProfileOverviewData = {
   profile: CustomerProfile;
   favoriteProviders: FavoriteProvider[];
   paymentMethods: PaymentMethod[];
+  paymentSummary: {
+    totalPaid: number;
+    lastPaymentLabel: string;
+  };
   bookingSummary: {
     upcoming: number;
     completed: number;

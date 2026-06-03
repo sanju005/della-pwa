@@ -17,6 +17,7 @@ import type {
   Booking,
   BookingStatus,
   CustomerProfile,
+  PaymentHistoryItem,
   ProfileOverviewData,
   SettingGroup,
 } from "@/lib/profile-types";
@@ -47,6 +48,10 @@ type BookingsProps = {
 
 type SettingsProps = {
   groups: SettingGroup[];
+};
+
+type PaymentsProps = {
+  payments: PaymentHistoryItem[];
 };
 
 export function ProfileShell({
@@ -177,6 +182,24 @@ export function ProfileOverviewScreen({ initialData }: OverviewProps) {
             </div>
           </div>
         ))}
+      </SectionCard>
+
+      <SectionCard
+        title="Payment"
+        actionHref="/profile/payments"
+        actionLabel="View All"
+      >
+        <ProfileInfoRow
+          icon={<WalletIcon className="h-4 w-4" />}
+          label="Total Paid"
+          value={`RM${initialData.paymentSummary.totalPaid}`}
+          valueTone="green"
+        />
+        <ProfileInfoRow
+          icon={<CalendarIcon className="h-4 w-4" />}
+          label="Latest Payment"
+          value={initialData.paymentSummary.lastPaymentLabel}
+        />
       </SectionCard>
     </ProfileShell>
   );
@@ -441,6 +464,188 @@ export function SettingsScreen({ groups }: SettingsProps) {
           </SectionCard>
         ))}
       </div>
+    </ProfileShell>
+  );
+}
+
+export function PaymentsScreen({ payments }: PaymentsProps) {
+  const [filterMode, setFilterMode] = useState<"month" | "custom">("month");
+  const [selectedMonth, setSelectedMonth] = useState("2026-06");
+  const [dateFrom, setDateFrom] = useState("2026-04-01");
+  const [dateTo, setDateTo] = useState("2026-06-30");
+
+  const filteredPayments = useMemo(() => {
+    return payments.filter((payment) => {
+      const paidDate = new Date(payment.paidAt);
+
+      if (filterMode === "month") {
+        const paymentMonth = `${paidDate.getFullYear()}-${String(
+          paidDate.getMonth() + 1
+        ).padStart(2, "0")}`;
+        return paymentMonth === selectedMonth;
+      }
+
+      const from = new Date(`${dateFrom}T00:00:00`);
+      const to = new Date(`${dateTo}T23:59:59`);
+      return paidDate >= from && paidDate <= to;
+    });
+  }, [dateFrom, dateTo, filterMode, payments, selectedMonth]);
+
+  const totalPaid = filteredPayments.reduce((sum, payment) => sum + payment.amount, 0);
+
+  return (
+    <ProfileShell title="Payment History" showBack backHref="/profile">
+      <div className="rounded-[18px] border border-[#e4ece7] bg-white p-4 shadow-[0_10px_26px_rgba(15,23,42,0.04)]">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-[13px] text-[#6b7280]">Total paid</p>
+            <p className="mt-1 text-[24px] font-extrabold text-[#16a34a]">
+              RM{totalPaid}
+            </p>
+          </div>
+          <div className="rounded-[14px] bg-[#eff9f0] px-3 py-2 text-right">
+            <p className="text-[12px] font-bold text-[#16a34a]">
+              {filteredPayments.length} payments
+            </p>
+            <p className="mt-1 text-[11px] text-[#4b5563]">
+              Category, date, and time
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <SectionCard title="Filter">
+        <div className="flex gap-3">
+          <button
+            type="button"
+            onClick={() => setFilterMode("month")}
+            className={`inline-flex h-10 flex-1 items-center justify-center rounded-[12px] border text-[13px] font-bold ${
+              filterMode === "month"
+                ? "border-[#16a34a] bg-[#eff9f0] text-[#16a34a]"
+                : "border-[#d9e2dd] bg-white text-[#111827]"
+            }`}
+          >
+            By Month
+          </button>
+          <button
+            type="button"
+            onClick={() => setFilterMode("custom")}
+            className={`inline-flex h-10 flex-1 items-center justify-center rounded-[12px] border text-[13px] font-bold ${
+              filterMode === "custom"
+                ? "border-[#16a34a] bg-[#eff9f0] text-[#16a34a]"
+                : "border-[#d9e2dd] bg-white text-[#111827]"
+            }`}
+          >
+            Custom Period
+          </button>
+        </div>
+
+        {filterMode === "month" ? (
+          <div className="mt-4">
+            <p className="mb-2 text-[13px] font-semibold text-[#111827]">Month</p>
+            <select
+              value={selectedMonth}
+              onChange={(event) => setSelectedMonth(event.target.value)}
+              className="h-11 w-full rounded-[12px] border border-[#d9e2dd] bg-white px-3 text-[14px] text-[#111827] outline-none"
+            >
+              <option value="2026-06">June 2026</option>
+              <option value="2026-05">May 2026</option>
+              <option value="2026-04">April 2026</option>
+              <option value="2026-03">March 2026</option>
+            </select>
+          </div>
+        ) : (
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            <div>
+              <p className="mb-2 text-[13px] font-semibold text-[#111827]">From</p>
+              <input
+                type="date"
+                value={dateFrom}
+                onChange={(event) => setDateFrom(event.target.value)}
+                className="h-11 w-full rounded-[12px] border border-[#d9e2dd] bg-white px-3 text-[14px] text-[#111827] outline-none"
+              />
+            </div>
+            <div>
+              <p className="mb-2 text-[13px] font-semibold text-[#111827]">To</p>
+              <input
+                type="date"
+                value={dateTo}
+                onChange={(event) => setDateTo(event.target.value)}
+                className="h-11 w-full rounded-[12px] border border-[#d9e2dd] bg-white px-3 text-[14px] text-[#111827] outline-none"
+              />
+            </div>
+          </div>
+        )}
+      </SectionCard>
+
+      <SectionCard title="Payment History">
+        <div className="space-y-4">
+          {filteredPayments.map((payment) => {
+            const paidAt = new Date(payment.paidAt);
+            return (
+              <div
+                key={payment.id}
+                className="rounded-[16px] border border-[#edf1ef] px-4 py-4"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-[15px] font-extrabold text-[#111827]">
+                      {payment.serviceTitle}
+                    </p>
+                    <p className="mt-1 text-[13px] font-semibold text-[#16a34a]">
+                      {payment.serviceCategory}
+                    </p>
+                    <p className="mt-1 text-[13px] text-[#4b5563]">
+                      Provider: {payment.provider}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[18px] font-extrabold text-[#111827]">
+                      RM{payment.amount}
+                    </p>
+                    <span className="mt-1 inline-flex rounded-full bg-[#eff9f0] px-2 py-1 text-[11px] font-bold text-[#16a34a]">
+                      {payment.status === "paid" ? "Paid" : "Refunded"}
+                    </span>
+                  </div>
+                </div>
+                <div className="mt-3 grid grid-cols-2 gap-3 text-[12px] text-[#6b7280]">
+                  <p>
+                    Date:{" "}
+                    <span className="font-semibold text-[#111827]">
+                      {new Intl.DateTimeFormat("en-MY", {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                      }).format(paidAt)}
+                    </span>
+                  </p>
+                  <p>
+                    Time:{" "}
+                    <span className="font-semibold text-[#111827]">
+                      {new Intl.DateTimeFormat("en-MY", {
+                        hour: "numeric",
+                        minute: "2-digit",
+                      }).format(paidAt)}
+                    </span>
+                  </p>
+                  <p className="col-span-2">
+                    Method:{" "}
+                    <span className="font-semibold text-[#111827]">
+                      {payment.paymentMethod}
+                    </span>
+                  </p>
+                </div>
+              </div>
+            );
+          })}
+
+          {filteredPayments.length === 0 ? (
+            <div className="rounded-[16px] border border-dashed border-[#d9e2dd] px-4 py-6 text-center text-[13px] text-[#6b7280]">
+              No payment found for this filter.
+            </div>
+          ) : null}
+        </div>
+      </SectionCard>
     </ProfileShell>
   );
 }
@@ -801,7 +1006,7 @@ function BottomNav() {
         <NavItem href="/home" label="Home" icon={<HomeIcon className="h-5 w-5" />} active={pathname === "/home"} />
         <NavItem href="/profile/bookings" label="Bookings" icon={<CalendarIcon className="h-5 w-5" />} active={pathname.startsWith("/profile/bookings")} />
         <NavItem href="/profile/messages" label="Messages" icon={<MessageIcon className="h-5 w-5" />} active={pathname.startsWith("/profile/messages")} />
-        <NavItem href="/profile/wallet" label="Wallet" icon={<WalletIcon className="h-5 w-5" />} active={pathname.startsWith("/profile/wallet")} />
+        <NavItem href="/profile" label="Favourite" icon={<UserIcon className="h-5 w-5" />} active={pathname === "/profile"} />
         <NavItem href="/profile" label="Profile" icon={<UserIcon className="h-5 w-5" />} active={pathname === "/profile" || pathname.startsWith("/profile/edit") || pathname.startsWith("/profile/addresses") || pathname.startsWith("/profile/settings")} />
       </div>
     </nav>

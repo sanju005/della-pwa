@@ -4,6 +4,7 @@ import type {
   Address,
   Booking,
   CustomerProfile,
+  PaymentHistoryItem,
   ProfileOverviewData,
   SettingGroup,
 } from "./profile-types";
@@ -49,6 +50,69 @@ const favoriteProviders = [
 const paymentMethods = [
   { id: "cash", label: "Cash", type: "Cash", isDefault: true },
   { id: "fpx", label: "Online Payment", type: "Card / FPX" },
+];
+
+const paymentHistory: PaymentHistoryItem[] = [
+  {
+    id: "payment-1",
+    serviceCategory: "Cleaning",
+    serviceTitle: "Deep Cleaning",
+    provider: "Maid Siti",
+    amount: 180,
+    paidAt: "2026-06-01T10:30:00+08:00",
+    paymentMethod: "Card / FPX",
+    status: "paid",
+  },
+  {
+    id: "payment-2",
+    serviceCategory: "Chef",
+    serviceTitle: "Dinner Chef Service",
+    provider: "Chef Amina",
+    amount: 260,
+    paidAt: "2026-05-28T19:15:00+08:00",
+    paymentMethod: "Card / FPX",
+    status: "paid",
+  },
+  {
+    id: "payment-3",
+    serviceCategory: "Driver",
+    serviceTitle: "Airport Transfer",
+    provider: "Driver Kumar",
+    amount: 95,
+    paidAt: "2026-05-18T06:45:00+08:00",
+    paymentMethod: "Cash",
+    status: "paid",
+  },
+  {
+    id: "payment-4",
+    serviceCategory: "Plumber",
+    serviceTitle: "Leak Repair",
+    provider: "Murugan",
+    amount: 320,
+    paidAt: "2026-04-30T14:05:00+08:00",
+    paymentMethod: "Card / FPX",
+    status: "paid",
+  },
+  {
+    id: "payment-5",
+    serviceCategory: "Babysitter",
+    serviceTitle: "Evening Childcare",
+    provider: "Sara",
+    amount: 210,
+    paidAt: "2026-04-15T18:20:00+08:00",
+    paymentMethod: "Cash",
+    status: "paid",
+  },
+  {
+    id: "payment-6",
+    serviceCategory: "Tutor",
+    serviceTitle: "Mathematics Home Tuition",
+    provider: "Tutor Farah",
+    amount: 245,
+    paidAt: "2026-03-12T16:00:00+08:00",
+    paymentMethod: "Card / FPX",
+    status: "paid",
+  },
 ];
 
 const addresses: Address[] = [
@@ -147,11 +211,23 @@ const settings: SettingGroup[] = [
 
 export async function getProfileOverviewData(): Promise<ProfileOverviewData> {
   const storedBookings = await listCustomerBookings();
+  const totalPaid = paymentHistory.reduce((sum, item) => sum + item.amount, 0);
+  const latestPayment = paymentHistory[0];
 
   return {
     profile: structuredClone(mockProfile),
     favoriteProviders: structuredClone(favoriteProviders),
     paymentMethods: structuredClone(paymentMethods),
+    paymentSummary: {
+      totalPaid,
+      lastPaymentLabel: latestPayment
+        ? `${latestPayment.serviceTitle} on ${new Intl.DateTimeFormat("en-MY", {
+            day: "numeric",
+            month: "short",
+            year: "numeric",
+          }).format(new Date(latestPayment.paidAt))}`
+        : "No payment yet",
+    },
     bookingSummary: {
       upcoming: storedBookings.length || 3,
       completed: 12,
@@ -195,4 +271,8 @@ export async function getBookings(): Promise<Booking[]> {
 
 export async function getProfileSettings(): Promise<SettingGroup[]> {
   return structuredClone(settings);
+}
+
+export async function getPaymentHistory(): Promise<PaymentHistoryItem[]> {
+  return structuredClone(paymentHistory);
 }

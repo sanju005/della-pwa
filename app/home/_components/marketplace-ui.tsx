@@ -15,7 +15,6 @@ import {
   SprayCan,
   Star,
   UserRound,
-  WalletCards,
   Wrench,
   Baby,
   CarFront,
@@ -180,7 +179,7 @@ export function MarketplaceScreen({
               <BottomNavLink href="/home" label="Home" active icon={<House className="h-5 w-5 stroke-[1.9]" />} />
               <BottomNavLink href="/profile/bookings" label="Bookings" icon={<BookOpen className="h-5 w-5 stroke-[1.9]" />} />
               <BottomNavLink href="/profile/messages" label="Messages" icon={<MessageCircleMore className="h-5 w-5 stroke-[1.9]" />} />
-              <BottomNavLink href="/profile/wallet" label="Wallet" icon={<WalletCards className="h-5 w-5 stroke-[1.9]" />} />
+              <BottomNavLink href="/profile" label="Favourite" icon={<Heart className="h-5 w-5 stroke-[1.9]" />} />
               <BottomNavLink href="/profile" label="Profile" icon={<CircleUserRound className="h-5 w-5 stroke-[1.9]" />} />
             </div>
           </nav>
