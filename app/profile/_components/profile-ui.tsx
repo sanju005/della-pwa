@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState, useTransition } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 import { LiveLocationChip } from "@/app/_components/live-location-chip";
 import {
@@ -46,6 +46,7 @@ type AddressesProps = {
 
 type BookingsProps = {
   bookings: Booking[];
+  initialTab?: BookingStatus;
 };
 
 type SettingsProps = {
@@ -461,13 +462,7 @@ export function AddressesScreen({ addresses }: AddressesProps) {
   );
 }
 
-export function BookingsScreen({ bookings }: BookingsProps) {
-  const searchParams = useSearchParams();
-  const requestedTab = searchParams.get("tab");
-  const initialTab: BookingStatus =
-    requestedTab === "completed" || requestedTab === "cancelled" || requestedTab === "upcoming"
-      ? requestedTab
-      : "upcoming";
+export function BookingsScreen({ bookings, initialTab = "upcoming" }: BookingsProps) {
   const [activeTab, setActiveTab] = useState<BookingStatus>(initialTab);
 
   const filtered = useMemo(
