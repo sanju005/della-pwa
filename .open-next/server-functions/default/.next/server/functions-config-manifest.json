@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "functions": {
+    "/api/auth/register/customer": {},
+    "/api/home": {},
+    "/api/location/reverse": {},
+    "/api/location/search": {},
+    "/api/provider/register": {},
+    "/api/provider/register/[id]": {},
+    "/api/providers": {}
+  }
+}
