@@ -66,6 +66,7 @@ export type Booking = {
   statusLabel: string;
   badgeTone: "green" | "amber" | "slate";
   thumbnail: string;
+  imageSrc?: string;
 };
 
 export type SettingItem = {

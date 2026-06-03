@@ -9,7 +9,10 @@ import type {
   SettingGroup,
 } from "./profile-types";
 import { listCustomerBookings } from "./customer-booking-storage";
-import { buildProviderPortraitSrc } from "./provider-catalog";
+import {
+  buildProviderPortraitSrc,
+  type ProviderCategoryKey,
+} from "./provider-catalog";
 
 const mockProfile: CustomerProfile = {
   firstName: "Sanju",
@@ -202,6 +205,7 @@ const bookings: Booking[] = [
     statusLabel: "Confirmed",
     badgeTone: "green",
     thumbnail: "food",
+    imageSrc: buildProviderPortraitSrc({ name: "Chef Amina", serviceKey: "chef" }),
   },
   {
     id: "booking-2",
@@ -213,6 +217,7 @@ const bookings: Booking[] = [
     statusLabel: "Pending",
     badgeTone: "amber",
     thumbnail: "cleaning",
+    imageSrc: buildProviderPortraitSrc({ name: "Siti Maid Service", serviceKey: "maid" }),
   },
   {
     id: "booking-3",
@@ -224,6 +229,31 @@ const bookings: Booking[] = [
     statusLabel: "Confirmed",
     badgeTone: "green",
     thumbnail: "car",
+    imageSrc: buildProviderPortraitSrc({ name: "Driver Kumar", serviceKey: "driver" }),
+  },
+  {
+    id: "booking-4",
+    service: "Tutor Service",
+    provider: "Tutor Farah",
+    schedule: "27 May 2024, 04:30 PM",
+    location: "Subang Jaya, Selangor",
+    status: "completed",
+    statusLabel: "Completed",
+    badgeTone: "green",
+    thumbnail: "cleaning",
+    imageSrc: buildProviderPortraitSrc({ name: "Tutor Farah", serviceKey: "tutor" }),
+  },
+  {
+    id: "booking-5",
+    service: "Plumber Service",
+    provider: "Murugan",
+    schedule: "18 May 2024, 11:15 AM",
+    location: "Shah Alam, Selangor",
+    status: "cancelled",
+    statusLabel: "Cancelled",
+    badgeTone: "slate",
+    thumbnail: "car",
+    imageSrc: buildProviderPortraitSrc({ name: "Home Pipe Expert", serviceKey: "plumber" }),
   },
 ];
 
@@ -297,20 +327,29 @@ export async function getBookings(): Promise<Booking[]> {
   }
 
   return storedBookings.map((booking) => ({
-    id: booking.id,
-    service: `${booking.serviceLabel} Service`,
-    provider: booking.providerName,
-    schedule: `${booking.dateLabel}, ${booking.timeLabel}`,
-    location: booking.location,
-    status: booking.status === "pending" ? "upcoming" : "completed",
-    statusLabel: booking.status === "pending" ? "Pending" : "Confirmed",
-    badgeTone: booking.status === "pending" ? "amber" : "green",
-    thumbnail:
-      booking.serviceKey === "chef"
-        ? "food"
-        : booking.serviceKey === "driver"
-          ? "car"
-          : "cleaning",
+    ...(function () {
+      const serviceKey = booking.serviceKey as ProviderCategoryKey;
+      return {
+        id: booking.id,
+        service: `${booking.serviceLabel} Service`,
+        provider: booking.providerName,
+        schedule: `${booking.dateLabel}, ${booking.timeLabel}`,
+        location: booking.location,
+        status: booking.status === "pending" ? "upcoming" : "completed",
+        statusLabel: booking.status === "pending" ? "Pending" : "Confirmed",
+        badgeTone: booking.status === "pending" ? "amber" : "green",
+        thumbnail:
+          serviceKey === "chef"
+            ? "food"
+            : serviceKey === "driver"
+              ? "car"
+              : "cleaning",
+        imageSrc: buildProviderPortraitSrc({
+          name: booking.providerName,
+          serviceKey,
+        }),
+      } satisfies Booking;
+    })(),
   }));
 }
 

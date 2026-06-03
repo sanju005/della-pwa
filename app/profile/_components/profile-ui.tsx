@@ -487,7 +487,7 @@ export function BookingsScreen({ bookings }: BookingsProps) {
             className="rounded-[18px] border border-[#e4ece7] bg-white p-4 shadow-[0_10px_26px_rgba(15,23,42,0.04)]"
           >
             <div className="flex gap-3">
-              <BookingThumb kind={booking.thumbnail} />
+              <BookingThumb kind={booking.thumbnail} imageSrc={booking.imageSrc} service={booking.service} />
               <div className="min-w-0 flex-1">
                 <div className="flex items-start justify-between gap-3">
                   <div>
@@ -513,6 +513,34 @@ export function BookingsScreen({ bookings }: BookingsProps) {
                 <span className={`mt-3 inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold ${badgeToneClass(booking.badgeTone)}`}>
                   {booking.statusLabel}
                 </span>
+
+                {booking.status === "upcoming" ? (
+                  <div className="mt-4 flex gap-3">
+                    <button
+                      type="button"
+                      className="inline-flex h-10 flex-1 items-center justify-center rounded-[12px] border border-[#d9e2dd] bg-white text-[13px] font-extrabold text-[#111827]"
+                    >
+                      Message
+                    </button>
+                    <button
+                      type="button"
+                      className="inline-flex h-10 flex-1 items-center justify-center rounded-[12px] bg-[#16a34a] text-[13px] font-extrabold text-white"
+                    >
+                      See Details
+                    </button>
+                  </div>
+                ) : null}
+
+                {booking.status === "completed" ? (
+                  <div className="mt-4 flex justify-end">
+                    <button
+                      type="button"
+                      className="inline-flex h-10 items-center justify-center rounded-[12px] bg-[#16a34a] px-4 text-[13px] font-extrabold text-white"
+                    >
+                      Review
+                    </button>
+                  </div>
+                ) : null}
               </div>
             </div>
           </div>
@@ -1147,13 +1175,35 @@ function NavItem({
   );
 }
 
-function BookingThumb({ kind }: { kind: string }) {
+function BookingThumb({
+  kind,
+  imageSrc,
+  service,
+}: {
+  kind: string;
+  imageSrc?: string;
+  service: string;
+}) {
   const tones =
     kind === "food"
       ? "from-amber-500 via-orange-500 to-emerald-700"
       : kind === "cleaning"
         ? "from-sky-300 via-slate-200 to-cyan-600"
         : "from-slate-800 via-slate-600 to-stone-400";
+
+  if (imageSrc) {
+    return (
+      <div className="relative h-[4.5rem] w-[4.5rem] shrink-0 overflow-hidden rounded-[14px] shadow-[0_8px_18px_rgba(15,23,42,0.16)]">
+        <Image
+          src={imageSrc}
+          alt={service}
+          fill
+          unoptimized
+          className="object-cover"
+        />
+      </div>
+    );
+  }
 
   return (
     <div className={`h-[4.5rem] w-[4.5rem] shrink-0 rounded-[14px] bg-gradient-to-br ${tones} p-2 shadow-[0_8px_18px_rgba(15,23,42,0.16)]`}>
