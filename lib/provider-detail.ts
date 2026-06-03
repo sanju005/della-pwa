@@ -31,6 +31,13 @@ type ProviderCustomerReview = {
   images: string[];
 };
 
+export type ProviderCalendarDate = {
+  isoDate: string;
+  dayNumber: number;
+  weekdayShort: string;
+  state: "available" | "booked";
+};
+
 export type ProviderDetail = ProviderListing & {
   href: string;
   profileImage: string;
@@ -44,6 +51,8 @@ export type ProviderDetail = ProviderListing & {
   about: string;
   gallery: ProviderGalleryImage[];
   availability: ProviderAvailabilitySlot[];
+  calendarMonthLabel: string;
+  calendarDates: ProviderCalendarDate[];
   customerReviews: ProviderCustomerReview[];
 };
 
@@ -176,6 +185,45 @@ function buildAvailability(serviceKey: ProviderCategoryKey): ProviderAvailabilit
   });
 }
 
+function buildCalendarDates(serviceKey: ProviderCategoryKey): {
+  monthLabel: string;
+  dates: ProviderCalendarDate[];
+} {
+  const monthBase = new Date();
+  const year = monthBase.getFullYear();
+  const month = monthBase.getMonth();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const bookedByService: Record<ProviderCategoryKey, number[]> = {
+    chef: [4, 10, 16, 22, 29],
+    maid: [6, 12, 18, 24, 28],
+    babysitter: [5, 11, 17, 23, 30],
+    driver: [3, 8, 15, 21, 27],
+    cleaner: [2, 9, 14, 20, 26],
+    tutor: [7, 13, 19, 25],
+    plumber: [1, 6, 12, 18, 24],
+    electrician: [5, 10, 16, 22, 28],
+  };
+
+  const dates: ProviderCalendarDate[] = Array.from({ length: daysInMonth }, (_, index) => {
+    const dayNumber = index + 1;
+    const date = new Date(year, month, dayNumber);
+    return {
+      isoDate: `${year}-${String(month + 1).padStart(2, "0")}-${String(dayNumber).padStart(2, "0")}`,
+      dayNumber,
+      weekdayShort: date.toLocaleDateString("en-MY", { weekday: "short" }),
+      state: bookedByService[serviceKey].includes(dayNumber) ? "booked" : "available",
+    };
+  });
+
+  return {
+    monthLabel: new Date(year, month, 1).toLocaleDateString("en-MY", {
+      month: "long",
+      year: "numeric",
+    }),
+    dates,
+  };
+}
+
 function mergeSpecialties(listing: ProviderListing) {
   const combined = [...listing.specialties, ...specialtyDefaults[listing.serviceKey]];
   return [...new Set(combined)].slice(0, 6);
@@ -261,6 +309,7 @@ function buildCustomerReviews(listing: ProviderListing): ProviderCustomerReview[
 
 function buildDetailFromListing(listing: ProviderListing): ProviderDetail {
   const captions = galleryCaptions[listing.serviceKey];
+  const calendar = buildCalendarDates(listing.serviceKey);
 
   return {
     ...listing,
@@ -293,6 +342,8 @@ function buildDetailFromListing(listing: ProviderListing): ProviderDetail {
       },
     ],
     availability: buildAvailability(listing.serviceKey),
+    calendarMonthLabel: calendar.monthLabel,
+    calendarDates: calendar.dates,
     customerReviews: buildCustomerReviews(listing),
   };
 }

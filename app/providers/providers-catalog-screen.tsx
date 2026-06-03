@@ -410,7 +410,7 @@ function ProviderCard({ listing }: { listing: CatalogScreenListing }) {
       </div>
 
       <div className="mt-4 border-t border-[#E9EEEA] pt-4">
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div className="flex items-center gap-2 rounded-[16px] bg-[#F8FCF9] px-3 py-3">
             <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#EEF9F1] text-[#16A34A]">
               <IdCard className="h-4.5 w-4.5" />
@@ -419,7 +419,7 @@ function ProviderCard({ listing }: { listing: CatalogScreenListing }) {
               <p className="text-[10px] font-semibold uppercase tracking-[0.05em] text-[#98A2B3]">
                 Verified
               </p>
-              <p className="truncate text-[12px] font-semibold text-[#0F172A]">
+              <p className="text-[12px] font-semibold text-[#0F172A]">
                 ID Verified
               </p>
             </div>
@@ -434,7 +434,7 @@ function ProviderCard({ listing }: { listing: CatalogScreenListing }) {
               <p className="text-[10px] font-semibold uppercase tracking-[0.05em] text-[#98A2B3]">
                 Contact
               </p>
-              <p className="truncate text-[12px] font-semibold text-[#0F172A]">
+              <p className="text-[12px] font-semibold text-[#0F172A]">
                 Phone Verified
               </p>
             </div>

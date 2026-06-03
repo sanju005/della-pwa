@@ -70,16 +70,30 @@ function toDateLabel(dayLabel: string, dateLabel: string) {
 export function BookingFormScreen({
   detail,
   serviceQuery,
+  initialDateQuery,
 }: {
   detail: ProviderDetail;
   serviceQuery: string | null;
+  initialDateQuery: string | null;
 }) {
   const router = useRouter();
   const availableSlots = detail.availability.filter((slot) => slot.state === "available");
   const defaultSlot = availableSlots[0] ?? detail.availability[0];
+  const queriedCalendarDate = initialDateQuery
+    ? detail.calendarDates.find((date) => date.isoDate === initialDateQuery)
+    : null;
+  const defaultDateLabel = queriedCalendarDate
+    ? `${queriedCalendarDate.weekdayShort}, ${new Date(
+        `${queriedCalendarDate.isoDate}T00:00:00`
+      ).toLocaleDateString("en-MY", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      })}`
+    : toDateLabel(defaultSlot.dayLabel, defaultSlot.dateLabel);
 
   const [bookingMode, setBookingMode] = useState<BookingMode>("hourly");
-  const [selectedDate, setSelectedDate] = useState(toDateLabel(defaultSlot.dayLabel, defaultSlot.dateLabel));
+  const [selectedDate, setSelectedDate] = useState(defaultDateLabel);
   const [startTime, setStartTime] = useState("10:00 AM");
   const [endTime, setEndTime] = useState("01:00 PM");
   const [notes, setNotes] = useState("");

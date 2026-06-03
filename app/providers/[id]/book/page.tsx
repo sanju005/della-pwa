@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 export default async function ProviderBookingPage(props: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ service?: string }>;
+  searchParams: Promise<{ service?: string; date?: string }>;
 }) {
   const params = await props.params;
   const searchParams = await props.searchParams;
@@ -17,5 +17,11 @@ export default async function ProviderBookingPage(props: {
     notFound();
   }
 
-  return <BookingFormScreen detail={detail} serviceQuery={searchParams.service ?? null} />;
+  return (
+    <BookingFormScreen
+      detail={detail}
+      serviceQuery={searchParams.service ?? null}
+      initialDateQuery={searchParams.date ?? null}
+    />
+  );
 }
