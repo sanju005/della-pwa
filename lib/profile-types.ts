@@ -17,6 +17,9 @@ export type FavoriteProvider = {
   role: string;
   initials: string;
   accent: string;
+  location?: string;
+  rating?: number;
+  priceLabel?: string;
 };
 
 export type PaymentMethod = {

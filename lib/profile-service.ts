@@ -30,6 +30,9 @@ const favoriteProviders = [
     role: "Chef",
     initials: "CA",
     accent: "from-emerald-500 to-green-700",
+    location: "Kajang, Selangor",
+    rating: 4.9,
+    priceLabel: "RM260",
   },
   {
     id: "maid-siti",
@@ -37,6 +40,9 @@ const favoriteProviders = [
     role: "Cleaning",
     initials: "MS",
     accent: "from-teal-500 to-emerald-700",
+    location: "Setapak, Kuala Lumpur",
+    rating: 4.8,
+    priceLabel: "RM180",
   },
   {
     id: "driver-kumar",
@@ -44,6 +50,29 @@ const favoriteProviders = [
     role: "Driver",
     initials: "DK",
     accent: "from-sky-500 to-slate-700",
+    location: "Ampang, Selangor",
+    rating: 4.7,
+    priceLabel: "RM205",
+  },
+  {
+    id: "plumber-murugan",
+    name: "Murugan",
+    role: "Plumber",
+    initials: "MU",
+    accent: "from-orange-500 to-amber-700",
+    location: "Shah Alam, Selangor",
+    rating: 4.8,
+    priceLabel: "RM360",
+  },
+  {
+    id: "tutor-farah",
+    name: "Tutor Farah",
+    role: "Tutor",
+    initials: "TF",
+    accent: "from-violet-500 to-fuchsia-700",
+    location: "Subang Jaya, Selangor",
+    rating: 4.8,
+    priceLabel: "RM260",
   },
 ];
 
@@ -275,4 +304,8 @@ export async function getProfileSettings(): Promise<SettingGroup[]> {
 
 export async function getPaymentHistory(): Promise<PaymentHistoryItem[]> {
   return structuredClone(paymentHistory);
+}
+
+export async function getFavoriteProviders() {
+  return structuredClone(favoriteProviders);
 }

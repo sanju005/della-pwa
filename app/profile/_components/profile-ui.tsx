@@ -17,6 +17,7 @@ import type {
   Booking,
   BookingStatus,
   CustomerProfile,
+  FavoriteProvider,
   PaymentHistoryItem,
   ProfileOverviewData,
   SettingGroup,
@@ -52,6 +53,10 @@ type SettingsProps = {
 
 type PaymentsProps = {
   payments: PaymentHistoryItem[];
+};
+
+type FavoritesProps = {
+  providers: FavoriteProvider[];
 };
 
 export function ProfileShell({
@@ -136,7 +141,7 @@ export function ProfileOverviewScreen({ initialData }: OverviewProps) {
 
       <SectionCard
         title="Favourite Providers"
-        actionHref="/profile/bookings"
+        actionHref="/profile/favourites"
         actionLabel="View All"
       >
         <div className="flex items-start justify-between gap-3">
@@ -201,6 +206,65 @@ export function ProfileOverviewScreen({ initialData }: OverviewProps) {
           value={initialData.paymentSummary.lastPaymentLabel}
         />
       </SectionCard>
+    </ProfileShell>
+  );
+}
+
+export function FavoritesScreen({ providers }: FavoritesProps) {
+  return (
+    <ProfileShell title="Favourite Providers" showBack backHref="/profile">
+      <div className="space-y-4">
+        {providers.map((provider) => (
+          <div
+            key={provider.id}
+            className="rounded-[18px] border border-[#e4ece7] bg-white p-4 shadow-[0_10px_26px_rgba(15,23,42,0.04)]"
+          >
+            <div className="flex items-start gap-4">
+              <AvatarCircle
+                initials={provider.initials}
+                size="lg"
+                accent={provider.accent}
+              />
+              <div className="min-w-0 flex-1">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <h2 className="text-[16px] font-extrabold text-[#111827]">
+                      {provider.name}
+                    </h2>
+                    <p className="mt-1 text-[13px] font-semibold text-[#16a34a]">
+                      {provider.role}
+                    </p>
+                  </div>
+                  <span className="rounded-full bg-[#e9f9ec] px-2.5 py-1 text-[12px] font-bold text-[#16a34a]">
+                    Favourite
+                  </span>
+                </div>
+
+                <div className="mt-3 grid grid-cols-2 gap-3 text-[13px] text-[#4b5563]">
+                  <p>
+                    Rating:{" "}
+                    <span className="font-semibold text-[#111827]">
+                      {provider.rating?.toFixed(1) ?? "4.8"}
+                    </span>
+                  </p>
+                  <p>
+                    From:{" "}
+                    <span className="font-semibold text-[#111827]">
+                      {provider.priceLabel ?? "RM200"}
+                    </span>
+                  </p>
+                  <p className="col-span-2">
+                    Location:{" "}
+                    <span className="font-semibold text-[#111827]">
+                      {provider.location ?? "Kuala Lumpur"}
+                    </span>
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
     </ProfileShell>
   );
 }
@@ -1006,7 +1070,7 @@ function BottomNav() {
         <NavItem href="/home" label="Home" icon={<HomeIcon className="h-5 w-5" />} active={pathname === "/home"} />
         <NavItem href="/profile/bookings" label="Bookings" icon={<CalendarIcon className="h-5 w-5" />} active={pathname.startsWith("/profile/bookings")} />
         <NavItem href="/profile/messages" label="Messages" icon={<MessageIcon className="h-5 w-5" />} active={pathname.startsWith("/profile/messages")} />
-        <NavItem href="/profile" label="Favourite" icon={<UserIcon className="h-5 w-5" />} active={pathname === "/profile"} />
+        <NavItem href="/profile/favourites" label="Favourite" icon={<UserIcon className="h-5 w-5" />} active={pathname.startsWith("/profile/favourites")} />
         <NavItem href="/profile" label="Profile" icon={<UserIcon className="h-5 w-5" />} active={pathname === "/profile" || pathname.startsWith("/profile/edit") || pathname.startsWith("/profile/addresses") || pathname.startsWith("/profile/settings")} />
       </div>
     </nav>
