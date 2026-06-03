@@ -67,6 +67,9 @@ export type Booking = {
   badgeTone: "green" | "amber" | "slate";
   thumbnail: string;
   imageSrc?: string;
+  paymentAmount?: number;
+  paymentMethod?: string;
+  notes?: string;
 };
 
 export type SettingItem = {

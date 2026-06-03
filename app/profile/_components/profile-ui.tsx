@@ -60,6 +60,10 @@ type FavoritesProps = {
   providers: FavoriteProvider[];
 };
 
+type BookingDetailProps = {
+  booking: Booking;
+};
+
 export function ProfileShell({
   children,
   title,
@@ -522,12 +526,12 @@ export function BookingsScreen({ bookings }: BookingsProps) {
                     >
                       Message
                     </button>
-                    <button
-                      type="button"
+                    <Link
+                      href={`/profile/bookings/${booking.id}`}
                       className="inline-flex h-10 flex-1 items-center justify-center rounded-[12px] bg-[#16a34a] text-[13px] font-extrabold text-white"
                     >
                       See Details
-                    </button>
+                    </Link>
                   </div>
                 ) : null}
 
@@ -595,6 +599,60 @@ export function SettingsScreen({ groups }: SettingsProps) {
           </SectionCard>
         ))}
       </div>
+    </ProfileShell>
+  );
+}
+
+export function BookingDetailScreen({ booking }: BookingDetailProps) {
+  return (
+    <ProfileShell title="Booking Details" showBack backHref="/profile/bookings">
+      <div className="rounded-[18px] border border-[#e4ece7] bg-white p-4 shadow-[0_10px_26px_rgba(15,23,42,0.04)]">
+        <div className="flex gap-4">
+          <BookingThumb kind={booking.thumbnail} imageSrc={booking.imageSrc} service={booking.service} />
+          <div className="min-w-0 flex-1">
+            <h2 className="text-[18px] font-extrabold text-[#111827]">
+              {booking.service}
+            </h2>
+            <p className="mt-1 text-[14px] text-[#4b5563]">{booking.provider}</p>
+            <span className={`mt-3 inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold ${badgeToneClass(booking.badgeTone)}`}>
+              {booking.statusLabel}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <SectionCard title="Schedule & Location">
+        <ProfileInfoRow
+          icon={<CalendarIcon className="h-4 w-4" />}
+          label="Date & Time"
+          value={booking.schedule}
+        />
+        <ProfileInfoRow
+          icon={<PinIcon className="h-4 w-4" />}
+          label="Location"
+          value={booking.location}
+        />
+      </SectionCard>
+
+      <SectionCard title="Payment">
+        <ProfileInfoRow
+          icon={<WalletIcon className="h-4 w-4" />}
+          label="Amount Paid"
+          value={`RM${booking.paymentAmount ?? 0}`}
+          valueTone="green"
+        />
+        <ProfileInfoRow
+          icon={<WalletIcon className="h-4 w-4" />}
+          label="Payment Method"
+          value={booking.paymentMethod ?? "Not available"}
+        />
+      </SectionCard>
+
+      <SectionCard title="Notes">
+        <p className="text-[14px] leading-6 text-[#374151]">
+          {booking.notes || "No additional note added for this booking."}
+        </p>
+      </SectionCard>
     </ProfileShell>
   );
 }

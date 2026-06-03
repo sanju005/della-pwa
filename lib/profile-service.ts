@@ -206,6 +206,9 @@ const bookings: Booking[] = [
     badgeTone: "green",
     thumbnail: "food",
     imageSrc: buildProviderPortraitSrc({ name: "Chef Amina", serviceKey: "chef" }),
+    paymentAmount: 260,
+    paymentMethod: "Card / FPX",
+    notes: "Dinner setup for 4 people",
   },
   {
     id: "booking-2",
@@ -218,6 +221,9 @@ const bookings: Booking[] = [
     badgeTone: "amber",
     thumbnail: "cleaning",
     imageSrc: buildProviderPortraitSrc({ name: "Siti Maid Service", serviceKey: "maid" }),
+    paymentAmount: 180,
+    paymentMethod: "Cash",
+    notes: "Please bring vacuum and cleaning supplies",
   },
   {
     id: "booking-3",
@@ -230,6 +236,9 @@ const bookings: Booking[] = [
     badgeTone: "green",
     thumbnail: "car",
     imageSrc: buildProviderPortraitSrc({ name: "Driver Kumar", serviceKey: "driver" }),
+    paymentAmount: 205,
+    paymentMethod: "Card / FPX",
+    notes: "Airport drop-off completed successfully",
   },
   {
     id: "booking-4",
@@ -242,6 +251,9 @@ const bookings: Booking[] = [
     badgeTone: "green",
     thumbnail: "cleaning",
     imageSrc: buildProviderPortraitSrc({ name: "Tutor Farah", serviceKey: "tutor" }),
+    paymentAmount: 260,
+    paymentMethod: "Online Transfer",
+    notes: "Weekly math lesson package",
   },
   {
     id: "booking-5",
@@ -254,6 +266,9 @@ const bookings: Booking[] = [
     badgeTone: "slate",
     thumbnail: "car",
     imageSrc: buildProviderPortraitSrc({ name: "Home Pipe Expert", serviceKey: "plumber" }),
+    paymentAmount: 0,
+    paymentMethod: "Not charged",
+    notes: "Booking cancelled by customer before visit",
   },
 ];
 
@@ -348,9 +363,17 @@ export async function getBookings(): Promise<Booking[]> {
           name: booking.providerName,
           serviceKey,
         }),
+        paymentAmount: booking.totalAmount,
+        paymentMethod: booking.bookingMode === "hourly" ? "Card / FPX" : "Cash",
+        notes: booking.notes,
       } satisfies Booking;
     })(),
   }));
+}
+
+export async function getBookingById(id: string): Promise<Booking | null> {
+  const allBookings = await getBookings();
+  return allBookings.find((booking) => booking.id === id) ?? null;
 }
 
 export async function getProfileSettings(): Promise<SettingGroup[]> {
