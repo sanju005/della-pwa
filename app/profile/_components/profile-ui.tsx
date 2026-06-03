@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 
 import { LiveLocationChip } from "@/app/_components/live-location-chip";
 import {
+  loadSavedPlaces,
   loadStoredLiveLocation,
   resolveCurrentLiveLocation,
   type StoredLiveLocation,
@@ -448,6 +449,9 @@ function LocationSettingsCard() {
   const [location, setLocation] = useState<StoredLiveLocation | null>(() =>
     loadStoredLiveLocation()
   );
+  const [savedPlaces, setSavedPlaces] = useState<StoredLiveLocation[]>(() =>
+    loadSavedPlaces()
+  );
   const [isLocating, setIsLocating] = useState(false);
   const [statusMessage, setStatusMessage] = useState("");
 
@@ -463,6 +467,7 @@ function LocationSettingsCard() {
         }
 
         setLocation(nextLocation);
+        setSavedPlaces(loadSavedPlaces());
         setStatusMessage("Current location updated successfully.");
       })
       .catch(() => {
@@ -499,7 +504,14 @@ function LocationSettingsCard() {
             <LiveLocationChip
               fallbackLabel={location?.label ?? "No live location saved yet"}
               className="text-[14px] font-semibold"
-              onLocationChange={setLocation}
+              onLocationChange={(nextLocation) => {
+                setLocation(nextLocation);
+                setSavedPlaces(loadSavedPlaces());
+              }}
+              onLocationClear={() => {
+                setLocation(null);
+                setSavedPlaces(loadSavedPlaces());
+              }}
             />
           </div>
           {location ? (
@@ -546,6 +558,39 @@ function LocationSettingsCard() {
               <p className="text-[13px] text-[#2563eb]">
                 {location.pickupNote || "No pickup note added yet"}
               </p>
+            </div>
+          </div>
+        ) : null}
+
+        {savedPlaces.length > 0 ? (
+          <div className="mt-4 rounded-[18px] border border-[#e4ece7] bg-white p-4 shadow-[0_10px_26px_rgba(15,23,42,0.04)]">
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="text-[14px] font-extrabold text-[#111827]">
+                Saved Places
+              </h3>
+              <span className="text-[12px] font-semibold text-[#6b7280]">
+                {savedPlaces.length} saved
+              </span>
+            </div>
+            <div className="space-y-3">
+              {savedPlaces.map((place) => (
+                <div
+                  key={place.id}
+                  className="rounded-[14px] border border-[#edf1ef] px-3 py-3"
+                >
+                  <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-[#6b7280]">
+                    {place.addressLabel ?? "Place"}
+                  </p>
+                  <p className="mt-1 text-[15px] font-bold text-[#111827]">
+                    {[place.houseNumber, place.buildingName || place.label]
+                      .filter(Boolean)
+                      .join(", ")}
+                  </p>
+                  <p className="mt-1 text-[13px] text-[#4b5563]">
+                    {place.formattedAddress ?? place.label}
+                  </p>
+                </div>
+              ))}
             </div>
           </div>
         ) : null}
