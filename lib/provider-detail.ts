@@ -3,6 +3,7 @@ import "server-only";
 import { cache } from "react";
 import {
   buildProviderDetailHref,
+  buildProviderPortraitSrc,
   getProviderCatalog,
   type ProviderCategoryKey,
   type ProviderListing,
@@ -177,7 +178,7 @@ function buildDetailFromListing(listing: ProviderListing): ProviderDetail {
     ...listing,
     href: buildProviderDetailHref(listing),
     title: titleForService(listing.serviceKey),
-    profileImage: providerMediaUrl(listing.serviceKey, "portrait"),
+    profileImage: buildProviderPortraitSrc(listing),
     reviewsLabel: `${listing.rating.toFixed(1)} (${listing.reviews} reviews)`,
     jobsCompleted: Math.max(listing.reviews, 12),
     locationFull: `${listing.location}, Malaysia`,
