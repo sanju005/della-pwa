@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState, useTransition } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { LiveLocationChip } from "@/app/_components/live-location-chip";
 import {
@@ -143,9 +143,9 @@ export function ProfileOverviewScreen({ initialData }: OverviewProps) {
         actionHref="/profile/bookings"
         actionLabel="View All"
       >
-        <ProfileInfoRow icon={<CalendarIcon className="h-4 w-4" />} label="Upcoming Bookings" value={String(initialData.bookingSummary.upcoming)} valueTone="green" />
-        <ProfileInfoRow icon={<CheckCircleIcon className="h-4 w-4" />} label="Completed Bookings" value={String(initialData.bookingSummary.completed)} valueTone="green" />
-        <ProfileInfoRow icon={<CloseCircleIcon className="h-4 w-4" />} label="Cancelled Bookings" value={String(initialData.bookingSummary.cancelled)} valueTone="green" />
+        <ProfileInfoRow icon={<CalendarIcon className="h-4 w-4" />} label="Upcoming Bookings" value={String(initialData.bookingSummary.upcoming)} valueTone="green" href="/profile/bookings?tab=upcoming" />
+        <ProfileInfoRow icon={<CheckCircleIcon className="h-4 w-4" />} label="Completed Bookings" value={String(initialData.bookingSummary.completed)} valueTone="green" href="/profile/bookings?tab=completed" />
+        <ProfileInfoRow icon={<CloseCircleIcon className="h-4 w-4" />} label="Cancelled Bookings" value={String(initialData.bookingSummary.cancelled)} valueTone="green" href="/profile/bookings?tab=cancelled" />
       </SectionCard>
 
       <SectionCard
@@ -462,7 +462,13 @@ export function AddressesScreen({ addresses }: AddressesProps) {
 }
 
 export function BookingsScreen({ bookings }: BookingsProps) {
-  const [activeTab, setActiveTab] = useState<BookingStatus>("upcoming");
+  const searchParams = useSearchParams();
+  const requestedTab = searchParams.get("tab");
+  const initialTab: BookingStatus =
+    requestedTab === "completed" || requestedTab === "cancelled" || requestedTab === "upcoming"
+      ? requestedTab
+      : "upcoming";
+  const [activeTab, setActiveTab] = useState<BookingStatus>(initialTab);
 
   const filtered = useMemo(
     () => bookings.filter((booking) => booking.status === activeTab),
@@ -1294,14 +1300,16 @@ function ProfileInfoRow({
   label,
   value,
   valueTone = "default",
+  href,
 }: {
   icon: React.ReactNode;
   label: string;
   value: string;
   valueTone?: "default" | "green";
+  href?: string;
 }) {
-  return (
-    <div className="flex items-center justify-between gap-3 border-t border-[#edf1ef] py-3 first:border-t-0 first:pt-0 last:pb-0">
+  const content = (
+    <>
       <div className="flex items-center gap-3 text-[14px] text-[#111827]">
         <span className="text-[#16a34a]">{icon}</span>
         <span>{label}</span>
@@ -1315,6 +1323,23 @@ function ProfileInfoRow({
       >
         {value}
       </span>
+    </>
+  );
+
+  if (href) {
+    return (
+      <Link
+        href={href}
+        className="flex items-center justify-between gap-3 border-t border-[#edf1ef] py-3 first:border-t-0 first:pt-0 last:pb-0"
+      >
+        {content}
+      </Link>
+    );
+  }
+
+  return (
+    <div className="flex items-center justify-between gap-3 border-t border-[#edf1ef] py-3 first:border-t-0 first:pt-0 last:pb-0">
+      {content}
     </div>
   );
 }
