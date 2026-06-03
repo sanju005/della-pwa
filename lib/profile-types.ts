@@ -70,6 +70,10 @@ export type Booking = {
   paymentAmount?: number;
   paymentMethod?: string;
   notes?: string;
+  activitySteps?: Array<{
+    label: string;
+    status: "done" | "current" | "pending";
+  }>;
 };
 
 export type SettingItem = {

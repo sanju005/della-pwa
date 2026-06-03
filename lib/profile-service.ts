@@ -209,6 +209,14 @@ const bookings: Booking[] = [
     paymentAmount: 260,
     paymentMethod: "Card / FPX",
     notes: "Dinner setup for 4 people",
+    activitySteps: [
+      { label: "Accepted", status: "done" },
+      { label: "Confirmed", status: "current" },
+      { label: "On the way", status: "pending" },
+      { label: "Arrived", status: "pending" },
+      { label: "Task Completed", status: "pending" },
+      { label: "Payment Done", status: "pending" },
+    ],
   },
   {
     id: "booking-2",
@@ -224,6 +232,14 @@ const bookings: Booking[] = [
     paymentAmount: 180,
     paymentMethod: "Cash",
     notes: "Please bring vacuum and cleaning supplies",
+    activitySteps: [
+      { label: "Accepted", status: "current" },
+      { label: "Confirmed", status: "pending" },
+      { label: "On the way", status: "pending" },
+      { label: "Arrived", status: "pending" },
+      { label: "Task Completed", status: "pending" },
+      { label: "Payment Done", status: "pending" },
+    ],
   },
   {
     id: "booking-3",
@@ -239,6 +255,14 @@ const bookings: Booking[] = [
     paymentAmount: 205,
     paymentMethod: "Card / FPX",
     notes: "Airport drop-off completed successfully",
+    activitySteps: [
+      { label: "Accepted", status: "done" },
+      { label: "Confirmed", status: "done" },
+      { label: "On the way", status: "done" },
+      { label: "Arrived", status: "done" },
+      { label: "Task Completed", status: "done" },
+      { label: "Payment Done", status: "done" },
+    ],
   },
   {
     id: "booking-4",
@@ -254,6 +278,14 @@ const bookings: Booking[] = [
     paymentAmount: 260,
     paymentMethod: "Online Transfer",
     notes: "Weekly math lesson package",
+    activitySteps: [
+      { label: "Accepted", status: "done" },
+      { label: "Confirmed", status: "done" },
+      { label: "On the way", status: "done" },
+      { label: "Arrived", status: "done" },
+      { label: "Task Completed", status: "done" },
+      { label: "Payment Done", status: "done" },
+    ],
   },
   {
     id: "booking-5",
@@ -269,6 +301,14 @@ const bookings: Booking[] = [
     paymentAmount: 0,
     paymentMethod: "Not charged",
     notes: "Booking cancelled by customer before visit",
+    activitySteps: [
+      { label: "Accepted", status: "done" },
+      { label: "Confirmed", status: "pending" },
+      { label: "On the way", status: "pending" },
+      { label: "Arrived", status: "pending" },
+      { label: "Task Completed", status: "pending" },
+      { label: "Payment Done", status: "pending" },
+    ],
   },
 ];
 
@@ -366,6 +406,24 @@ export async function getBookings(): Promise<Booking[]> {
         paymentAmount: booking.totalAmount,
         paymentMethod: booking.bookingMode === "hourly" ? "Card / FPX" : "Cash",
         notes: booking.notes,
+        activitySteps:
+          booking.status === "pending"
+            ? [
+                { label: "Accepted", status: "done" },
+                { label: "Confirmed", status: "current" },
+                { label: "On the way", status: "pending" },
+                { label: "Arrived", status: "pending" },
+                { label: "Task Completed", status: "pending" },
+                { label: "Payment Done", status: "pending" },
+              ]
+            : [
+                { label: "Accepted", status: "done" },
+                { label: "Confirmed", status: "done" },
+                { label: "On the way", status: "done" },
+                { label: "Arrived", status: "done" },
+                { label: "Task Completed", status: "done" },
+                { label: "Payment Done", status: "done" },
+              ],
       } satisfies Booking;
     })(),
   }));

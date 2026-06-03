@@ -634,6 +634,55 @@ export function BookingDetailScreen({ booking }: BookingDetailProps) {
         />
       </SectionCard>
 
+      <SectionCard title="Booking Activity">
+        <div className="space-y-4">
+          {(booking.activitySteps ?? []).map((step, index, steps) => (
+            <div key={step.label} className="flex gap-3">
+              <div className="flex flex-col items-center">
+                <span
+                  className={`inline-flex h-6 w-6 items-center justify-center rounded-full border-2 ${
+                    step.status === "done"
+                      ? "border-[#16a34a] bg-[#16a34a] text-white"
+                      : step.status === "current"
+                        ? "border-[#16a34a] bg-white text-[#16a34a]"
+                        : "border-[#d9e2dd] bg-white text-[#98a2b3]"
+                  }`}
+                >
+                  {step.status === "done" ? (
+                    <CheckCircleIcon className="h-3.5 w-3.5" />
+                  ) : (
+                    <span className="h-2 w-2 rounded-full bg-current" />
+                  )}
+                </span>
+                {index < steps.length - 1 ? (
+                  <span
+                    className={`mt-1 h-8 w-[2px] ${
+                      step.status === "done" ? "bg-[#16a34a]" : "bg-[#e5e7eb]"
+                    }`}
+                  />
+                ) : null}
+              </div>
+              <div className="pt-0.5">
+                <p
+                  className={`text-[14px] font-semibold ${
+                    step.status === "pending" ? "text-[#98a2b3]" : "text-[#111827]"
+                  }`}
+                >
+                  {step.label}
+                </p>
+                <p className="mt-1 text-[12px] text-[#6b7280]">
+                  {step.status === "done"
+                    ? "Completed"
+                    : step.status === "current"
+                      ? "Current step"
+                      : "Waiting"}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </SectionCard>
+
       <SectionCard title="Payment">
         <ProfileInfoRow
           icon={<WalletIcon className="h-4 w-4" />}
