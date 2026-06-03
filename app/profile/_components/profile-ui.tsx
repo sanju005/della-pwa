@@ -64,6 +64,10 @@ type BookingDetailProps = {
   booking: Booking;
 };
 
+type BookingReviewProps = {
+  booking: Booking;
+};
+
 export function ProfileShell({
   children,
   title,
@@ -518,6 +522,19 @@ export function BookingsScreen({ bookings }: BookingsProps) {
                   {booking.statusLabel}
                 </span>
 
+                {booking.status === "cancelled" ? (
+                  <div className="mt-3 space-y-1.5 rounded-[14px] bg-[#f8fafc] px-3 py-2.5 text-[12px] leading-5 text-[#475569]">
+                    <p>
+                      <span className="font-extrabold text-[#111827]">Cancelled by:</span>{" "}
+                      {booking.cancelledBy ?? "Not specified"}
+                    </p>
+                    <p>
+                      <span className="font-extrabold text-[#111827]">Reason:</span>{" "}
+                      {booking.cancellationReason ?? "No reason shared."}
+                    </p>
+                  </div>
+                ) : null}
+
                 {booking.status === "upcoming" ? (
                   <div className="mt-4 flex gap-3">
                     <button
@@ -537,12 +554,12 @@ export function BookingsScreen({ bookings }: BookingsProps) {
 
                 {booking.status === "completed" ? (
                   <div className="mt-4 flex justify-end">
-                    <button
-                      type="button"
+                    <Link
+                      href={`/profile/bookings/${booking.id}/review`}
                       className="inline-flex h-10 items-center justify-center rounded-[12px] bg-[#16a34a] px-4 text-[13px] font-extrabold text-white"
                     >
                       Review
-                    </button>
+                    </Link>
                   </div>
                 ) : null}
               </div>
@@ -697,11 +714,134 @@ export function BookingDetailScreen({ booking }: BookingDetailProps) {
         />
       </SectionCard>
 
+      {booking.status === "cancelled" ? (
+        <SectionCard title="Cancellation Details">
+          <ProfileInfoRow
+            icon={<CloseCircleIcon className="h-4 w-4" />}
+            label="Cancelled By"
+            value={booking.cancelledBy ?? "Not specified"}
+          />
+          <div className="border-t border-[#edf1ef] pt-3">
+            <p className="text-[13px] font-semibold text-[#111827]">Reason</p>
+            <p className="mt-2 text-[14px] leading-6 text-[#374151]">
+              {booking.cancellationReason ?? "No cancellation reason shared."}
+            </p>
+          </div>
+        </SectionCard>
+      ) : null}
+
       <SectionCard title="Notes">
         <p className="text-[14px] leading-6 text-[#374151]">
           {booking.notes || "No additional note added for this booking."}
         </p>
       </SectionCard>
+
+      {booking.status === "completed" ? (
+        <div className="mt-5">
+          <Link
+            href={`/profile/bookings/${booking.id}/review`}
+            className="inline-flex h-11 w-full items-center justify-center rounded-[12px] bg-[#16a34a] text-[15px] font-extrabold text-white shadow-[0_16px_30px_rgba(22,163,74,0.22)]"
+          >
+            Review This Service
+          </Link>
+        </div>
+      ) : null}
+    </ProfileShell>
+  );
+}
+
+export function BookingReviewScreen({ booking }: BookingReviewProps) {
+  const [rating, setRating] = useState(0);
+  const [comment, setComment] = useState("");
+  const [photos, setPhotos] = useState<string[]>([]);
+  const [submitted, setSubmitted] = useState(false);
+
+  return (
+    <ProfileShell title="Write Review" showBack backHref={`/profile/bookings/${booking.id}`}>
+      <div className="rounded-[18px] border border-[#e4ece7] bg-white p-4 shadow-[0_10px_26px_rgba(15,23,42,0.04)]">
+        <div className="flex gap-4">
+          <BookingThumb kind={booking.thumbnail} imageSrc={booking.imageSrc} service={booking.service} />
+          <div className="min-w-0 flex-1">
+            <h2 className="text-[17px] font-extrabold text-[#111827]">
+              {booking.provider}
+            </h2>
+            <p className="mt-1 text-[14px] text-[#16a34a]">{booking.service}</p>
+            <p className="mt-2 text-[13px] text-[#4b5563]">{booking.location}</p>
+          </div>
+        </div>
+      </div>
+
+      <SectionCard title="Rate Provider">
+        <div className="flex items-center gap-2">
+          {[1, 2, 3, 4, 5].map((value) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => setRating(value)}
+              className="text-[#f59e0b]"
+              aria-label={`Rate ${value} stars`}
+            >
+              <StarIcon
+                className={`h-8 w-8 ${
+                  value <= rating ? "fill-current text-[#f59e0b]" : "text-[#d0d5dd]"
+                }`}
+              />
+            </button>
+          ))}
+        </div>
+        <p className="mt-3 text-[13px] text-[#6b7280]">
+          {rating > 0 ? `You selected ${rating} star${rating > 1 ? "s" : ""}.` : "Tap a star to rate this service."}
+        </p>
+      </SectionCard>
+
+      <SectionCard title="Add Photos">
+        <label className="inline-flex h-11 w-full cursor-pointer items-center justify-center rounded-[12px] border border-dashed border-[#16a34a] bg-[#fbfffc] text-[14px] font-extrabold text-[#16a34a]">
+          Upload Review Photos
+          <input
+            type="file"
+            accept="image/*"
+            multiple
+            className="hidden"
+            onChange={(event) => {
+              const files = Array.from(event.target.files ?? []).map((file) => file.name);
+              setPhotos(files);
+            }}
+          />
+        </label>
+        <div className="mt-3 grid grid-cols-3 gap-3">
+          {(photos.length > 0 ? photos : ["Food setup", "Work result", "Provider arrival"]).map((photo, index) => (
+            <div
+              key={`${photo}-${index}`}
+              className="flex aspect-square items-center justify-center rounded-[14px] border border-[#e4ece7] bg-[#f8fcf9] px-2 text-center text-[12px] font-semibold text-[#4b5563]"
+            >
+              {photo}
+            </div>
+          ))}
+        </div>
+      </SectionCard>
+
+      <SectionCard title="Comment">
+        <textarea
+          value={comment}
+          onChange={(event) => setComment(event.target.value)}
+          placeholder="Share your experience with this service provider"
+          className="min-h-[8rem] w-full rounded-[14px] border border-[#d9e2dd] px-4 py-3 text-[14px] text-[#111827] outline-none"
+        />
+      </SectionCard>
+
+      {submitted ? (
+        <p className="mt-4 text-center text-[13px] font-semibold text-[#16a34a]">
+          Review submitted successfully.
+        </p>
+      ) : null}
+
+      <button
+        type="button"
+        onClick={() => setSubmitted(true)}
+        className="mt-5 inline-flex h-11 w-full items-center justify-center rounded-[12px] bg-[#16a34a] text-[15px] font-extrabold text-white shadow-[0_16px_30px_rgba(22,163,74,0.22)]"
+      >
+        Submit Review
+      </button>
     </ProfileShell>
   );
 }
@@ -1620,6 +1760,14 @@ function FavoriteHeartIcon({ className }: { className?: string }) {
       <path
         d="M12 20.4s-6.7-4.2-9.2-8.1C.9 9.3 2 5.6 5.4 4.8c2-.5 4 .2 5.2 1.8 1.2-1.6 3.2-2.3 5.2-1.8 3.4.8 4.5 4.5 2.6 7.5-2.5 3.9-9.2 8.1-9.2 8.1Z"
       />
+    </svg>
+  );
+}
+
+function StarIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className={className}>
+      <path d="m12 3.5 2.7 5.47 6.03.88-4.36 4.25 1.03 6-5.4-2.84-5.4 2.84 1.03-6L3.27 9.85l6.03-.88L12 3.5Z" />
     </svg>
   );
 }

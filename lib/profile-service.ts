@@ -300,7 +300,9 @@ const bookings: Booking[] = [
     imageSrc: buildProviderPortraitSrc({ name: "Home Pipe Expert", serviceKey: "plumber" }),
     paymentAmount: 0,
     paymentMethod: "Not charged",
-    notes: "Booking cancelled by customer before visit",
+    notes: "Booking was cancelled before the scheduled visit.",
+    cancelledBy: "Service provider",
+    cancellationReason: "Not available that day due to urgent work.",
     activitySteps: [
       { label: "Accepted", status: "done" },
       { label: "Confirmed", status: "pending" },
