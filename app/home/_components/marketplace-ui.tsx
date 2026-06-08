@@ -379,7 +379,7 @@ function PopularProviderCard({
         <div className="mt-8 flex items-end justify-between gap-3 border-t border-[#e8eeea] pt-6">
           <div className="min-w-0 flex-1">
             <p className="text-[14px] font-medium text-[#667085]">From</p>
-            <p className="mt-2 text-[1.95rem] font-extrabold leading-none tracking-[-0.05em] text-[#16a34a]">
+            <p className="mt-2 text-[1.85rem] font-semibold leading-none tracking-[-0.04em] text-[#16a34a]">
               {priceLabel}
             </p>
           </div>
