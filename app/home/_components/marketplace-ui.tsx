@@ -289,7 +289,7 @@ function ProviderSliderSection({
           {providers.map((provider) => (
             <div
               key={`${title}-${provider.id}`}
-              className="w-[calc(100vw-2.5rem)] max-w-[24.375rem] shrink-0"
+              className="w-[calc(100vw-4.25rem)] max-w-[21.5rem] shrink-0"
             >
               <PopularProviderCard
                 href={buildProviderDetailHref({
@@ -336,7 +336,7 @@ function PopularProviderCard({
 }) {
   return (
     <article className="mx-auto w-full max-w-[390px] rounded-[28px] bg-white p-6 text-left shadow-[0_18px_48px_rgba(15,23,42,0.08)]">
-      <div className="relative h-[260px] overflow-hidden rounded-[16px] bg-[#eef4ef]">
+      <div className="relative h-[210px] overflow-hidden rounded-[16px] bg-[#eef4ef]">
         <Image
           src={portraitSrc}
           alt={name}
