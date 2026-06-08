@@ -136,11 +136,11 @@ export function ProvidersCatalogScreen({ data }: { data: CatalogScreenData }) {
           <header className="flex items-center justify-between gap-3">
             <Link
               href="/home"
-              className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-[#f4faf5] text-[#0F172A]"
+              className="inline-flex h-[3.25rem] w-[3.25rem] items-center justify-center rounded-[18px] border border-[#e3ebe6] bg-white text-[#0F172A] shadow-[0_10px_24px_rgba(15,23,42,0.04)]"
             >
               <ArrowLeft className="h-6 w-6" />
             </Link>
-            <LiveLocationChip fallbackLabel="Current location" />
+            <LiveLocationChip fallbackLabel="Current location" className="flex-1 min-w-0" />
           </header>
 
           <section className="mt-8">

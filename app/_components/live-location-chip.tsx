@@ -96,15 +96,15 @@ export function LiveLocationChip({
       <button
         type="button"
         onClick={() => setIsPickerOpen(true)}
-        className={`flex items-center gap-2 text-[15px] font-semibold text-[#0F172A] ${className}`.trim()}
+        className={`flex min-h-[3.25rem] items-center gap-2.5 rounded-[18px] border border-[#e3ebe6] bg-white px-4 text-[15px] font-semibold text-[#0F172A] shadow-[0_10px_24px_rgba(15,23,42,0.04)] ${className}`.trim()}
         title={locationTitle}
       >
-        <MapPin className="h-5 w-5 shrink-0 fill-[#16A34A] text-[#16A34A]" />
+        <MapPin className="h-5.5 w-5.5 shrink-0 fill-[#16A34A] text-[#16A34A]" />
         <span className="truncate">{activeLabel}</span>
         {isLoading ? (
-          <LoaderCircle className="h-4 w-4 shrink-0 animate-spin text-[#16A34A]" />
+          <LoaderCircle className="h-4.5 w-4.5 shrink-0 animate-spin text-[#16A34A]" />
         ) : (
-          <ChevronDown className="h-4 w-4 shrink-0" />
+          <ChevronDown className="h-4.5 w-4.5 shrink-0 text-[#667085]" />
         )}
       </button>
 
