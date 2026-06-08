@@ -1,19 +1,25 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import {
   Bell,
   BookOpen,
   BriefcaseBusiness,
+  CreditCard,
   ChevronRight,
   CircleUserRound,
   CookingPot,
   House,
+  MapPin,
   MessageCircleMore,
   Search,
+  Smartphone,
+  Star,
   SprayCan,
   UserRound,
+  User,
   Wrench,
   Baby,
   CarFront,
@@ -24,7 +30,6 @@ import {
 import {
   BottomNav,
   EmptyState,
-  PremiumProviderCard as SharedProviderCard,
   SectionTitle,
   StatusBadge,
 } from "@/app/_components/della-ui";
@@ -286,7 +291,7 @@ function ProviderSliderSection({
               key={`${title}-${provider.id}`}
               className="w-[calc(100vw-2.5rem)] max-w-[24.375rem] shrink-0"
             >
-              <SharedProviderCard
+              <PopularProviderCard
                 href={buildProviderDetailHref({
                   id: provider.id,
                   serviceKey: provider.serviceKey,
@@ -307,6 +312,114 @@ function ProviderSliderSection({
         </div>
       </div>
     </section>
+  );
+}
+
+function PopularProviderCard({
+  href,
+  name,
+  fullName,
+  priceLabel,
+  rating,
+  reviews,
+  distanceLabel,
+  portraitSrc,
+}: {
+  href: string;
+  name: string;
+  fullName: string;
+  priceLabel: string;
+  rating: string;
+  reviews: string;
+  distanceLabel: string;
+  portraitSrc: string;
+}) {
+  return (
+    <article className="mx-auto w-full max-w-[390px] rounded-[28px] bg-white p-6 text-left shadow-[0_18px_48px_rgba(15,23,42,0.08)]">
+      <div className="relative h-[260px] overflow-hidden rounded-[16px] bg-[#eef4ef]">
+        <Image
+          src={portraitSrc}
+          alt={name}
+          fill
+          sizes="(max-width: 430px) calc(100vw - 52px), 342px"
+          className="object-cover"
+          unoptimized
+        />
+      </div>
+
+      <div className="pt-6">
+        <h3 className="text-[2.1rem] font-extrabold leading-none tracking-[-0.07em] text-[#162544]">
+          {name}
+        </h3>
+
+        <p className="mt-6 text-[14px] font-medium text-[#667085]">Full name</p>
+        <p className="mt-3 text-[1rem] font-bold text-[#1f2c44]">{fullName}</p>
+
+        <div className="mt-6 flex flex-wrap gap-3">
+          <ProviderBadge icon={<CreditCard className="h-4 w-4" />} label="ID Verified" accent />
+          <ProviderBadge icon={<Smartphone className="h-4 w-4" />} label="Phone Verified" />
+        </div>
+
+        <div className="mt-8 border-t border-[#e8eeea] pt-6">
+          <div className="flex items-center gap-5 text-[#667085]">
+            <span className="inline-flex items-center gap-3 text-[1rem] font-semibold text-[#1f2c44]">
+              <Star className="h-10 w-10 fill-[#f5b301] text-[#f5b301]" />
+              <span>{rating}</span>
+            </span>
+            <span className="h-10 w-px bg-[#e4e7ec]" />
+            <span className="text-[1rem] font-medium">{reviews}</span>
+          </div>
+
+          <div className="mt-6 flex items-center gap-3 text-[1rem] font-semibold text-[#1f2c44]">
+            <MapPin className="h-8 w-8 text-[#667085]" />
+            <span>{distanceLabel}</span>
+          </div>
+        </div>
+
+        <div className="mt-8 flex items-end justify-between gap-4 border-t border-[#e8eeea] pt-6">
+          <div className="min-w-0 flex-1">
+            <p className="text-[14px] font-medium text-[#667085]">From</p>
+            <p className="mt-2 text-[2.2rem] font-extrabold leading-none tracking-[-0.05em] text-[#16a34a]">
+              {priceLabel}
+            </p>
+          </div>
+
+          <Link
+            href={href}
+            className="inline-flex h-[4.6rem] min-w-[13rem] shrink-0 items-center justify-center gap-3 rounded-[18px] bg-[linear-gradient(180deg,#edf8f0_0%,#e8f6ed_100%)] px-7 text-[1rem] font-bold text-[#169647]"
+          >
+            <span className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#cfe9d7] bg-white/85 text-[#169647]">
+              <User className="h-5 w-5" />
+            </span>
+            <span>View Profile</span>
+          </Link>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function ProviderBadge({
+  icon,
+  label,
+  accent = false,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  accent?: boolean;
+}) {
+  return (
+    <span className="inline-flex items-center gap-3 rounded-full border border-[#d8ebdf] bg-[#fbfefc] px-4 py-3 text-[12px] font-medium text-[#344054]">
+      <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-white text-[#16a34a] ring-1 ring-[#dbeee2]">
+        {icon}
+      </span>
+      {accent ? (
+        <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-[#16a34a] text-white">
+          <span className="text-[11px] font-bold">✓</span>
+        </span>
+      ) : null}
+      {label}
+    </span>
   );
 }
 
