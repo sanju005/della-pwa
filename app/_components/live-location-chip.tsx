@@ -38,6 +38,9 @@ type LiveLocationChipProps = {
   className?: string;
   onLocationChange?: (location: StoredLiveLocation) => void;
   onLocationClear?: () => void;
+  displayLabel?: string;
+  leadingIcon?: "pin" | "search";
+  showChevron?: boolean;
 };
 
 const DynamicLocationPickerMap = dynamic(
@@ -60,6 +63,9 @@ export function LiveLocationChip({
   className = "",
   onLocationChange,
   onLocationClear,
+  displayLabel,
+  leadingIcon = "pin",
+  showChevron = true,
 }: LiveLocationChipProps) {
   const [location, setLocation] = useState<StoredLiveLocation | null>(() =>
     loadStoredLiveLocation()
@@ -87,6 +93,7 @@ export function LiveLocationChip({
   }, [fallbackLabel, onLocationChange]);
 
   const activeLabel = location?.label ?? fallbackLabel;
+  const visibleLabel = displayLabel ?? activeLabel;
   const locationTitle = location
     ? `Saved at ${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}`
     : "Pick your location on the map";
@@ -99,13 +106,17 @@ export function LiveLocationChip({
         className={`flex min-h-[3.25rem] items-center gap-2.5 rounded-[18px] border border-[#e3ebe6] bg-white px-4 text-[15px] font-semibold text-[#0F172A] shadow-[0_10px_24px_rgba(15,23,42,0.04)] ${className}`.trim()}
         title={locationTitle}
       >
-        <MapPin className="h-5.5 w-5.5 shrink-0 fill-[#16A34A] text-[#16A34A]" />
-        <span className="truncate">{activeLabel}</span>
+        {leadingIcon === "search" ? (
+          <Search className="h-5.5 w-5.5 shrink-0 text-[#667085]" />
+        ) : (
+          <MapPin className="h-5.5 w-5.5 shrink-0 fill-[#16A34A] text-[#16A34A]" />
+        )}
+        <span className="truncate">{visibleLabel}</span>
         {isLoading ? (
           <LoaderCircle className="h-4.5 w-4.5 shrink-0 animate-spin text-[#16A34A]" />
-        ) : (
+        ) : showChevron ? (
           <ChevronDown className="h-4.5 w-4.5 shrink-0 text-[#667085]" />
-        )}
+        ) : null}
       </button>
 
       {isPickerOpen ? (

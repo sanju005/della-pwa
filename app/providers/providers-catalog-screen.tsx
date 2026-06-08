@@ -11,6 +11,7 @@ import {
   ChefHat,
   ChevronDown,
   Clock3,
+  Building2,
   Heart,
   IdCard,
   MapPin,
@@ -121,7 +122,6 @@ export function ProvidersCatalogScreen({ data }: { data: CatalogScreenData }) {
   const serviceLower = (data.serviceLabel || "service").toLowerCase();
   const heroProviders = filteredListings.slice(0, 3);
   const extraProviders = Math.max(filteredListings.length - heroProviders.length, 0);
-  const compactAddress = locationDetails?.label ?? "Current location";
   const fullAddress =
     locationDetails?.formattedAddress ||
     locationDetails?.label ||
@@ -131,7 +131,7 @@ export function ProvidersCatalogScreen({ data }: { data: CatalogScreenData }) {
     <main className="min-h-[100dvh] bg-[#f6fff8]">
       <div className="mx-auto min-h-[100dvh] w-full max-w-[430px] bg-white px-6 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
         <div className="py-6">
-          <header className="space-y-1">
+          <header className="space-y-5">
             <div className="flex items-center justify-between gap-3">
               <Link
                 href="/home"
@@ -140,17 +140,45 @@ export function ProvidersCatalogScreen({ data }: { data: CatalogScreenData }) {
                 <ArrowLeft className="h-6 w-6" />
               </Link>
               <LiveLocationChip
-                fallbackLabel={compactAddress}
+                fallbackLabel="Search location or address..."
                 className="flex-1 min-w-0"
                 onLocationChange={(location) => setLocationDetails(location)}
+                displayLabel="Search location or address..."
+                leadingIcon="search"
+                showChevron={false}
               />
             </div>
-            <p className="pl-[4.1rem] text-[12px] leading-4.5 text-[#98A2B3]">
-              {fullAddress}
-            </p>
+
+            <div className="rounded-[28px] border border-[#edf1ee] bg-white px-5 py-5 shadow-[0_14px_34px_rgba(15,23,42,0.05)]">
+              <div className="flex items-start gap-4">
+                <div className="inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-[18px] bg-[#eef9f0] text-[#16A34A]">
+                  <MapPin className="h-7 w-7 fill-[#16A34A] text-[#16A34A]" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[14px] font-medium text-[#98A2B3]">Location name</p>
+                  <p className="mt-1 text-[18px] font-extrabold tracking-[-0.03em] text-[#1f2c44]">
+                    {locationDetails?.addressLabel || "Home"}
+                  </p>
+                </div>
+              </div>
+
+              <div className="my-5 h-px bg-[#edf1ee]" />
+
+              <div className="flex items-start gap-4">
+                <div className="inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-[18px] bg-[#eef9f0] text-[#16A34A]">
+                  <Building2 className="h-7 w-7" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[14px] font-medium text-[#98A2B3]">Address</p>
+                  <p className="mt-1 text-[16px] font-medium leading-8 text-[#1f2c44]">
+                    {fullAddress}
+                  </p>
+                </div>
+              </div>
+            </div>
           </header>
 
-          <section className="mt-2.5">
+          <section className="mt-5">
             <div className="rounded-[30px] bg-white px-5 py-4 shadow-[0_20px_50px_rgba(15,23,42,0.08)] ring-1 ring-[#eff4f1]">
               <div className="flex items-start gap-4">
                 <div className="inline-flex h-20 w-20 shrink-0 items-center justify-center rounded-[22px] bg-[#F3FBF5] text-[#11233f] shadow-[0_10px_24px_rgba(15,23,42,0.04)]">
