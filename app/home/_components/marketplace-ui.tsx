@@ -376,20 +376,20 @@ function PopularProviderCard({
           </div>
         </div>
 
-        <div className="mt-8 flex items-end justify-between gap-4 border-t border-[#e8eeea] pt-6">
+        <div className="mt-8 flex items-end justify-between gap-3 border-t border-[#e8eeea] pt-6">
           <div className="min-w-0 flex-1">
             <p className="text-[14px] font-medium text-[#667085]">From</p>
-            <p className="mt-2 text-[2.2rem] font-extrabold leading-none tracking-[-0.05em] text-[#16a34a]">
+            <p className="mt-2 text-[1.95rem] font-extrabold leading-none tracking-[-0.05em] text-[#16a34a]">
               {priceLabel}
             </p>
           </div>
 
           <Link
             href={href}
-            className="inline-flex h-[4.6rem] min-w-[13rem] shrink-0 items-center justify-center gap-3 rounded-[18px] bg-[linear-gradient(180deg,#edf8f0_0%,#e8f6ed_100%)] px-7 text-[1rem] font-bold text-[#169647]"
+            className="inline-flex h-[4rem] min-w-[10.75rem] shrink-0 items-center justify-center gap-2.5 rounded-[16px] bg-[linear-gradient(180deg,#edf8f0_0%,#e8f6ed_100%)] px-5 text-[0.95rem] font-bold text-[#169647]"
           >
-            <span className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#cfe9d7] bg-white/85 text-[#169647]">
-              <User className="h-5 w-5" />
+            <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[#cfe9d7] bg-white/85 text-[#169647]">
+              <User className="h-4.5 w-4.5" />
             </span>
             <span>View Profile</span>
           </Link>
