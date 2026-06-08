@@ -17,7 +17,6 @@ import {
   Phone,
   ShieldCheck,
   Smile,
-  SlidersHorizontal,
   Star,
   StarIcon,
   ThumbsUp,
@@ -202,7 +201,7 @@ export function ProvidersCatalogScreen({ data }: { data: CatalogScreenData }) {
             </div>
           </section>
 
-          <section className="mt-7 flex flex-wrap items-center gap-3">
+          <section className="mt-7 flex items-center gap-2.5 overflow-x-auto pb-1">
             <FilterPill
               active={sortBy === "nearest"}
               onClick={() => setSortBy("nearest")}
@@ -220,12 +219,6 @@ export function ProvidersCatalogScreen({ data }: { data: CatalogScreenData }) {
               onClick={() => setSortBy("price-low")}
               icon={<BadgeCheck className="h-4 w-4" />}
               label="Low Rate"
-            />
-            <FilterPill
-              active={false}
-              onClick={() => undefined}
-              icon={<SlidersHorizontal className="h-4 w-4" />}
-              label="More Filters"
             />
           </section>
 
@@ -333,7 +326,7 @@ function FilterPill({
     <button
       type="button"
       onClick={onClick}
-      className={`inline-flex h-12 items-center gap-2 rounded-[18px] border px-4 text-[13px] font-semibold shadow-[0_10px_24px_rgba(15,23,42,0.04)] ${
+      className={`inline-flex h-12 shrink-0 items-center gap-2 rounded-[18px] border px-4 text-[13px] font-semibold shadow-[0_10px_24px_rgba(15,23,42,0.04)] ${
         active
           ? "border-[#d8ebdf] bg-[#f3fbf5] text-[#16A34A]"
           : "border-[#e7ece8] bg-white text-[#344054]"
