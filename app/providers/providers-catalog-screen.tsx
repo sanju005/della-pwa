@@ -223,7 +223,7 @@ export function ProvidersCatalogScreen({ data }: { data: CatalogScreenData }) {
           </section>
 
           <section className="mt-5 overflow-hidden rounded-[24px] border border-[#E5ECE7] bg-white p-2 shadow-[0_8px_20px_rgba(15,23,42,0.04)]">
-            <div className="flex gap-2">
+            <div className="grid grid-cols-2 gap-2">
               <TabButton
                 active={activeTab === "all"}
                 onClick={() => setActiveTab("all")}
@@ -353,7 +353,7 @@ function TabButton({
     <button
       type="button"
       onClick={onClick}
-      className={`inline-flex min-w-0 items-center justify-center gap-2 rounded-[16px] px-4 py-3 text-center transition ${
+      className={`inline-flex w-full min-w-0 items-center justify-center gap-2 rounded-[16px] px-4 py-3 text-center transition ${
         active ? "bg-[#16A34A] text-white shadow-[0_12px_22px_rgba(22,163,74,0.24)]" : "text-[#344054]"
       }`}
     >
