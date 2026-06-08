@@ -354,12 +354,12 @@ function PopularProviderCard({
 
         <p className="mt-5 text-[1rem] font-semibold text-[#1f2c44]">{fullName}</p>
 
-        <div className="mt-6 flex flex-wrap gap-3">
+        <div className="mt-4 flex flex-wrap gap-3">
           <ProviderBadge icon={<CreditCard className="h-4 w-4" />} label="ID Verified" accent />
           <ProviderBadge icon={<Smartphone className="h-4 w-4" />} label="Phone Verified" />
         </div>
 
-        <div className="mt-8 border-t border-[#e8eeea] pt-6">
+        <div className="mt-5 border-t border-[#e8eeea] pt-5">
           <div className="flex items-center gap-5 text-[#667085]">
             <span className="inline-flex items-center gap-3 text-[1rem] font-semibold text-[#1f2c44]">
               <Star className="h-10 w-10 fill-[#f5b301] text-[#f5b301]" />
