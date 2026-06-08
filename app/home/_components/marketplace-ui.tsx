@@ -282,14 +282,17 @@ function ProviderSliderSection({
       <div className="-mx-5 overflow-x-auto px-5 pb-2">
         <div className="flex gap-4">
           {providers.map((provider) => (
-            <div key={`${title}-${provider.id}`} className="w-[22rem] shrink-0">
+            <div
+              key={`${title}-${provider.id}`}
+              className="w-[calc(100vw-2.75rem)] max-w-[22.5rem] shrink-0"
+            >
               <SharedProviderCard
                 href={buildProviderDetailHref({
                   id: provider.id,
                   serviceKey: provider.serviceKey,
                 })}
                 name={provider.name}
-                service={provider.service}
+                fullName={provider.name === "Chef Amina" ? "Amina Isha" : provider.name}
                 priceLabel={provider.priceLabel}
                 rating={provider.rating.toFixed(1)}
                 reviews={`${provider.reviews} reviews`}
@@ -299,7 +302,6 @@ function ProviderSliderSection({
                   serviceKey: provider.serviceKey,
                 })}
                 badge={<StatusBadge label={provider.statusLabel} tone="accepted" />}
-                subtitle={provider.specialties[0] ?? provider.name}
               />
             </div>
           ))}

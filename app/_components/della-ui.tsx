@@ -367,25 +367,23 @@ export function BookingCard({
 export function PremiumProviderCard({
   href,
   name,
-  service,
+  fullName,
   priceLabel,
   rating,
   reviews,
   distanceLabel,
   portraitSrc,
   badge,
-  subtitle,
 }: {
   href: string;
   name: string;
-  service: string;
+  fullName?: string;
   priceLabel: string;
   rating: string;
   reviews: string;
   distanceLabel: string;
   portraitSrc: string;
   badge?: ReactNode;
-  subtitle?: string;
 }) {
   return (
     <AppCard className="overflow-hidden rounded-[28px] border-[#edf1ee] p-0 shadow-[0_22px_48px_rgba(15,23,42,0.08)]">
@@ -403,16 +401,16 @@ export function PremiumProviderCard({
 
       <div className="px-5 pb-5 pt-5">
         <div className="min-w-0">
-          <h3 className="truncate text-[2.3rem] font-extrabold leading-none tracking-[-0.065em] text-[#162544]">
+          <h3 className="truncate text-[2.15rem] font-extrabold leading-none tracking-[-0.065em] text-[#162544]">
             {name}
           </h3>
           <p className="mt-5 text-[13px] font-medium text-[#6b7280]">Full name</p>
           <p className="mt-1.5 truncate text-[1.05rem] font-bold text-[#1f2c44]">
-            {subtitle ?? name}
+            {fullName ?? name}
           </p>
         </div>
 
-        <div className="mt-6 flex flex-wrap gap-3.5">
+        <div className="mt-6 flex flex-wrap gap-3">
           <VerificationPill
             icon={<CreditCard className="h-3.5 w-3.5" />}
             label="ID Verified"
@@ -438,8 +436,8 @@ export function PremiumProviderCard({
           </div>
         </div>
 
-        <div className="mt-7 flex items-end justify-between gap-4 border-t border-[#e8eeea] pt-5">
-          <div className="min-w-0">
+        <div className="mt-7 flex items-end justify-between gap-3 border-t border-[#e8eeea] pt-5">
+          <div className="min-w-0 flex-1">
             <p className="text-[13px] font-medium text-[#667085]">From</p>
             <p className="mt-1 text-[2rem] font-extrabold leading-none tracking-[-0.05em] text-[#16a34a]">
               {priceLabel}
@@ -447,7 +445,7 @@ export function PremiumProviderCard({
           </div>
           <Link
             href={href}
-            className="inline-flex h-[4.8rem] min-w-[13.8rem] items-center justify-center gap-3 rounded-[18px] bg-[linear-gradient(180deg,#edf8f0_0%,#e4f5e9_100%)] px-7 text-[1.04rem] font-bold text-[#169647]"
+            className="inline-flex h-[4.6rem] min-w-[11.8rem] shrink-0 items-center justify-center gap-3 rounded-[18px] bg-[linear-gradient(180deg,#edf8f0_0%,#e4f5e9_100%)] px-6 text-[1rem] font-bold text-[#169647]"
           >
             <span className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#cfe9d7] bg-white/75 text-[#169647]">
               <CircleCheck className="h-5 w-5" />
@@ -468,7 +466,7 @@ function VerificationPill({
   label: string;
 }) {
   return (
-    <span className="inline-flex items-center gap-3 rounded-full border border-[#d8ebdf] bg-[#fbfefc] px-4 py-2.5 text-[12px] font-medium text-[#344054]">
+    <span className="inline-flex items-center gap-2.5 rounded-full border border-[#d8ebdf] bg-[#fbfefc] px-3.5 py-2.5 text-[12px] font-medium text-[#344054]">
       <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-white text-[#16a34a] ring-1 ring-[#dbeee2]">
         {icon}
       </span>
