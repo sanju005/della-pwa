@@ -388,8 +388,8 @@ export function PremiumProviderCard({
   subtitle?: string;
 }) {
   return (
-    <AppCard className="overflow-hidden rounded-[26px] p-0 shadow-[0_18px_40px_rgba(15,23,42,0.08)]">
-      <div className="relative mx-3 mt-3 h-[15.2rem] overflow-hidden rounded-[16px] bg-[#eef4ef]">
+    <AppCard className="overflow-hidden rounded-[26px] border-[#edf1ee] p-0 shadow-[0_20px_44px_rgba(15,23,42,0.08)]">
+      <div className="relative mx-4 mt-4 h-[17rem] overflow-hidden rounded-[18px] bg-[#eef4ef]">
         <Image
           src={portraitSrc}
           alt={name}
@@ -401,19 +401,18 @@ export function PremiumProviderCard({
         {badge ? <div className="absolute left-3 top-3">{badge}</div> : null}
       </div>
 
-      <div className="px-4 pb-4 pt-5">
+      <div className="px-4 pb-5 pt-5">
         <div className="min-w-0">
-          <h3 className="truncate text-[18px] font-extrabold tracking-[-0.04em] text-[#1f2c44]">
+          <h3 className="truncate text-[2.05rem] font-extrabold leading-none tracking-[-0.06em] text-[#162544]">
             {name}
           </h3>
-          <p className="mt-2 text-[12px] font-semibold text-[#98a2b3]">Full name</p>
-          <p className="mt-0.5 truncate text-[15px] font-bold text-[#344054]">
+          <p className="mt-5 text-[13px] font-medium text-[#6b7280]">Full name</p>
+          <p className="mt-1 truncate text-[1rem] font-bold text-[#1f2c44]">
             {subtitle ?? name}
           </p>
-          <p className="mt-2 text-[13px] font-medium text-[#667085]">{service}</p>
         </div>
 
-        <div className="mt-4 flex flex-wrap gap-2">
+        <div className="mt-5 flex flex-wrap gap-3">
           <VerificationPill
             icon={<CreditCard className="h-3.5 w-3.5" />}
             label="ID Verified"
@@ -424,34 +423,34 @@ export function PremiumProviderCard({
           />
         </div>
 
-        <div className="mt-5 border-t border-[#e8eeea] pt-4">
-          <div className="flex items-center gap-3 text-[14px] text-[#667085]">
-            <span className="inline-flex items-center gap-2 font-semibold text-[#1f2c44]">
-              <Star className="h-4.5 w-4.5 fill-[#f5b301] text-[#f5b301]" />
+        <div className="mt-7 border-t border-[#e8eeea] pt-5">
+          <div className="flex items-center gap-4 text-[14px] text-[#667085]">
+            <span className="inline-flex items-center gap-3 font-semibold text-[#1f2c44]">
+              <Star className="h-8 w-8 fill-[#f5b301] text-[#f5b301]" />
               {rating}
             </span>
-            <span className="h-5 w-px bg-[#e4e7ec]" />
-            <span>{reviews}</span>
+            <span className="h-8 w-px bg-[#e4e7ec]" />
+            <span className="text-[1rem] font-medium text-[#667085]">{reviews}</span>
           </div>
-          <div className="mt-4 flex items-center gap-2 text-[14px] font-semibold text-[#344054]">
-            <MapPin className="h-4.5 w-4.5 text-[#667085]" />
+          <div className="mt-5 flex items-center gap-3 text-[1rem] font-semibold text-[#1f2c44]">
+            <MapPin className="h-7 w-7 text-[#667085]" />
             <span>{distanceLabel}</span>
           </div>
         </div>
 
-        <div className="mt-5 flex items-end justify-between gap-3 border-t border-[#e8eeea] pt-4">
+        <div className="mt-7 flex items-end justify-between gap-4 border-t border-[#e8eeea] pt-5">
           <div className="min-w-0">
-            <p className="text-[13px] text-[#667085]">From</p>
-            <p className="mt-1 text-[20px] font-extrabold tracking-[-0.03em] text-[#16a34a]">
+            <p className="text-[13px] font-medium text-[#667085]">From</p>
+            <p className="mt-1 text-[2rem] font-extrabold leading-none tracking-[-0.05em] text-[#16a34a]">
               {priceLabel}
             </p>
           </div>
           <Link
             href={href}
-            className="inline-flex h-12 min-w-[11rem] items-center justify-center gap-2 rounded-[16px] bg-[#edf8f0] px-5 text-[15px] font-bold text-[#169647]"
+            className="inline-flex h-[4.6rem] min-w-[12.8rem] items-center justify-center gap-3 rounded-[18px] bg-[linear-gradient(180deg,#edf8f0_0%,#e4f5e9_100%)] px-6 text-[1rem] font-bold text-[#169647]"
           >
-            <span className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-[#cfe9d7] text-[#169647]">
-              <CircleCheck className="h-4 w-4" />
+            <span className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#cfe9d7] bg-white/75 text-[#169647]">
+              <CircleCheck className="h-5 w-5" />
             </span>
             <span>View Profile</span>
           </Link>
@@ -469,7 +468,7 @@ function VerificationPill({
   label: string;
 }) {
   return (
-    <span className="inline-flex items-center gap-2 rounded-full border border-[#dbeee2] bg-[#f6fcf7] px-3 py-2 text-[12px] font-semibold text-[#475467]">
+    <span className="inline-flex items-center gap-2.5 rounded-full border border-[#d8ebdf] bg-[#fbfefc] px-3.5 py-2.5 text-[12px] font-medium text-[#344054]">
       <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-white text-[#16a34a] ring-1 ring-[#dbeee2]">
         {icon}
       </span>

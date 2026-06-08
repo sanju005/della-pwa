@@ -282,7 +282,7 @@ function ProviderSliderSection({
       <div className="-mx-5 overflow-x-auto px-5 pb-2">
         <div className="flex gap-4">
           {providers.map((provider) => (
-            <div key={`${title}-${provider.id}`} className="w-[15.8rem] shrink-0">
+            <div key={`${title}-${provider.id}`} className="w-[20.5rem] shrink-0">
               <SharedProviderCard
                 href={buildProviderDetailHref({
                   id: provider.id,
