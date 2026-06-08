@@ -161,11 +161,11 @@ export function MarketplaceScreen({
 
           <section className="mt-8 rounded-[26px] border border-[#E8EEE9] bg-white px-4 py-5 shadow-[0_14px_32px_rgba(15,23,42,0.05)]">
             <div className="grid grid-cols-4 gap-y-6">
-                {categories.map((category) => (
-                  <CategoryItem key={category.key} category={category} />
-                ))}
-              </div>
-            </section>
+              {categories.map((category) => (
+                <CategoryItem key={category.key} category={category} />
+              ))}
+            </div>
+          </section>
 
           {errorMessage ? (
             <div className="mt-6 rounded-[18px] border border-[#F3C7C7] bg-[#FFF4F4] px-4 py-3 text-[13px] font-semibold text-[#B42318]">
@@ -247,11 +247,32 @@ export function MarketplaceScreen({
 
           <BottomNav
             items={[
-              { href: "/home", label: "Home", active: true, icon: <House className="h-5 w-5 stroke-[1.9]" /> },
-              { href: "/profile/bookings", label: "Bookings", icon: <BookOpen className="h-5 w-5 stroke-[1.9]" /> },
-              { href: "/profile/messages", label: "Messages", icon: <MessageCircleMore className="h-5 w-5 stroke-[1.9]" /> },
-              { href: "/profile/favourites", label: "Favourite", icon: <Heart className="h-5 w-5 stroke-[1.9]" /> },
-              { href: "/profile", label: "Profile", icon: <CircleUserRound className="h-5 w-5 stroke-[1.9]" /> },
+              {
+                href: "/home",
+                label: "Home",
+                active: true,
+                icon: <House className="h-5 w-5 stroke-[1.9]" />,
+              },
+              {
+                href: "/profile/bookings",
+                label: "Bookings",
+                icon: <BookOpen className="h-5 w-5 stroke-[1.9]" />,
+              },
+              {
+                href: "/profile/messages",
+                label: "Messages",
+                icon: <MessageCircleMore className="h-5 w-5 stroke-[1.9]" />,
+              },
+              {
+                href: "/profile/favourites",
+                label: "Favourite",
+                icon: <Heart className="h-5 w-5 stroke-[1.9]" />,
+              },
+              {
+                href: "/profile",
+                label: "Profile",
+                icon: <CircleUserRound className="h-5 w-5 stroke-[1.9]" />,
+              },
             ]}
           />
         </div>
@@ -354,9 +375,16 @@ function PopularProviderCard({
 
         <p className="mt-5 text-[1rem] font-semibold text-[#1f2c44]">{fullName}</p>
 
-        <div className="mt-4 flex flex-wrap gap-3">
-          <ProviderBadge icon={<CreditCard className="h-4 w-4" />} label="ID Verified" accent />
-          <ProviderBadge icon={<Smartphone className="h-4 w-4" />} label="Phone Verified" />
+        <div className="mt-4 flex flex-nowrap gap-2 overflow-hidden">
+          <ProviderBadge
+            icon={<CreditCard className="h-4 w-4" />}
+            label="ID Verified"
+            accent
+          />
+          <ProviderBadge
+            icon={<Smartphone className="h-4 w-4" />}
+            label="Phone Verified"
+          />
         </div>
 
         <div className="mt-5 border-t border-[#e8eeea] pt-5">
@@ -408,16 +436,16 @@ function ProviderBadge({
   accent?: boolean;
 }) {
   return (
-    <span className="inline-flex items-center gap-3 rounded-full border border-[#d8ebdf] bg-[#fbfefc] px-4 py-3 text-[12px] font-medium text-[#344054]">
-      <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-white text-[#16a34a] ring-1 ring-[#dbeee2]">
+    <span className="inline-flex items-center gap-2 rounded-full border border-[#d8ebdf] bg-[#fbfefc] px-3 py-2.5 text-[11px] font-medium text-[#344054]">
+      <span className="inline-flex h-4.5 w-4.5 items-center justify-center rounded-full bg-white text-[#16a34a] ring-1 ring-[#dbeee2]">
         {icon}
       </span>
       {accent ? (
-        <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-[#16a34a] text-white">
-          <span className="text-[11px] font-bold">✓</span>
+        <span className="inline-flex h-4.5 w-4.5 items-center justify-center rounded-full bg-[#16a34a] text-white">
+          <span className="text-[10px] font-bold">✓</span>
         </span>
       ) : null}
-      {label}
+      <span className="whitespace-nowrap">{label}</span>
     </span>
   );
 }
