@@ -149,28 +149,28 @@ export function ProvidersCatalogScreen({ data }: { data: CatalogScreenData }) {
               />
             </div>
 
-            <div className="rounded-[28px] border border-[#edf1ee] bg-white px-5 py-5 shadow-[0_14px_34px_rgba(15,23,42,0.05)]">
+            <div className="rounded-[28px] border border-[#edf1ee] bg-white px-4 py-4 shadow-[0_14px_34px_rgba(15,23,42,0.05)]">
               <div className="flex items-start gap-4">
-                <div className="inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-[18px] bg-[#eef9f0] text-[#16A34A]">
-                  <MapPin className="h-7 w-7 fill-[#16A34A] text-[#16A34A]" />
+                <div className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-[16px] bg-[#eef9f0] text-[#16A34A]">
+                  <MapPin className="h-6 w-6 fill-[#16A34A] text-[#16A34A]" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-[14px] font-medium text-[#98A2B3]">Location name</p>
-                  <p className="mt-1 text-[18px] font-extrabold tracking-[-0.03em] text-[#1f2c44]">
+                  <p className="text-[13px] font-medium text-[#98A2B3]">Location name</p>
+                  <p className="mt-1 text-[16px] font-extrabold tracking-[-0.03em] text-[#1f2c44]">
                     {locationDetails?.addressLabel || "Home"}
                   </p>
                 </div>
               </div>
 
-              <div className="my-5 h-px bg-[#edf1ee]" />
+              <div className="my-4 h-px bg-[#edf1ee]" />
 
               <div className="flex items-start gap-4">
-                <div className="inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-[18px] bg-[#eef9f0] text-[#16A34A]">
-                  <Building2 className="h-7 w-7" />
+                <div className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-[16px] bg-[#eef9f0] text-[#16A34A]">
+                  <Building2 className="h-6 w-6" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-[14px] font-medium text-[#98A2B3]">Address</p>
-                  <p className="mt-1 text-[16px] font-medium leading-8 text-[#1f2c44]">
+                  <p className="text-[13px] font-medium text-[#98A2B3]">Address</p>
+                  <p className="mt-1 text-[14px] font-medium leading-7 text-[#1f2c44]">
                     {fullAddress}
                   </p>
                 </div>
