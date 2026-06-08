@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ChevronDown,
   LoaderCircle,
@@ -72,8 +72,25 @@ export function LiveLocationChip({
   );
   const [isLoading, setIsLoading] = useState(false);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
+  const hasResolvedInitialLocation = useRef(false);
 
   useEffect(() => {
+    if (location) {
+      onLocationChange?.(location);
+    }
+  }, [location, onLocationChange]);
+
+  useEffect(() => {
+    if (hasResolvedInitialLocation.current) {
+      return;
+    }
+
+    hasResolvedInitialLocation.current = true;
+
+    if (location) {
+      return;
+    }
+
     const timerId = window.setTimeout(() => {
       setIsLoading(true);
 
@@ -81,7 +98,6 @@ export function LiveLocationChip({
         .then((nextLocation) => {
           if (nextLocation) {
             setLocation(nextLocation);
-            onLocationChange?.(nextLocation);
           }
         })
         .finally(() => {
@@ -90,7 +106,7 @@ export function LiveLocationChip({
     }, 0);
 
     return () => window.clearTimeout(timerId);
-  }, [fallbackLabel, onLocationChange]);
+  }, [fallbackLabel, location]);
 
   const activeLabel = location?.label ?? fallbackLabel;
   const visibleLabel = displayLabel ?? activeLabel;
@@ -126,7 +142,6 @@ export function LiveLocationChip({
           onClose={() => setIsPickerOpen(false)}
           onSave={(nextLocation) => {
             setLocation(nextLocation);
-            onLocationChange?.(nextLocation);
             setIsPickerOpen(false);
           }}
           onDelete={() => {
@@ -518,7 +533,7 @@ function LocationPickerModal({
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     type="button"
-                    onClick={() => handleSave(true)}
+                    onClick={() => handleSave(false)}
                     className="inline-flex h-11 items-center justify-center rounded-[12px] bg-[#16a34a] px-4 text-[14px] font-extrabold text-white shadow-[0_12px_24px_rgba(22,163,74,0.18)]"
                   >
                     Save
