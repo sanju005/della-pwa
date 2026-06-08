@@ -25,6 +25,7 @@ import {
 import { EmptyState as SharedEmptyState } from "@/app/_components/della-ui";
 
 import { LiveLocationChip } from "@/app/_components/live-location-chip";
+import type { StoredLiveLocation } from "@/lib/live-location";
 
 type TabKey = "all" | "active-now";
 type SortKey = "popular" | "nearest" | "price-low";
@@ -82,6 +83,7 @@ const serviceIcons: Partial<
 };
 
 export function ProvidersCatalogScreen({ data }: { data: CatalogScreenData }) {
+  const [locationDetails, setLocationDetails] = useState<StoredLiveLocation | null>(null);
   const [activeTab, setActiveTab] = useState<TabKey>("all");
   const [sortBy, setSortBy] = useState<SortKey>("popular");
 
@@ -119,22 +121,36 @@ export function ProvidersCatalogScreen({ data }: { data: CatalogScreenData }) {
   const serviceLower = (data.serviceLabel || "service").toLowerCase();
   const heroProviders = filteredListings.slice(0, 3);
   const extraProviders = Math.max(filteredListings.length - heroProviders.length, 0);
+  const compactAddress = locationDetails?.label ?? "Current location";
+  const fullAddress =
+    locationDetails?.formattedAddress ||
+    locationDetails?.label ||
+    "Bandar Puteri Puchong, Subang Jaya City Council";
 
   return (
     <main className="min-h-[100dvh] bg-[#f6fff8]">
       <div className="mx-auto min-h-[100dvh] w-full max-w-[430px] bg-white px-6 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
         <div className="py-6">
-          <header className="flex items-center justify-between gap-3">
-            <Link
-              href="/home"
-              className="inline-flex h-[3.25rem] w-[3.25rem] items-center justify-center rounded-[18px] border border-[#e3ebe6] bg-white text-[#0F172A] shadow-[0_10px_24px_rgba(15,23,42,0.04)]"
-            >
-              <ArrowLeft className="h-6 w-6" />
-            </Link>
-            <LiveLocationChip fallbackLabel="Current location" className="flex-1 min-w-0" />
+          <header className="space-y-2">
+            <div className="flex items-center justify-between gap-3">
+              <Link
+                href="/home"
+                className="inline-flex h-[3.25rem] w-[3.25rem] items-center justify-center rounded-[18px] border border-[#e3ebe6] bg-white text-[#0F172A] shadow-[0_10px_24px_rgba(15,23,42,0.04)]"
+              >
+                <ArrowLeft className="h-6 w-6" />
+              </Link>
+              <LiveLocationChip
+                fallbackLabel={compactAddress}
+                className="flex-1 min-w-0"
+                onLocationChange={(location) => setLocationDetails(location)}
+              />
+            </div>
+            <p className="pl-[4.1rem] text-[12px] leading-5 text-[#98A2B3]">
+              {fullAddress}
+            </p>
           </header>
 
-          <section className="mt-8">
+          <section className="mt-4">
             <div className="rounded-[30px] bg-white px-5 py-5 shadow-[0_20px_50px_rgba(15,23,42,0.08)] ring-1 ring-[#eff4f1]">
               <div className="flex items-start gap-4">
                 <div className="inline-flex h-20 w-20 shrink-0 items-center justify-center rounded-[22px] bg-[#F3FBF5] text-[#11233f] shadow-[0_10px_24px_rgba(15,23,42,0.04)]">
