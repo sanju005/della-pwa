@@ -373,9 +373,9 @@ function PopularProviderCard({
           {name}
         </h3>
 
-        <p className="mt-5 text-[1rem] font-semibold text-[#1f2c44]">{fullName}</p>
+        <p className="mt-3 text-[1rem] font-semibold text-[#1f2c44]">{fullName}</p>
 
-        <div className="mt-4 flex items-center gap-4 text-[#667085]">
+        <div className="mt-3 flex items-center gap-4 text-[#667085]">
           <span className="inline-flex items-center gap-2 text-[0.92rem] font-semibold text-[#1f2c44]">
             <Star className="h-7 w-7 fill-[#f5b301] text-[#f5b301]" />
             <span>{rating}</span>
@@ -384,7 +384,7 @@ function PopularProviderCard({
           <span className="text-[0.92rem] font-medium">{reviews}</span>
         </div>
 
-        <div className="mt-4 flex flex-nowrap gap-2 overflow-hidden">
+        <div className="mt-3 flex flex-nowrap gap-2 overflow-hidden">
           <ProviderBadge
             icon={<CreditCard className="h-4 w-4" />}
             label="ID Verified"
@@ -396,14 +396,14 @@ function PopularProviderCard({
           />
         </div>
 
-        <div className="mt-5 border-t border-[#e8eeea] pt-5">
+        <div className="mt-4 border-t border-[#e8eeea] pt-4">
           <div className="flex items-center gap-3 text-[0.98rem] font-semibold text-[#1f2c44]">
             <MapPin className="h-8 w-8 text-[#667085]" />
             <span>{distanceLabel}</span>
           </div>
         </div>
 
-        <div className="mt-8 flex items-end justify-between gap-3 border-t border-[#e8eeea] pt-6">
+        <div className="mt-5 flex items-end justify-between gap-3 border-t border-[#e8eeea] pt-4">
           <div className="min-w-0 flex-1">
             <p className="text-[14px] font-medium text-[#667085]">From</p>
             <p className="mt-2 text-[1.85rem] font-semibold leading-none tracking-[-0.04em] text-[#16a34a]">
