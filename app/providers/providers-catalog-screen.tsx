@@ -453,9 +453,6 @@ function ProviderCard({ listing }: { listing: CatalogScreenListing }) {
                 <h3 className="min-w-0 flex-1 text-[1.04rem] font-extrabold leading-6 tracking-[-0.04em] text-[#1f2c44]">
                   <span className="break-words">{listing.name}</span>
                 </h3>
-                {listing.isApproved ? (
-                  <BadgeCheck className="mt-0.5 h-4.5 w-4.5 shrink-0 fill-[#16a34a] text-[#16a34a]" />
-                ) : null}
               </div>
               <p className="mt-2 break-words text-[15px] font-bold leading-5 text-[#1f2c44]">
                 {fullName}
