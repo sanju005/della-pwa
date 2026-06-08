@@ -310,7 +310,7 @@ function ProviderSliderSection({
           {providers.map((provider) => (
             <div
               key={`${title}-${provider.id}`}
-              className="w-[calc(100vw-4rem)] max-w-[21rem] shrink-0"
+              className="w-[calc(100vw-5.5rem)] max-w-[17rem] shrink-0"
             >
               <PopularProviderCard
                 href={buildProviderDetailHref({
@@ -356,67 +356,67 @@ function PopularProviderCard({
   portraitSrc: string;
 }) {
   return (
-    <article className="mx-auto w-full max-w-[390px] rounded-[28px] border border-[#eef2ef] bg-white p-5 text-left shadow-[0_16px_40px_rgba(15,23,42,0.07)]">
-      <div className="relative h-[210px] overflow-hidden rounded-[16px] bg-[#eef4ef]">
+    <article className="mx-auto w-full max-w-[312px] rounded-[22px] border border-[#eef2ef] bg-white p-4 text-left shadow-[0_14px_32px_rgba(15,23,42,0.07)]">
+      <div className="relative h-[168px] overflow-hidden rounded-[14px] bg-[#eef4ef]">
         <Image
           src={portraitSrc}
           alt={name}
           fill
-          sizes="(max-width: 430px) calc(100vw - 52px), 342px"
+          sizes="(max-width: 430px) calc(100vw - 64px), 272px"
           className="object-cover"
           unoptimized
         />
       </div>
 
-      <div className="pt-5">
-        <h3 className="text-[1.6rem] font-semibold leading-none tracking-[-0.05em] text-[#162544]">
+      <div className="pt-4">
+        <h3 className="text-[1.28rem] font-semibold leading-none tracking-[-0.045em] text-[#162544]">
           {name}
         </h3>
 
-        <p className="mt-2.5 text-[0.96rem] font-medium text-[#1f2c44]">{fullName}</p>
+        <p className="mt-2 text-[0.78rem] font-medium text-[#1f2c44]">{fullName}</p>
 
-        <div className="mt-2.5 flex items-center gap-3 text-[#667085]">
-          <span className="inline-flex items-center gap-1.5 text-[0.88rem] font-semibold text-[#1f2c44]">
-            <Star className="h-6 w-6 fill-[#f5b301] text-[#f5b301]" />
+        <div className="mt-2 flex items-center gap-2.5 text-[#667085]">
+          <span className="inline-flex items-center gap-1 text-[0.72rem] font-semibold text-[#1f2c44]">
+            <Star className="h-5 w-5 fill-[#f5b301] text-[#f5b301]" />
             <span>{rating}</span>
           </span>
-          <span className="h-6 w-px bg-[#e4e7ec]" />
-          <span className="text-[0.88rem] font-medium">{reviews}</span>
+          <span className="h-5 w-px bg-[#e4e7ec]" />
+          <span className="text-[0.72rem] font-medium">{reviews}</span>
         </div>
 
-        <div className="mt-3 flex flex-nowrap gap-1.5 overflow-hidden">
+        <div className="mt-2.5 flex flex-nowrap gap-1 overflow-hidden">
           <ProviderBadge
-            icon={<CreditCard className="h-4 w-4" />}
+            icon={<CreditCard className="h-3.5 w-3.5" />}
             label="ID Verified"
             accent
           />
           <ProviderBadge
-            icon={<Smartphone className="h-4 w-4" />}
+            icon={<Smartphone className="h-3.5 w-3.5" />}
             label="Phone Verified"
           />
         </div>
 
-        <div className="mt-3.5 border-t border-[#e8eeea] pt-3.5">
-          <div className="flex items-center gap-2.5 text-[0.94rem] font-semibold text-[#1f2c44]">
-            <MapPin className="h-7 w-7 text-[#667085]" />
+        <div className="mt-3 border-t border-[#e8eeea] pt-3">
+          <div className="flex items-center gap-2 text-[0.8rem] font-semibold text-[#1f2c44]">
+            <MapPin className="h-5.5 w-5.5 text-[#667085]" />
             <span>{distanceLabel}</span>
           </div>
         </div>
 
-        <div className="mt-4 flex items-end justify-between gap-2.5 border-t border-[#e8eeea] pt-3.5">
+        <div className="mt-3.5 flex items-end justify-between gap-2 border-t border-[#e8eeea] pt-3">
           <div className="min-w-0 flex-1">
-            <p className="text-[12px] font-medium text-[#667085]">From</p>
-            <p className="mt-1 text-[1.35rem] font-medium leading-none tracking-[-0.02em] text-[#16a34a]">
+            <p className="text-[10px] font-medium text-[#667085]">From</p>
+            <p className="mt-1 text-[1.08rem] font-medium leading-none tracking-[-0.01em] text-[#16a34a]">
               {priceLabel}
             </p>
           </div>
 
           <Link
             href={href}
-            className="inline-flex h-[3.35rem] min-w-[8.9rem] shrink-0 items-center justify-center gap-2 rounded-[14px] bg-[linear-gradient(180deg,#edf8f0_0%,#e8f6ed_100%)] px-3.5 text-[0.84rem] font-semibold text-[#169647]"
+            className="inline-flex h-[2.7rem] min-w-[7.1rem] shrink-0 items-center justify-center gap-1.5 rounded-[12px] bg-[linear-gradient(180deg,#edf8f0_0%,#e8f6ed_100%)] px-3 text-[0.68rem] font-semibold text-[#169647]"
           >
-            <span className="inline-flex h-6.5 w-6.5 items-center justify-center rounded-full border border-[#cfe9d7] bg-white/85 text-[#169647]">
-              <User className="h-3.5 w-3.5" />
+            <span className="inline-flex h-5.5 w-5.5 items-center justify-center rounded-full border border-[#cfe9d7] bg-white/85 text-[#169647]">
+              <User className="h-3 w-3" />
             </span>
             <span>View Profile</span>
           </Link>
@@ -436,13 +436,13 @@ function ProviderBadge({
   accent?: boolean;
 }) {
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full border border-[#d8ebdf] bg-[#fbfefc] px-2.5 py-2 text-[10px] font-medium text-[#344054]">
-      <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-white text-[#16a34a] ring-1 ring-[#dbeee2]">
+    <span className="inline-flex items-center gap-1 rounded-full border border-[#d8ebdf] bg-[#fbfefc] px-2 py-1.5 text-[8px] font-medium text-[#344054]">
+      <span className="inline-flex h-3.5 w-3.5 items-center justify-center rounded-full bg-white text-[#16a34a] ring-1 ring-[#dbeee2]">
         {icon}
       </span>
       {accent ? (
-        <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-[#16a34a] text-white">
-          <span className="text-[10px] font-bold">✓</span>
+        <span className="inline-flex h-3.5 w-3.5 items-center justify-center rounded-full bg-[#16a34a] text-white">
+          <span className="text-[8px] font-bold">✓</span>
         </span>
       ) : null}
       <span className="whitespace-nowrap">{label}</span>
