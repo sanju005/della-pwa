@@ -419,22 +419,26 @@ function ProviderCard({ listing }: { listing: CatalogScreenListing }) {
         </div>
 
         <div className="flex min-w-0 flex-1 flex-col">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0 flex-1">
-                <h3 className="flex min-w-0 items-center gap-2 text-[1.08rem] font-extrabold tracking-[-0.04em] text-[#1f2c44]">
-                  <span className="truncate">{listing.name}</span>
-                  {listing.isApproved ? (
-                    <BadgeCheck className="h-4.5 w-4.5 shrink-0 fill-[#16a34a] text-[#16a34a]" />
-                  ) : null}
+          <div className="flex items-start justify-between gap-2.5">
+            <div className="min-w-0 flex-1 pr-1">
+              <div className="flex items-start gap-2">
+                <h3 className="min-w-0 flex-1 text-[1.08rem] font-extrabold leading-6 tracking-[-0.04em] text-[#1f2c44]">
+                  <span className="line-clamp-2 break-words">{listing.name}</span>
                 </h3>
-                <p className="mt-2 truncate text-[15px] font-bold text-[#1f2c44]">{fullName}</p>
-                <span className="mt-4 inline-flex items-center gap-2 rounded-full bg-[#ecf9f0] px-3 py-2 text-[12px] font-semibold text-[#16a34a]">
-                  <ShieldCheck className="h-4 w-4" />
-                  Top Rated Provider
-                </span>
+                {listing.isApproved ? (
+                  <BadgeCheck className="mt-0.5 h-4.5 w-4.5 shrink-0 fill-[#16a34a] text-[#16a34a]" />
+                ) : null}
               </div>
+              <p className="mt-2 line-clamp-2 break-words text-[15px] font-bold leading-5 text-[#1f2c44]">
+                {fullName}
+              </p>
+              <span className="mt-3 inline-flex max-w-full items-center gap-1.5 rounded-full bg-[#ecf9f0] px-3 py-1.5 text-[11px] font-semibold text-[#16a34a]">
+                <ShieldCheck className="h-3.5 w-3.5 shrink-0" />
+                <span className="truncate">Top Rated Provider</span>
+              </span>
+            </div>
 
-              <button
+            <button
               type="button"
               aria-label="Save provider"
               className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#eef2ef] bg-white text-[#667085] shadow-[0_8px_18px_rgba(15,23,42,0.06)]"
@@ -446,7 +450,7 @@ function ProviderCard({ listing }: { listing: CatalogScreenListing }) {
       </div>
 
       <div className="mt-5 space-y-4 text-left">
-        <div className="grid grid-cols-2 gap-x-4 gap-y-4 border-b border-[#edf1ee] pb-4">
+        <div className="grid grid-cols-2 gap-x-5 gap-y-3 border-b border-[#edf1ee] pb-4">
           <InfoMetric
             icon={<Star className="h-5 w-5 fill-[#f5b301] text-[#f5b301]" />}
             value={listing.rating.toFixed(1)}
@@ -467,17 +471,17 @@ function ProviderCard({ listing }: { listing: CatalogScreenListing }) {
           />
         </div>
 
-        <div className="flex items-center gap-2 overflow-x-auto pb-1">
+        <div className="grid grid-cols-3 gap-2">
           <VerifiedBadge icon={<IdCard className="h-3.5 w-3.5" />} label="ID Verified" />
           <VerifiedBadge icon={<Phone className="h-3.5 w-3.5" />} label="Phone Verified" />
           <VerifiedBadge icon={<Smile className="h-3.5 w-3.5" />} label="Face Verified" />
         </div>
 
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2.5">
           {serviceTags.map((tag) => (
             <span
               key={tag}
-              className="inline-flex items-center rounded-full bg-[#ecf9f0] px-3 py-2 text-[12px] font-semibold text-[#15803d]"
+              className="inline-flex items-center rounded-full bg-[#ecf9f0] px-3 py-2 text-[12px] font-semibold leading-none text-[#15803d]"
             >
               {tag}
             </span>
@@ -485,7 +489,7 @@ function ProviderCard({ listing }: { listing: CatalogScreenListing }) {
         </div>
       </div>
 
-      <div className="mt-5 rounded-[20px] border border-[#edf1ee] bg-[#fbfdfb] p-2">
+      <div className="mt-5 rounded-[20px] border border-[#edf1ee] bg-[#fbfdfb] px-1.5 py-2">
         <div className="grid grid-cols-4 divide-x divide-[#e8eeea] text-[12px] text-[#667085]">
           <StatPill
             icon={<Clock3 className="h-3.5 w-3.5 text-[#16a34a]" />}
@@ -521,11 +525,11 @@ function VerifiedBadge({
   label: string;
 }) {
   return (
-    <span className="inline-flex shrink-0 items-center gap-2 rounded-full border border-[#dceadf] bg-white px-3 py-2 text-[11px] font-semibold text-[#475467]">
-      <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-white text-[#16a34a] ring-1 ring-[#dceadf]">
+    <span className="inline-flex min-w-0 items-center justify-center gap-1.5 rounded-full border border-[#dceadf] bg-white px-2.5 py-2 text-[10px] font-semibold text-[#475467]">
+      <span className="inline-flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded-full bg-white text-[#16a34a] ring-1 ring-[#dceadf]">
         {icon}
       </span>
-      <span>{label}</span>
+      <span className="truncate">{label}</span>
     </span>
   );
 }
@@ -560,12 +564,12 @@ function StatPill({
   value: string;
 }) {
   return (
-    <div className="px-3 py-3 text-center">
-      <div className="flex items-center justify-center gap-2">
+    <div className="px-2 py-3 text-center">
+      <div className="flex items-center justify-center gap-1.5">
         {icon}
-        <span className="text-[11px] font-semibold text-[#98a2b3]">{label}</span>
+        <span className="text-[10px] font-semibold leading-4 text-[#98a2b3]">{label}</span>
       </div>
-      <p className="mt-2 text-[13px] font-bold text-[#1f2c44]">{value}</p>
+      <p className="mt-2 text-[13px] font-bold leading-5 text-[#1f2c44]">{value}</p>
     </div>
   );
 }
