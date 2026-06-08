@@ -136,16 +136,16 @@ export function ProvidersCatalogScreen({ data }: { data: CatalogScreenData }) {
           </header>
 
           <section className="mt-8">
-            <div className="rounded-[30px] bg-white px-5 py-6 shadow-[0_20px_50px_rgba(15,23,42,0.08)] ring-1 ring-[#eff4f1]">
+            <div className="rounded-[30px] bg-white px-5 py-5 shadow-[0_20px_50px_rgba(15,23,42,0.08)] ring-1 ring-[#eff4f1]">
               <div className="flex items-start gap-4">
-                <div className="inline-flex h-24 w-24 shrink-0 items-center justify-center rounded-[24px] bg-[#F3FBF5] text-[#11233f] shadow-[0_10px_24px_rgba(15,23,42,0.04)]">
-                  <Icon className="h-14 w-14 stroke-[1.8]" />
+                <div className="inline-flex h-20 w-20 shrink-0 items-center justify-center rounded-[22px] bg-[#F3FBF5] text-[#11233f] shadow-[0_10px_24px_rgba(15,23,42,0.04)]">
+                  <Icon className="h-12 w-12 stroke-[1.8]" />
                 </div>
                 <div className="min-w-0 flex-1 pt-1">
-                  <h1 className="text-[2rem] font-extrabold tracking-[-0.05em] text-[#13294b]">
+                  <h1 className="text-[1.72rem] font-extrabold tracking-[-0.05em] text-[#13294b]">
                     {serviceTitle}
                   </h1>
-                  <p className="mt-1 text-[15px] leading-7 text-[#667085]">
+                  <p className="mt-1 text-[14px] leading-6 text-[#667085]">
                     Find trusted and verified
                     <br />
                     {serviceLower} services near you
