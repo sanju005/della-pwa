@@ -538,6 +538,13 @@ function ProviderCard({ listing }: { listing: CatalogScreenListing }) {
           />
         </div>
       </div>
+
+      <Link
+        href={listing.href}
+        className="mt-4 inline-flex h-12 w-full items-center justify-center rounded-[18px] bg-[#16A34A] px-4 text-[14px] font-bold text-white shadow-[0_14px_28px_rgba(22,163,74,0.22)] transition hover:bg-[#15803d]"
+      >
+        View Profile
+      </Link>
     </article>
   );
 }
