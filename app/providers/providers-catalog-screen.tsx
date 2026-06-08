@@ -151,7 +151,7 @@ export function ProvidersCatalogScreen({ data }: { data: CatalogScreenData }) {
           </header>
 
           <section className="mt-4">
-            <div className="rounded-[30px] bg-white px-5 py-5 shadow-[0_20px_50px_rgba(15,23,42,0.08)] ring-1 ring-[#eff4f1]">
+            <div className="rounded-[30px] bg-white px-5 py-4 shadow-[0_20px_50px_rgba(15,23,42,0.08)] ring-1 ring-[#eff4f1]">
               <div className="flex items-start gap-4">
                 <div className="inline-flex h-20 w-20 shrink-0 items-center justify-center rounded-[22px] bg-[#F3FBF5] text-[#11233f] shadow-[0_10px_24px_rgba(15,23,42,0.04)]">
                   <Icon className="h-12 w-12 stroke-[1.8]" />
@@ -160,7 +160,7 @@ export function ProvidersCatalogScreen({ data }: { data: CatalogScreenData }) {
                   <h1 className="text-[1.72rem] font-extrabold tracking-[-0.05em] text-[#13294b]">
                     {serviceTitle}
                   </h1>
-                  <p className="mt-1 text-[14px] leading-6 text-[#667085]">
+                  <p className="mt-0.5 text-[14px] leading-6 text-[#667085]">
                     Find trusted and verified
                     <br />
                     {serviceLower} services near you
@@ -168,7 +168,7 @@ export function ProvidersCatalogScreen({ data }: { data: CatalogScreenData }) {
                 </div>
               </div>
 
-              <div className="mt-6 grid grid-cols-3 divide-x divide-[#ebf0ed] rounded-[20px] border border-[#eef3f0] bg-white">
+              <div className="mt-4 grid grid-cols-3 divide-x divide-[#ebf0ed] rounded-[20px] border border-[#eef3f0] bg-white">
                 <TrustBadge
                   icon={<ShieldCheck className="h-5 w-5 text-[#16A34A]" />}
                   title="Verified"
@@ -186,7 +186,7 @@ export function ProvidersCatalogScreen({ data }: { data: CatalogScreenData }) {
                 />
               </div>
 
-              <div className="mt-5 flex items-center gap-3">
+              <div className="mt-4 flex items-center gap-3">
                 <div className="flex items-center">
                   {heroProviders.map((listing, index) => (
                     <div
@@ -317,7 +317,7 @@ function TrustBadge({
   label: string;
 }) {
   return (
-    <div className="min-w-0 px-3 py-3 text-center">
+    <div className="min-w-0 px-3 py-2.5 text-center">
       <div className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[#f3fbf5] text-[#16A34A]">
         {icon}
       </div>
@@ -467,7 +467,7 @@ function ProviderCard({ listing }: { listing: CatalogScreenListing }) {
           />
         </div>
 
-        <div className="flex flex-wrap gap-2 rounded-[18px] border border-[#e8eeea] bg-white p-3">
+        <div className="flex items-center gap-2 overflow-x-auto pb-1">
           <VerifiedBadge icon={<IdCard className="h-3.5 w-3.5" />} label="ID Verified" />
           <VerifiedBadge icon={<Phone className="h-3.5 w-3.5" />} label="Phone Verified" />
           <VerifiedBadge icon={<Smile className="h-3.5 w-3.5" />} label="Face Verified" />
@@ -521,7 +521,7 @@ function VerifiedBadge({
   label: string;
 }) {
   return (
-    <span className="inline-flex items-center gap-2 rounded-full border border-[#dceadf] bg-[#f7fcf8] px-3 py-2 text-[11px] font-semibold text-[#475467]">
+    <span className="inline-flex shrink-0 items-center gap-2 rounded-full border border-[#dceadf] bg-white px-3 py-2 text-[11px] font-semibold text-[#475467]">
       <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-white text-[#16a34a] ring-1 ring-[#dceadf]">
         {icon}
       </span>
