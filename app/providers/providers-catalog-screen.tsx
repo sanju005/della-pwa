@@ -131,7 +131,7 @@ export function ProvidersCatalogScreen({ data }: { data: CatalogScreenData }) {
     <main className="min-h-[100dvh] bg-[#f6fff8]">
       <div className="mx-auto min-h-[100dvh] w-full max-w-[430px] bg-white px-6 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
         <div className="py-6">
-          <header className="space-y-2">
+          <header className="space-y-1">
             <div className="flex items-center justify-between gap-3">
               <Link
                 href="/home"
@@ -145,12 +145,12 @@ export function ProvidersCatalogScreen({ data }: { data: CatalogScreenData }) {
                 onLocationChange={(location) => setLocationDetails(location)}
               />
             </div>
-            <p className="pl-[4.1rem] text-[12px] leading-5 text-[#98A2B3]">
+            <p className="pl-[4.1rem] text-[12px] leading-4.5 text-[#98A2B3]">
               {fullAddress}
             </p>
           </header>
 
-          <section className="mt-4">
+          <section className="mt-2.5">
             <div className="rounded-[30px] bg-white px-5 py-4 shadow-[0_20px_50px_rgba(15,23,42,0.08)] ring-1 ring-[#eff4f1]">
               <div className="flex items-start gap-4">
                 <div className="inline-flex h-20 w-20 shrink-0 items-center justify-center rounded-[22px] bg-[#F3FBF5] text-[#11233f] shadow-[0_10px_24px_rgba(15,23,42,0.04)]">
