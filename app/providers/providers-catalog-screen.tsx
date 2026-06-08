@@ -8,21 +8,22 @@ import {
   ArrowLeft,
   BadgeCheck,
   BriefcaseBusiness,
+  ChefHat,
   ChevronDown,
   Clock3,
-  Filter,
   Heart,
   IdCard,
   MapPin,
   Phone,
-  Search,
   ShieldCheck,
   Smile,
+  SlidersHorizontal,
   Star,
+  StarIcon,
   ThumbsUp,
   UserRound,
 } from "lucide-react";
-import { EmptyState as SharedEmptyState, PageHeader, SectionTitle } from "@/app/_components/della-ui";
+import { EmptyState as SharedEmptyState } from "@/app/_components/della-ui";
 
 import { LiveLocationChip } from "@/app/_components/live-location-chip";
 
@@ -71,7 +72,7 @@ type CatalogScreenData = {
 const serviceIcons: Partial<
   Record<Exclude<ServiceKey, null>, ComponentType<{ className?: string }>>
 > = {
-  chef: BriefcaseBusiness,
+  chef: ChefHat,
   maid: UserRound,
   babysitter: UserRound,
   driver: BriefcaseBusiness,
@@ -82,7 +83,6 @@ const serviceIcons: Partial<
 };
 
 export function ProvidersCatalogScreen({ data }: { data: CatalogScreenData }) {
-  const [query, setQuery] = useState("");
   const [activeTab, setActiveTab] = useState<TabKey>("all");
   const [sortBy, setSortBy] = useState<SortKey>("popular");
 
@@ -95,23 +95,12 @@ export function ProvidersCatalogScreen({ data }: { data: CatalogScreenData }) {
   );
 
   const filteredListings = useMemo(() => {
-    const loweredQuery = query.trim().toLowerCase();
-
     let items = data.listings.filter((listing) => {
-      const matchesQuery =
-        loweredQuery.length === 0 ||
-        listing.name.toLowerCase().includes(loweredQuery) ||
-        listing.providerName?.toLowerCase().includes(loweredQuery) ||
-        listing.bio.toLowerCase().includes(loweredQuery) ||
-        listing.specialties.some((specialty) =>
-          specialty.toLowerCase().includes(loweredQuery)
-        );
-
       const matchesTab =
         activeTab === "all" ||
         (activeTab === "active-now" && listing.availabilityLabel === "Available Today");
 
-      return matchesQuery && matchesTab;
+      return matchesTab;
     });
 
     items = [...items].sort((left, right) => {
@@ -122,12 +111,15 @@ export function ProvidersCatalogScreen({ data }: { data: CatalogScreenData }) {
     });
 
     return items;
-  }, [activeTab, data.listings, query, sortBy]);
+  }, [activeTab, data.listings, sortBy]);
 
   const Icon = data.service
     ? serviceIcons[data.service] ?? BriefcaseBusiness
     : BriefcaseBusiness;
+  const serviceTitle = data.serviceLabel ? `${data.serviceLabel} Services` : "Service Providers";
   const serviceLower = (data.serviceLabel || "service").toLowerCase();
+  const heroProviders = filteredListings.slice(0, 3);
+  const extraProviders = Math.max(filteredListings.length - heroProviders.length, 0);
 
   return (
     <main className="min-h-[100dvh] bg-[#f6fff8]">
@@ -144,54 +136,101 @@ export function ProvidersCatalogScreen({ data }: { data: CatalogScreenData }) {
           </header>
 
           <section className="mt-8">
-            <div className="flex items-start gap-4">
-              <div className="inline-flex h-24 w-24 shrink-0 items-center justify-center rounded-[24px] bg-[#EEF9F1] text-[#0F172A] shadow-[0_10px_24px_rgba(15,23,42,0.04)] sm:h-28 sm:w-28">
-                <Icon className="h-14 w-14 stroke-[1.8]" />
-              </div>
-              <div className="min-w-0 flex-1 pt-1">
-                <PageHeader
-                  title={data.serviceLabel}
-                  subtitle={`Find trusted ${serviceLower} services near you`}
-                />
-                <div className="mt-4 grid grid-cols-3 gap-3 text-[12px] leading-5 text-[#344054]">
-                  <TrustBadge
-                    icon={<ShieldCheck className="h-4.5 w-4.5 text-[#16A34A]" />}
-                    label="Approval badge after admin review"
-                  />
-                  <TrustBadge
-                    icon={<Star className="h-4.5 w-4.5 fill-[#16A34A] text-[#16A34A]" />}
-                    label="Rating & Reviews"
-                  />
-                  <TrustBadge
-                    icon={<BadgeCheck className="h-4.5 w-4.5 text-[#16A34A]" />}
-                    label="Secure Booking"
-                  />
+            <div className="rounded-[30px] bg-white px-5 py-6 shadow-[0_20px_50px_rgba(15,23,42,0.08)] ring-1 ring-[#eff4f1]">
+              <div className="flex items-start gap-4">
+                <div className="inline-flex h-24 w-24 shrink-0 items-center justify-center rounded-[24px] bg-[#F3FBF5] text-[#11233f] shadow-[0_10px_24px_rgba(15,23,42,0.04)]">
+                  <Icon className="h-14 w-14 stroke-[1.8]" />
+                </div>
+                <div className="min-w-0 flex-1 pt-1">
+                  <h1 className="text-[2rem] font-extrabold tracking-[-0.05em] text-[#13294b]">
+                    {serviceTitle}
+                  </h1>
+                  <p className="mt-1 text-[15px] leading-7 text-[#667085]">
+                    Find trusted and verified
+                    <br />
+                    {serviceLower} services near you
+                  </p>
                 </div>
               </div>
+
+              <div className="mt-6 grid grid-cols-3 divide-x divide-[#ebf0ed] rounded-[20px] border border-[#eef3f0] bg-white">
+                <TrustBadge
+                  icon={<ShieldCheck className="h-5 w-5 text-[#16A34A]" />}
+                  title="Verified"
+                  label="Background checked"
+                />
+                <TrustBadge
+                  icon={<StarIcon className="h-5 w-5 text-[#16A34A]" />}
+                  title="4.8+ Rated"
+                  label="High ratings & reviews"
+                />
+                <TrustBadge
+                  icon={<ShieldCheck className="h-5 w-5 text-[#16A34A]" />}
+                  title="Secure Booking"
+                  label="Protected payments"
+                />
+              </div>
+
+              <div className="mt-5 flex items-center gap-3">
+                <div className="flex items-center">
+                  {heroProviders.map((listing, index) => (
+                    <div
+                      key={listing.id}
+                      className={`relative h-11 w-11 overflow-hidden rounded-full border-2 border-white shadow-[0_8px_18px_rgba(15,23,42,0.08)] ${index === 0 ? "" : "-ml-2.5"}`}
+                    >
+                      <Image
+                        src={listing.portraitSrc}
+                        alt={listing.name}
+                        width={80}
+                        height={80}
+                        unoptimized
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
+                  ))}
+                  {extraProviders > 0 ? (
+                    <div className="-ml-2.5 inline-flex h-11 min-w-11 items-center justify-center rounded-full border-2 border-white bg-[#16A34A] px-2 text-[13px] font-bold text-white shadow-[0_8px_18px_rgba(22,163,74,0.28)]">
+                      +{extraProviders}
+                    </div>
+                  ) : null}
+                </div>
+                <p className="text-[15px] font-medium text-[#667085]">
+                  <span className="font-semibold text-[#344054]">{filteredListings.length}</span>{" "}
+                  {serviceLower} available
+                </p>
+              </div>
             </div>
           </section>
 
-          <section className="mt-8 flex items-center gap-3">
-            <div className="flex h-[58px] basis-[70%] items-center rounded-[20px] border border-[#E5ECE7] px-5 shadow-[0_8px_22px_rgba(15,23,42,0.05)]">
-              <Search className="h-6 w-6 text-[#0F172A]" />
-              <input
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder={`Search ${serviceLower} services...`}
-                className="ml-4 h-full w-full border-0 bg-transparent text-[16px] text-[#0F172A] outline-none placeholder:text-[#667085]"
-              />
-            </div>
-            <button
-              type="button"
-              className="inline-flex h-[58px] basis-[30%] items-center justify-center gap-2 rounded-[16px] bg-[#16A34A] px-4 text-[16px] font-extrabold text-white"
-            >
-              <Filter className="h-5 w-5" />
-              Filter
-            </button>
+          <section className="mt-7 flex flex-wrap items-center gap-3">
+            <FilterPill
+              active={sortBy === "nearest"}
+              onClick={() => setSortBy("nearest")}
+              icon={<MapPin className="h-4 w-4" />}
+              label="Nearby"
+            />
+            <FilterPill
+              active={sortBy === "popular"}
+              onClick={() => setSortBy("popular")}
+              icon={<Star className="h-4 w-4" />}
+              label="Top Rated"
+            />
+            <FilterPill
+              active={sortBy === "price-low"}
+              onClick={() => setSortBy("price-low")}
+              icon={<BadgeCheck className="h-4 w-4" />}
+              label="Low Rate"
+            />
+            <FilterPill
+              active={false}
+              onClick={() => undefined}
+              icon={<SlidersHorizontal className="h-4 w-4" />}
+              label="More Filters"
+            />
           </section>
 
-          <section className="mt-6 overflow-hidden rounded-[20px] border border-[#E5ECE7] bg-white shadow-[0_8px_20px_rgba(15,23,42,0.04)]">
-            <div className="grid grid-cols-4">
+          <section className="mt-5 overflow-hidden rounded-[24px] border border-[#E5ECE7] bg-white p-2 shadow-[0_8px_20px_rgba(15,23,42,0.04)]">
+            <div className="flex gap-2">
               <TabButton
                 active={activeTab === "all"}
                 onClick={() => setActiveTab("all")}
@@ -214,21 +253,29 @@ export function ProvidersCatalogScreen({ data }: { data: CatalogScreenData }) {
           ) : null}
 
           <section className="mt-8">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <SectionTitle title={`${filteredListings.length} ${data.serviceLabel} services found`} />
-              <label className="flex items-center gap-3 text-[14px] text-[#475467]">
+            <div className="flex items-center justify-between gap-4">
+              <div className="min-w-0">
+                <p className="flex items-center gap-2 text-[15px] text-[#667085]">
+                  <span className="h-2.5 w-2.5 rounded-full bg-[#16A34A]" />
+                  <span>
+                    <span className="font-semibold text-[#344054]">{filteredListings.length}</span>{" "}
+                    {serviceLower} available near you
+                  </span>
+                </p>
+              </div>
+              <label className="flex shrink-0 items-center gap-2 text-[14px] text-[#98A2B3]">
                 <span>Sort by</span>
                 <span className="relative">
                   <select
                     value={sortBy}
                     onChange={(event) => setSortBy(event.target.value as SortKey)}
-                    className="h-12 appearance-none rounded-[14px] border border-[#E5ECE7] bg-white pl-4 pr-10 text-[15px] font-semibold text-[#344054] outline-none"
+                    className="appearance-none bg-transparent pl-1 pr-6 text-[15px] font-bold text-[#16A34A] outline-none"
                   >
                     <option value="popular">Popular</option>
                     <option value="nearest">Nearest</option>
-                    <option value="price-low">Lowest price</option>
+                    <option value="price-low">Low Rate</option>
                   </select>
-                  <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#475467]" />
+                  <ChevronDown className="pointer-events-none absolute right-0 top-1/2 h-4 w-4 -translate-y-1/2 text-[#16A34A]" />
                 </span>
               </label>
             </div>
@@ -251,12 +298,50 @@ export function ProvidersCatalogScreen({ data }: { data: CatalogScreenData }) {
   );
 }
 
-function TrustBadge({ icon, label }: { icon: ReactNode; label: string }) {
+function TrustBadge({
+  icon,
+  title,
+  label,
+}: {
+  icon: ReactNode;
+  title: string;
+  label: string;
+}) {
   return (
-    <div className="inline-flex min-w-0 items-start gap-2">
-      <span className="mt-0.5 shrink-0">{icon}</span>
-      <span>{label}</span>
+    <div className="min-w-0 px-3 py-4 text-center">
+      <div className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#f3fbf5] text-[#16A34A]">
+        {icon}
+      </div>
+      <p className="mt-3 text-[13px] font-bold text-[#22324c]">{title}</p>
+      <p className="mt-1 text-[11px] leading-4 text-[#667085]">{label}</p>
     </div>
+  );
+}
+
+function FilterPill({
+  active,
+  onClick,
+  icon,
+  label,
+}: {
+  active: boolean;
+  onClick: () => void;
+  icon: ReactNode;
+  label: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`inline-flex h-12 items-center gap-2 rounded-[18px] border px-4 text-[13px] font-semibold shadow-[0_10px_24px_rgba(15,23,42,0.04)] ${
+        active
+          ? "border-[#d8ebdf] bg-[#f3fbf5] text-[#16A34A]"
+          : "border-[#e7ece8] bg-white text-[#344054]"
+      }`}
+    >
+      <span className={active ? "text-[#16A34A]" : "text-[#344054]"}>{icon}</span>
+      <span>{label}</span>
+    </button>
   );
 }
 
@@ -275,21 +360,21 @@ function TabButton({
     <button
       type="button"
       onClick={onClick}
-      className={`min-w-0 px-2 py-4 text-center ${
-        active ? "shadow-[inset_0_-3px_0_#16A34A]" : ""
+      className={`inline-flex min-w-0 items-center justify-center gap-2 rounded-[16px] px-4 py-3 text-center transition ${
+        active ? "bg-[#16A34A] text-white shadow-[0_12px_22px_rgba(22,163,74,0.24)]" : "text-[#344054]"
       }`}
     >
       <div className="flex items-center justify-center gap-1.5 whitespace-nowrap">
         <span
           className={`text-[11px] font-extrabold tracking-[-0.02em] ${
-            active ? "text-[#16A34A]" : "text-[#0F172A]"
+            active ? "text-white" : "text-[#0F172A]"
           }`}
         >
           {label}
         </span>
         <span
           className={`inline-flex min-w-[1.7rem] items-center justify-center rounded-full px-1.5 py-1 text-[10px] font-bold leading-none ${
-            active ? "bg-[#16A34A] text-white" : "bg-[#F1F4F2] text-[#667085]"
+            active ? "bg-white/20 text-white" : "bg-[#F1F4F2] text-[#667085]"
           }`}
         >
           {count}
