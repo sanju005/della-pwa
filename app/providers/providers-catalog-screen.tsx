@@ -308,12 +308,12 @@ function TrustBadge({
   label: string;
 }) {
   return (
-    <div className="min-w-0 px-3 py-4 text-center">
-      <div className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#f3fbf5] text-[#16A34A]">
+    <div className="min-w-0 px-3 py-3 text-center">
+      <div className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[#f3fbf5] text-[#16A34A]">
         {icon}
       </div>
-      <p className="mt-3 text-[13px] font-bold text-[#22324c]">{title}</p>
-      <p className="mt-1 text-[11px] leading-4 text-[#667085]">{label}</p>
+      <p className="mt-2 text-[12px] font-bold text-[#22324c]">{title}</p>
+      <p className="mt-1 text-[10px] leading-4 text-[#667085]">{label}</p>
     </div>
   );
 }
