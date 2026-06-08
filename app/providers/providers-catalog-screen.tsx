@@ -26,7 +26,7 @@ import { EmptyState as SharedEmptyState, PageHeader, SectionTitle } from "@/app/
 
 import { LiveLocationChip } from "@/app/_components/live-location-chip";
 
-type TabKey = "all" | "live-in" | "part-time" | "full-time";
+type TabKey = "all" | "active-now";
 type SortKey = "popular" | "nearest" | "price-low";
 type WorkMode = "Live-in" | "Part-time" | "Full-time";
 type ServiceKey =
@@ -89,9 +89,7 @@ export function ProvidersCatalogScreen({ data }: { data: CatalogScreenData }) {
   const counts = useMemo(
     () => ({
       all: data.listings.length,
-      "live-in": data.listings.filter((item) => item.workMode === "Live-in").length,
-      "part-time": data.listings.filter((item) => item.workMode === "Part-time").length,
-      "full-time": data.listings.filter((item) => item.workMode === "Full-time").length,
+      "active-now": data.listings.filter((item) => item.availabilityLabel === "Available Today").length,
     }),
     [data.listings]
   );
@@ -111,9 +109,7 @@ export function ProvidersCatalogScreen({ data }: { data: CatalogScreenData }) {
 
       const matchesTab =
         activeTab === "all" ||
-        (activeTab === "live-in" && listing.workMode === "Live-in") ||
-        (activeTab === "part-time" && listing.workMode === "Part-time") ||
-        (activeTab === "full-time" && listing.workMode === "Full-time");
+        (activeTab === "active-now" && listing.availabilityLabel === "Available Today");
 
       return matchesQuery && matchesTab;
     });
@@ -203,22 +199,10 @@ export function ProvidersCatalogScreen({ data }: { data: CatalogScreenData }) {
                 count={counts.all}
               />
               <TabButton
-                active={activeTab === "live-in"}
-                onClick={() => setActiveTab("live-in")}
-                label="Live-in"
-                count={counts["live-in"]}
-              />
-              <TabButton
-                active={activeTab === "part-time"}
-                onClick={() => setActiveTab("part-time")}
-                label="Part-time"
-                count={counts["part-time"]}
-              />
-              <TabButton
-                active={activeTab === "full-time"}
-                onClick={() => setActiveTab("full-time")}
-                label="Full-time"
-                count={counts["full-time"]}
+                active={activeTab === "active-now"}
+                onClick={() => setActiveTab("active-now")}
+                label="Active now"
+                count={counts["active-now"]}
               />
             </div>
           </section>
