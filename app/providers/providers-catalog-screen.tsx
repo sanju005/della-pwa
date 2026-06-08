@@ -386,14 +386,19 @@ function TabButton({
 
 function ProviderCard({ listing }: { listing: CatalogScreenListing }) {
   const fullName = buildProviderFullName(listing);
-  const primaryLanguage = listing.specialties[0] ?? listing.workMode;
   const jobsCompleted = Math.max(listing.reviews * 2 + 68, 120);
   const repeatCustomers = Math.max(Math.round(listing.reviews * 0.61), 24);
+  const serviceTags = [
+    listing.specialties[1] ?? "Emergency Repair",
+    listing.specialties[2] ?? "Socket Repair",
+    listing.specialties[3] ?? "Wiring",
+    listing.specialties[4] ?? "Switch Board Repair",
+  ];
 
   return (
-    <article className="w-full max-w-[380px] rounded-[24px] border border-[#e7ece8] bg-white p-4 shadow-[0_18px_38px_rgba(15,23,42,0.07)]">
+    <article className="w-full max-w-[380px] rounded-[28px] border border-[#e7ece8] bg-white p-[18px] shadow-[0_18px_38px_rgba(15,23,42,0.07)]">
       <div className="flex items-start gap-4">
-        <div className="relative h-[150px] w-[120px] shrink-0 overflow-hidden rounded-[18px] bg-[#eef4ef]">
+        <div className="relative h-[156px] w-[128px] shrink-0 overflow-hidden rounded-[20px] bg-[#eef4ef]">
           <Image
             src={listing.portraitSrc}
             alt={listing.name}
@@ -402,25 +407,25 @@ function ProviderCard({ listing }: { listing: CatalogScreenListing }) {
             unoptimized
             className="h-full w-full object-cover"
           />
-          <div className="absolute left-3 top-3 rounded-full bg-white/92 px-3 py-1.5 text-[11px] font-extrabold text-[#16a34a] shadow-[0_8px_18px_rgba(15,23,42,0.12)]">
-            {listing.availabilityLabel}
-          </div>
         </div>
 
         <div className="flex min-w-0 flex-1 flex-col">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0 flex-1">
-              <h3 className="flex min-w-0 items-center gap-2 text-[1.08rem] font-extrabold tracking-[-0.04em] text-[#1f2c44]">
-                <span className="truncate">{listing.name}</span>
-                {listing.isApproved ? (
-                  <BadgeCheck className="h-4.5 w-4.5 shrink-0 fill-[#16a34a] text-[#16a34a]" />
-                ) : null}
-              </h3>
-              <p className="mt-2 text-[12px] font-semibold text-[#98a2b3]">Full name</p>
-              <p className="mt-0.5 truncate text-[15px] font-bold text-[#344054]">{fullName}</p>
-            </div>
+                <h3 className="flex min-w-0 items-center gap-2 text-[1.08rem] font-extrabold tracking-[-0.04em] text-[#1f2c44]">
+                  <span className="truncate">{listing.name}</span>
+                  {listing.isApproved ? (
+                    <BadgeCheck className="h-4.5 w-4.5 shrink-0 fill-[#16a34a] text-[#16a34a]" />
+                  ) : null}
+                </h3>
+                <p className="mt-2 truncate text-[15px] font-bold text-[#1f2c44]">{fullName}</p>
+                <span className="mt-4 inline-flex items-center gap-2 rounded-full bg-[#ecf9f0] px-3 py-2 text-[12px] font-semibold text-[#16a34a]">
+                  <ShieldCheck className="h-4 w-4" />
+                  Top Rated Provider
+                </span>
+              </div>
 
-            <button
+              <button
               type="button"
               aria-label="Save provider"
               className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#eef2ef] bg-white text-[#667085] shadow-[0_8px_18px_rgba(15,23,42,0.06)]"
@@ -431,52 +436,48 @@ function ProviderCard({ listing }: { listing: CatalogScreenListing }) {
         </div>
       </div>
 
-      <div className="mt-4 space-y-3 border-t border-[#e9eeea] pt-4 text-left">
-        <div className="flex flex-wrap gap-2">
+      <div className="mt-5 space-y-4 text-left">
+        <div className="grid grid-cols-2 gap-x-4 gap-y-4 border-b border-[#edf1ee] pb-4">
+          <InfoMetric
+            icon={<Star className="h-5 w-5 fill-[#f5b301] text-[#f5b301]" />}
+            value={listing.rating.toFixed(1)}
+            suffix={`(${listing.reviews} Reviews)`}
+          />
+          <InfoMetric
+            icon={<ThumbsUp className="h-4.5 w-4.5 fill-[#16a34a] text-[#16a34a]" />}
+            value="98%"
+            suffix="On-Time"
+          />
+          <InfoMetric
+            icon={<MapPin className="h-4.5 w-4.5 text-[#667085]" />}
+            value={`${listing.distanceKm} km away`}
+          />
+          <InfoMetric
+            icon={<BriefcaseBusiness className="h-4.5 w-4.5 text-[#667085]" />}
+            value={`${listing.yearsExperience} Experience`}
+          />
+        </div>
+
+        <div className="flex flex-wrap gap-2 rounded-[18px] border border-[#e8eeea] bg-white p-3">
           <VerifiedBadge icon={<IdCard className="h-3.5 w-3.5" />} label="ID Verified" />
           <VerifiedBadge icon={<Phone className="h-3.5 w-3.5" />} label="Phone Verified" />
           <VerifiedBadge icon={<Smile className="h-3.5 w-3.5" />} label="Face Verified" />
         </div>
 
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[13px] text-[#667085]">
-          <span className="inline-flex items-center gap-1.5 font-semibold text-[#1f2c44]">
-            <Star className="h-4 w-4 fill-[#f5b301] text-[#f5b301]" />
-            <span>{listing.rating.toFixed(1)}</span>
-            <span className="font-medium text-[#667085]">({listing.reviews} reviews)</span>
-          </span>
-          <span className="inline-flex items-center gap-1.5 font-semibold text-[#1f2c44]">
-            <ThumbsUp className="h-3.5 w-3.5 fill-[#16a34a] text-[#16a34a]" />
-            <span>98%</span>
-            <span className="font-medium text-[#667085]">On-time</span>
-          </span>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[13px] text-[#667085]">
-          <span className="inline-flex items-center gap-1.5 font-semibold text-[#344054]">
-            <MapPin className="h-3.5 w-3.5 text-[#667085]" />
-            <span>{listing.distanceKm} km away</span>
-          </span>
-          <span className="inline-flex items-center gap-1.5 font-semibold text-[#344054]">
-            <BriefcaseBusiness className="h-3.5 w-3.5 text-[#667085]" />
-            <span>{listing.yearsExperience} Experience</span>
-          </span>
-        </div>
-
         <div className="flex flex-wrap gap-2">
-          <span className="inline-flex items-center rounded-full bg-[#e9f8ee] px-3 py-1.5 text-[12px] font-semibold text-[#16a34a]">
-            {primaryLanguage}
-          </span>
-        </div>
-
-        <div className="flex flex-wrap gap-2">
-          <span className="inline-flex items-center rounded-full bg-[#eef7f1] px-3 py-1.5 text-[12px] font-semibold text-[#15803d]">
-            {listing.specialties[1] ?? "Emergency repair"}
-          </span>
+          {serviceTags.map((tag) => (
+            <span
+              key={tag}
+              className="inline-flex items-center rounded-full bg-[#ecf9f0] px-3 py-2 text-[12px] font-semibold text-[#15803d]"
+            >
+              {tag}
+            </span>
+          ))}
         </div>
       </div>
 
-      <div className="mt-4 border-t border-[#e9eeea] pt-4">
-        <div className="grid grid-cols-2 gap-3 text-[12px] text-[#667085]">
+      <div className="mt-5 rounded-[20px] border border-[#edf1ee] bg-[#fbfdfb] p-2">
+        <div className="grid grid-cols-4 divide-x divide-[#e8eeea] text-[12px] text-[#667085]">
           <StatPill
             icon={<Clock3 className="h-3.5 w-3.5 text-[#16a34a]" />}
             label="Replies in"
@@ -520,6 +521,26 @@ function VerifiedBadge({
   );
 }
 
+function InfoMetric({
+  icon,
+  value,
+  suffix,
+}: {
+  icon: ReactNode;
+  value: string;
+  suffix?: string;
+}) {
+  return (
+    <div className="flex min-w-0 items-center gap-2.5">
+      <span className="shrink-0">{icon}</span>
+      <p className="truncate text-[13px] font-bold text-[#1f2c44]">
+        {value}
+        {suffix ? <span className="ml-1 font-medium text-[#667085]">{suffix}</span> : null}
+      </p>
+    </div>
+  );
+}
+
 function StatPill({
   icon,
   label,
@@ -530,8 +551,8 @@ function StatPill({
   value: string;
 }) {
   return (
-    <div className="rounded-[16px] bg-[#f8fbf9] px-3 py-3 text-left">
-      <div className="flex items-center gap-2">
+    <div className="px-3 py-3 text-center">
+      <div className="flex items-center justify-center gap-2">
         {icon}
         <span className="text-[11px] font-semibold text-[#98a2b3]">{label}</span>
       </div>
