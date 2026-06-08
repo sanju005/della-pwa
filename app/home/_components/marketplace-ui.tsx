@@ -456,7 +456,7 @@ function CategoryItem({ category }: { category: HomeServiceCategory }) {
       href={`/providers?service=${category.key}`}
       className="flex flex-col items-center text-center"
     >
-      <div className="flex h-[3.7rem] w-[3.7rem] items-center justify-center rounded-full bg-[#EEF9F1] text-[#0F172A]">
+      <div className="flex h-[3.7rem] w-[3.7rem] items-center justify-center rounded-[18px] bg-[#EEF9F1] text-[#0F172A]">
         <CategoryIcon kind={category.key} />
       </div>
       <p className="mt-3 text-[13px] font-semibold tracking-[-0.02em] text-[#0F172A]">
