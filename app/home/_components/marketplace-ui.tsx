@@ -284,7 +284,7 @@ function ProviderSliderSection({
           {providers.map((provider) => (
             <div
               key={`${title}-${provider.id}`}
-              className="w-[calc(100vw-2.75rem)] max-w-[22.5rem] shrink-0"
+              className="w-[calc(100vw-2.5rem)] max-w-[24.375rem] shrink-0"
             >
               <SharedProviderCard
                 href={buildProviderDetailHref({
@@ -301,7 +301,6 @@ function ProviderSliderSection({
                   name: provider.name,
                   serviceKey: provider.serviceKey,
                 })}
-                badge={<StatusBadge label={provider.statusLabel} tone="accepted" />}
               />
             </div>
           ))}

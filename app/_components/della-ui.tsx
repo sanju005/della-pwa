@@ -7,7 +7,6 @@ import {
   Bell,
   CalendarDays,
   ChevronRight,
-  CircleCheck,
   CreditCard,
   LoaderCircle,
   MapPin,
@@ -15,6 +14,7 @@ import {
   Smartphone,
   Star,
   ShieldCheck,
+  UserRound,
 } from "lucide-react";
 
 type ButtonTone = "primary" | "secondary" | "ghost" | "danger";
@@ -373,7 +373,6 @@ export function PremiumProviderCard({
   reviews,
   distanceLabel,
   portraitSrc,
-  badge,
 }: {
   href: string;
   name: string;
@@ -383,72 +382,71 @@ export function PremiumProviderCard({
   reviews: string;
   distanceLabel: string;
   portraitSrc: string;
-  badge?: ReactNode;
 }) {
   return (
-    <AppCard className="overflow-hidden rounded-[28px] border-[#edf1ee] p-0 shadow-[0_22px_48px_rgba(15,23,42,0.08)]">
-      <div className="relative mx-4 mt-4 h-[18.25rem] overflow-hidden rounded-[20px] bg-[#eef4ef]">
+    <AppCard className="mx-auto w-full max-w-[390px] overflow-hidden rounded-[28px] border-[#eef2ef] bg-white p-0 shadow-[0_20px_48px_rgba(15,23,42,0.08)]">
+      <div className="relative mx-6 mt-6 h-[260px] overflow-hidden rounded-[16px] bg-[#eef4ef]">
         <Image
           src={portraitSrc}
           alt={name}
           fill
-          sizes="(max-width: 430px) 100vw, 320px"
+          sizes="(max-width: 430px) calc(100vw - 64px), 340px"
           className="object-cover"
           unoptimized
         />
-        {badge ? <div className="absolute left-3 top-3">{badge}</div> : null}
       </div>
 
-      <div className="px-5 pb-5 pt-5">
+      <div className="px-6 pb-6 pt-6 text-left">
         <div className="min-w-0">
-          <h3 className="truncate text-[2.15rem] font-extrabold leading-none tracking-[-0.065em] text-[#162544]">
+          <h3 className="truncate text-[3rem] font-extrabold leading-none tracking-[-0.07em] text-[#162544]">
             {name}
           </h3>
-          <p className="mt-5 text-[13px] font-medium text-[#6b7280]">Full name</p>
-          <p className="mt-1.5 truncate text-[1.05rem] font-bold text-[#1f2c44]">
+          <p className="mt-7 text-[14px] font-medium text-[#667085]">Full name</p>
+          <p className="mt-3 truncate text-[1.05rem] font-bold text-[#1f2c44]">
             {fullName ?? name}
           </p>
         </div>
 
-        <div className="mt-6 flex flex-wrap gap-3">
+        <div className="mt-7 flex flex-wrap gap-3">
           <VerificationPill
-            icon={<CreditCard className="h-3.5 w-3.5" />}
+            icon={<CreditCard className="h-4 w-4" />}
             label="ID Verified"
+            accent
           />
           <VerificationPill
-            icon={<Smartphone className="h-3.5 w-3.5" />}
+            icon={<Smartphone className="h-4 w-4" />}
             label="Phone Verified"
           />
         </div>
 
-        <div className="mt-7 border-t border-[#e8eeea] pt-5">
-          <div className="flex items-center gap-4 text-[14px] text-[#667085]">
+        <div className="mt-8 border-t border-[#e9eeea] pt-6">
+          <div className="flex items-center gap-5 text-[14px] text-[#667085]">
             <span className="inline-flex items-center gap-3 font-semibold text-[#1f2c44]">
-              <Star className="h-8 w-8 fill-[#f5b301] text-[#f5b301]" />
+              <Star className="h-10 w-10 fill-[#f5b301] text-[#f5b301]" />
               {rating}
             </span>
-            <span className="h-8 w-px bg-[#e4e7ec]" />
+            <span className="h-10 w-px bg-[#e4e7ec]" />
             <span className="text-[1rem] font-medium text-[#667085]">{reviews}</span>
           </div>
-          <div className="mt-5 flex items-center gap-3 text-[1rem] font-semibold text-[#1f2c44]">
-            <MapPin className="h-7 w-7 text-[#667085]" />
+          <div className="mt-6 flex items-center gap-3 text-[1rem] font-semibold text-[#1f2c44]">
+            <MapPin className="h-8 w-8 text-[#667085]" />
             <span>{distanceLabel}</span>
           </div>
         </div>
 
-        <div className="mt-7 flex items-end justify-between gap-3 border-t border-[#e8eeea] pt-5">
+        <div className="mt-8 flex items-end justify-between gap-4 border-t border-[#e9eeea] pt-6">
           <div className="min-w-0 flex-1">
-            <p className="text-[13px] font-medium text-[#667085]">From</p>
-            <p className="mt-1 text-[2rem] font-extrabold leading-none tracking-[-0.05em] text-[#16a34a]">
+            <p className="text-[14px] font-medium text-[#667085]">From</p>
+            <p className="mt-2 text-[2.2rem] font-extrabold leading-none tracking-[-0.05em] text-[#16a34a]">
               {priceLabel}
             </p>
           </div>
           <Link
             href={href}
-            className="inline-flex h-[4.6rem] min-w-[11.8rem] shrink-0 items-center justify-center gap-3 rounded-[18px] bg-[linear-gradient(180deg,#edf8f0_0%,#e4f5e9_100%)] px-6 text-[1rem] font-bold text-[#169647]"
+            className="inline-flex h-[4.6rem] min-w-[13rem] shrink-0 items-center justify-center gap-3 rounded-[18px] bg-[linear-gradient(180deg,#edf8f0_0%,#e8f6ed_100%)] px-7 text-[1rem] font-bold text-[#169647]"
           >
-            <span className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#cfe9d7] bg-white/75 text-[#169647]">
-              <CircleCheck className="h-5 w-5" />
+            <span className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[#cfe9d7] bg-white/80 text-[#169647]">
+              <UserRound className="h-5 w-5" />
             </span>
             <span>View Profile</span>
           </Link>
@@ -461,15 +459,22 @@ export function PremiumProviderCard({
 function VerificationPill({
   icon,
   label,
+  accent = false,
 }: {
   icon: ReactNode;
   label: string;
+  accent?: boolean;
 }) {
   return (
-    <span className="inline-flex items-center gap-2.5 rounded-full border border-[#d8ebdf] bg-[#fbfefc] px-3.5 py-2.5 text-[12px] font-medium text-[#344054]">
+    <span className="inline-flex items-center gap-3 rounded-full border border-[#d8ebdf] bg-[#fbfefc] px-4 py-3 text-[12px] font-medium text-[#344054]">
       <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-white text-[#16a34a] ring-1 ring-[#dbeee2]">
         {icon}
       </span>
+      {accent ? (
+        <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-[#16a34a] text-white">
+          <span className="text-[11px] font-bold">✓</span>
+        </span>
+      ) : null}
       {label}
     </span>
   );
