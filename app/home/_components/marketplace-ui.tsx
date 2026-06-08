@@ -21,7 +21,13 @@ import {
   Heart,
   CalendarDays,
 } from "lucide-react";
-import { BottomNav, EmptyState, ProviderCard as SharedProviderCard, SectionTitle, StatusBadge } from "@/app/_components/della-ui";
+import {
+  BottomNav,
+  EmptyState,
+  PremiumProviderCard as SharedProviderCard,
+  SectionTitle,
+  StatusBadge,
+} from "@/app/_components/della-ui";
 
 import { LiveLocationChip } from "@/app/_components/live-location-chip";
 import {
@@ -293,6 +299,7 @@ function ProviderSliderSection({
                   serviceKey: provider.serviceKey,
                 })}
                 badge={<StatusBadge label={provider.statusLabel} tone="accepted" />}
+                subtitle={provider.specialties[0] ?? provider.name}
               />
             </div>
           ))}
