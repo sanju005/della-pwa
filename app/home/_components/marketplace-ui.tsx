@@ -348,12 +348,11 @@ function PopularProviderCard({
       </div>
 
       <div className="pt-6">
-        <h3 className="text-[2.1rem] font-extrabold leading-none tracking-[-0.07em] text-[#162544]">
+        <h3 className="text-[1.75rem] font-semibold leading-none tracking-[-0.055em] text-[#162544]">
           {name}
         </h3>
 
-        <p className="mt-6 text-[14px] font-medium text-[#667085]">Full name</p>
-        <p className="mt-3 text-[1rem] font-bold text-[#1f2c44]">{fullName}</p>
+        <p className="mt-5 text-[1rem] font-semibold text-[#1f2c44]">{fullName}</p>
 
         <div className="mt-6 flex flex-wrap gap-3">
           <ProviderBadge icon={<CreditCard className="h-4 w-4" />} label="ID Verified" accent />
