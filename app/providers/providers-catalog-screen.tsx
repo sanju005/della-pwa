@@ -348,9 +348,9 @@ function ProviderCard({ listing }: { listing: CatalogScreenListing }) {
   const repeatCustomers = Math.max(Math.round(listing.reviews * 0.61), 24);
 
   return (
-    <article className="rounded-[24px] border border-[#e7ece8] bg-white p-4 shadow-[0_18px_38px_rgba(15,23,42,0.07)]">
-      <div className="flex items-stretch gap-4">
-        <div className="relative h-[12.5rem] w-[8.5rem] shrink-0 overflow-hidden rounded-[20px] bg-[#eef4ef] sm:h-[13rem] sm:w-[9rem]">
+    <article className="w-full max-w-[380px] rounded-[24px] border border-[#e7ece8] bg-white p-4 shadow-[0_18px_38px_rgba(15,23,42,0.07)]">
+      <div className="flex items-start gap-4">
+        <div className="relative h-[150px] w-[120px] shrink-0 overflow-hidden rounded-[18px] bg-[#eef4ef]">
           <Image
             src={listing.portraitSrc}
             alt={listing.name}
@@ -364,69 +364,76 @@ function ProviderCard({ listing }: { listing: CatalogScreenListing }) {
           </div>
         </div>
 
-        <div className="min-w-0 flex-1">
+        <div className="flex min-w-0 flex-1 flex-col">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0 flex-1">
-              <h3 className="flex min-w-0 items-center gap-2 text-[1.05rem] font-extrabold tracking-[-0.04em] text-[#1f2c44] sm:text-[1.2rem]">
+              <h3 className="flex min-w-0 items-center gap-2 text-[1.08rem] font-extrabold tracking-[-0.04em] text-[#1f2c44]">
                 <span className="truncate">{listing.name}</span>
                 {listing.isApproved ? (
                   <BadgeCheck className="h-4.5 w-4.5 shrink-0 fill-[#16a34a] text-[#16a34a]" />
                 ) : null}
               </h3>
               <p className="mt-2 text-[12px] font-semibold text-[#98a2b3]">Full name</p>
-              <p className="mt-0.5 truncate text-[15px] font-bold text-[#344054]">
-                {fullName}
-              </p>
-
-              <div className="mt-4 flex flex-wrap gap-2">
-                <VerifiedBadge icon={<IdCard className="h-3.5 w-3.5" />} label="ID Verified" />
-                <VerifiedBadge icon={<Phone className="h-3.5 w-3.5" />} label="Phone Verified" />
-                <VerifiedBadge icon={<Smile className="h-3.5 w-3.5" />} label="Face Verified" />
-              </div>
-
-              <div className="mt-4 space-y-2.5 border-t border-[#e9eeea] pt-4 text-[13px] text-[#667085]">
-                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                  <span className="inline-flex items-center gap-1.5 font-semibold text-[#1f2c44]">
-                    <Star className="h-4 w-4 fill-[#f5b301] text-[#f5b301]" />
-                    {listing.rating.toFixed(1)}
-                  </span>
-                  <span>({listing.reviews} reviews)</span>
-                  <span className="inline-flex items-center gap-1.5 font-semibold text-[#1f2c44]">
-                    <ThumbsUp className="h-3.5 w-3.5 fill-[#16a34a] text-[#16a34a]" />
-                    <span>98%</span>
-                    <span className="font-medium text-[#667085]">On-time</span>
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-1.5 font-semibold text-[#344054]">
-                  <MapPin className="h-3.5 w-3.5 text-[#667085]" />
-                  <span>{listing.distanceKm} km away</span>
-                </div>
-
-                <div>
-                  <p className="text-[13px] font-semibold text-[#1f2c44]">
-                    {listing.yearsExperience} Experience
-                  </p>
-                  <p className="mt-1 text-[13px] font-medium text-[#16a34a]">
-                    {primaryLanguage}
-                  </p>
-                </div>
-              </div>
+              <p className="mt-0.5 truncate text-[15px] font-bold text-[#344054]">{fullName}</p>
             </div>
 
             <button
               type="button"
               aria-label="Save provider"
-              className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[#eef2ef] bg-white text-[#667085] shadow-[0_8px_18px_rgba(15,23,42,0.06)]"
+              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#eef2ef] bg-white text-[#667085] shadow-[0_8px_18px_rgba(15,23,42,0.06)]"
             >
-              <Heart className="h-5.5 w-5.5" />
+              <Heart className="h-5 w-5" />
             </button>
           </div>
         </div>
       </div>
 
+      <div className="mt-4 space-y-3 border-t border-[#e9eeea] pt-4 text-left">
+        <div className="flex flex-wrap gap-2">
+          <VerifiedBadge icon={<IdCard className="h-3.5 w-3.5" />} label="ID Verified" />
+          <VerifiedBadge icon={<Phone className="h-3.5 w-3.5" />} label="Phone Verified" />
+          <VerifiedBadge icon={<Smile className="h-3.5 w-3.5" />} label="Face Verified" />
+        </div>
+
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[13px] text-[#667085]">
+          <span className="inline-flex items-center gap-1.5 font-semibold text-[#1f2c44]">
+            <Star className="h-4 w-4 fill-[#f5b301] text-[#f5b301]" />
+            <span>{listing.rating.toFixed(1)}</span>
+            <span className="font-medium text-[#667085]">({listing.reviews} reviews)</span>
+          </span>
+          <span className="inline-flex items-center gap-1.5 font-semibold text-[#1f2c44]">
+            <ThumbsUp className="h-3.5 w-3.5 fill-[#16a34a] text-[#16a34a]" />
+            <span>98%</span>
+            <span className="font-medium text-[#667085]">On-time</span>
+          </span>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[13px] text-[#667085]">
+          <span className="inline-flex items-center gap-1.5 font-semibold text-[#344054]">
+            <MapPin className="h-3.5 w-3.5 text-[#667085]" />
+            <span>{listing.distanceKm} km away</span>
+          </span>
+          <span className="inline-flex items-center gap-1.5 font-semibold text-[#344054]">
+            <BriefcaseBusiness className="h-3.5 w-3.5 text-[#667085]" />
+            <span>{listing.yearsExperience} Experience</span>
+          </span>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          <span className="inline-flex items-center rounded-full bg-[#e9f8ee] px-3 py-1.5 text-[12px] font-semibold text-[#16a34a]">
+            {primaryLanguage}
+          </span>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          <span className="inline-flex items-center rounded-full bg-[#eef7f1] px-3 py-1.5 text-[12px] font-semibold text-[#15803d]">
+            {listing.specialties[1] ?? "Emergency repair"}
+          </span>
+        </div>
+      </div>
+
       <div className="mt-4 border-t border-[#e9eeea] pt-4">
-        <div className="grid grid-cols-2 gap-3 text-[12px] text-[#667085] sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 text-[12px] text-[#667085]">
           <StatPill
             icon={<Clock3 className="h-3.5 w-3.5 text-[#16a34a]" />}
             label="Replies in"
@@ -480,7 +487,7 @@ function StatPill({
   value: string;
 }) {
   return (
-    <div className="rounded-[16px] bg-[#f8fbf9] px-3 py-3">
+    <div className="rounded-[16px] bg-[#f8fbf9] px-3 py-3 text-left">
       <div className="flex items-center gap-2">
         {icon}
         <span className="text-[11px] font-semibold text-[#98a2b3]">{label}</span>
