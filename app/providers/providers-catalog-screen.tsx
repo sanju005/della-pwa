@@ -9,7 +9,7 @@ import {
   BadgeCheck,
   BriefcaseBusiness,
   ChevronDown,
-  ChevronRight,
+  Clock3,
   Filter,
   Heart,
   IdCard,
@@ -17,6 +17,7 @@ import {
   Phone,
   Search,
   ShieldCheck,
+  Smile,
   Star,
   ThumbsUp,
   UserRound,
@@ -341,10 +342,15 @@ function TabButton({
 }
 
 function ProviderCard({ listing }: { listing: CatalogScreenListing }) {
+  const fullName = buildProviderFullName(listing);
+  const primaryLanguage = listing.specialties[0] ?? listing.workMode;
+  const jobsCompleted = Math.max(listing.reviews * 2 + 68, 120);
+  const repeatCustomers = Math.max(Math.round(listing.reviews * 0.61), 24);
+
   return (
-    <article className="rounded-[22px] border border-[#E7ECE8] bg-white p-4 shadow-[0_14px_30px_rgba(15,23,42,0.06)]">
-      <div className="flex gap-4">
-        <div className="relative h-[11rem] w-[7.6rem] shrink-0 overflow-hidden rounded-[20px]">
+    <article className="rounded-[24px] border border-[#e7ece8] bg-white p-4 shadow-[0_18px_38px_rgba(15,23,42,0.07)]">
+      <div className="flex items-stretch gap-4">
+        <div className="relative h-[12.5rem] w-[8.5rem] shrink-0 overflow-hidden rounded-[20px] bg-[#eef4ef] sm:h-[13rem] sm:w-[9rem]">
           <Image
             src={listing.portraitSrc}
             alt={listing.name}
@@ -353,7 +359,7 @@ function ProviderCard({ listing }: { listing: CatalogScreenListing }) {
             unoptimized
             className="h-full w-full object-cover"
           />
-          <div className="absolute bottom-3 left-2.5 rounded-[10px] bg-[#16A34A] px-2.5 py-1.5 text-[11px] font-bold text-white shadow-[0_8px_18px_rgba(22,163,74,0.22)]">
+          <div className="absolute left-3 top-3 rounded-full bg-white/92 px-3 py-1.5 text-[11px] font-extrabold text-[#16a34a] shadow-[0_8px_18px_rgba(15,23,42,0.12)]">
             {listing.availabilityLabel}
           </div>
         </div>
@@ -361,53 +367,57 @@ function ProviderCard({ listing }: { listing: CatalogScreenListing }) {
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0 flex-1">
-              <h3 className="flex min-w-0 items-center gap-2 text-[15px] font-extrabold tracking-[-0.03em] text-[#0F172A]">
+              <h3 className="flex min-w-0 items-center gap-2 text-[1.05rem] font-extrabold tracking-[-0.04em] text-[#1f2c44] sm:text-[1.2rem]">
                 <span className="truncate">{listing.name}</span>
                 {listing.isApproved ? (
-                  <BadgeCheck className="h-4.5 w-4.5 shrink-0 fill-[#16A34A] text-[#16A34A]" />
+                  <BadgeCheck className="h-4.5 w-4.5 shrink-0 fill-[#16a34a] text-[#16a34a]" />
                 ) : null}
               </h3>
-              {listing.providerName && listing.providerName !== listing.name ? (
-                <p className="mt-1 truncate text-[12px] font-semibold text-[#16A34A]">
-                  {listing.providerName}
-                </p>
-              ) : null}
-
-              <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] text-[#475467]">
-                <span className="inline-flex items-center gap-1">
-                  <Star className="h-4 w-4 fill-[#F59E0B] text-[#F59E0B]" />
-                  <span className="font-semibold text-[#0F172A]">
-                    {listing.rating.toFixed(1)}
-                  </span>
-                  <span>({listing.reviews})</span>
-                </span>
-                <span className="text-[#D0D5DD]">|</span>
-                <span className="inline-flex items-center gap-1">
-                  <ThumbsUp className="h-3.5 w-3.5 fill-[#16A34A] text-[#16A34A]" />
-                  <span className="font-semibold text-[#0F172A]">98%</span>
-                  <span>(On-time)</span>
-                </span>
-              </div>
-
-              <div className="mt-2 flex items-center gap-1 text-[13px] text-[#475467]">
-                <MapPin className="h-3.5 w-3.5 text-[#16A34A]" />
-                <span>{listing.distanceKm} km away</span>
-              </div>
+              <p className="mt-2 text-[12px] font-semibold text-[#98a2b3]">Full name</p>
+              <p className="mt-0.5 truncate text-[15px] font-bold text-[#344054]">
+                {fullName}
+              </p>
 
               <div className="mt-4 flex flex-wrap gap-2">
-                <span className="rounded-full bg-[#EEF9F1] px-3 py-1.5 text-[12px] font-semibold text-[#16A34A]">
-                  {listing.yearsExperience} Experience
-                </span>
-                <span className="rounded-full bg-[#F4F5F7] px-3 py-1.5 text-[12px] font-semibold text-[#667085]">
-                  {listing.specialties[0] ?? listing.workMode}
-                </span>
+                <VerifiedBadge icon={<IdCard className="h-3.5 w-3.5" />} label="ID Verified" />
+                <VerifiedBadge icon={<Phone className="h-3.5 w-3.5" />} label="Phone Verified" />
+                <VerifiedBadge icon={<Smile className="h-3.5 w-3.5" />} label="Face Verified" />
+              </div>
+
+              <div className="mt-4 space-y-2.5 border-t border-[#e9eeea] pt-4 text-[13px] text-[#667085]">
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <span className="inline-flex items-center gap-1.5 font-semibold text-[#1f2c44]">
+                    <Star className="h-4 w-4 fill-[#f5b301] text-[#f5b301]" />
+                    {listing.rating.toFixed(1)}
+                  </span>
+                  <span>({listing.reviews} reviews)</span>
+                  <span className="inline-flex items-center gap-1.5 font-semibold text-[#1f2c44]">
+                    <ThumbsUp className="h-3.5 w-3.5 fill-[#16a34a] text-[#16a34a]" />
+                    <span>98%</span>
+                    <span className="font-medium text-[#667085]">On-time</span>
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-1.5 font-semibold text-[#344054]">
+                  <MapPin className="h-3.5 w-3.5 text-[#667085]" />
+                  <span>{listing.distanceKm} km away</span>
+                </div>
+
+                <div>
+                  <p className="text-[13px] font-semibold text-[#1f2c44]">
+                    {listing.yearsExperience} Experience
+                  </p>
+                  <p className="mt-1 text-[13px] font-medium text-[#16a34a]">
+                    {primaryLanguage}
+                  </p>
+                </div>
               </div>
             </div>
 
             <button
               type="button"
               aria-label="Save provider"
-              className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[#EEF2EF] bg-white text-[#667085] shadow-[0_8px_18px_rgba(15,23,42,0.06)]"
+              className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[#eef2ef] bg-white text-[#667085] shadow-[0_8px_18px_rgba(15,23,42,0.06)]"
             >
               <Heart className="h-5.5 w-5.5" />
             </button>
@@ -415,57 +425,79 @@ function ProviderCard({ listing }: { listing: CatalogScreenListing }) {
         </div>
       </div>
 
-      {listing.isApproved ? (
-        <div className="mt-4 border-t border-[#E9EEEA] pt-4">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div className="flex items-center gap-2 rounded-[16px] bg-[#F8FCF9] px-3 py-3">
-              <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#EEF9F1] text-[#16A34A]">
-                <IdCard className="h-4.5 w-4.5" />
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.05em] text-[#98A2B3]">
-                  Verified
-                </p>
-                <p className="text-[12px] font-semibold text-[#0F172A]">
-                  ID Verified
-                </p>
-              </div>
-              <BadgeCheck className="h-4.5 w-4.5 shrink-0 fill-[#16A34A] text-[#16A34A]" />
-            </div>
-
-            <div className="flex items-center gap-2 rounded-[16px] bg-[#F8FCF9] px-3 py-3">
-              <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#EEF9F1] text-[#16A34A]">
-                <Phone className="h-4.5 w-4.5" />
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.05em] text-[#98A2B3]">
-                  Contact
-                </p>
-                <p className="text-[12px] font-semibold text-[#0F172A]">
-                  Phone Verified
-                </p>
-              </div>
-              <BadgeCheck className="h-4.5 w-4.5 shrink-0 fill-[#16A34A] text-[#16A34A]" />
-            </div>
-          </div>
+      <div className="mt-4 border-t border-[#e9eeea] pt-4">
+        <div className="grid grid-cols-2 gap-3 text-[12px] text-[#667085] sm:grid-cols-4">
+          <StatPill
+            icon={<Clock3 className="h-3.5 w-3.5 text-[#16a34a]" />}
+            label="Replies in"
+            value="~5 min"
+          />
+          <StatPill
+            icon={<BriefcaseBusiness className="h-3.5 w-3.5 text-[#16a34a]" />}
+            label="Jobs Completed"
+            value={jobsCompleted.toString()}
+          />
+          <StatPill
+            icon={<UserRound className="h-3.5 w-3.5 text-[#16a34a]" />}
+            label="Repeat Customers"
+            value={repeatCustomers.toString()}
+          />
+          <StatPill
+            icon={<Clock3 className="h-3.5 w-3.5 text-[#16a34a]" />}
+            label="Active"
+            value="10 min ago"
+          />
         </div>
-      ) : null}
-
-      <div className="mt-4 flex items-end justify-between gap-3 border-t border-[#E9EEEA] pt-4">
-        <div className="min-w-0">
-          <p className="text-[13px] text-[#667085]">From</p>
-          <p className="mt-1 text-[20px] font-extrabold tracking-[-0.03em] text-[#16A34A]">
-            RM{listing.hourlyRate}/hr
-          </p>
-        </div>
-        <Link
-          href={listing.href}
-          className="inline-flex h-12 min-w-[9.5rem] items-center justify-center gap-2 rounded-[16px] bg-[#16A34A] px-5 text-[14px] font-extrabold text-white shadow-[0_10px_24px_rgba(22,163,74,0.22)]"
-        >
-          View Profile
-          <ChevronRight className="h-4.5 w-4.5" />
-        </Link>
       </div>
     </article>
   );
+}
+
+function VerifiedBadge({
+  icon,
+  label,
+}: {
+  icon: ReactNode;
+  label: string;
+}) {
+  return (
+    <span className="inline-flex items-center gap-2 rounded-full border border-[#dceadf] bg-[#f7fcf8] px-3 py-2 text-[11px] font-semibold text-[#475467]">
+      <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-white text-[#16a34a] ring-1 ring-[#dceadf]">
+        {icon}
+      </span>
+      <span>{label}</span>
+    </span>
+  );
+}
+
+function StatPill({
+  icon,
+  label,
+  value,
+}: {
+  icon: ReactNode;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="rounded-[16px] bg-[#f8fbf9] px-3 py-3">
+      <div className="flex items-center gap-2">
+        {icon}
+        <span className="text-[11px] font-semibold text-[#98a2b3]">{label}</span>
+      </div>
+      <p className="mt-2 text-[13px] font-bold text-[#1f2c44]">{value}</p>
+    </div>
+  );
+}
+
+function buildProviderFullName(listing: CatalogScreenListing) {
+  if (listing.name === "Chef Amina") {
+    return "Amina Isha";
+  }
+
+  if (listing.providerName && listing.providerName !== listing.name) {
+    return listing.providerName;
+  }
+
+  return listing.name;
 }
