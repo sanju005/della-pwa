@@ -1,5 +1,9 @@
+"use client";
+
 import type { ReactNode } from "react";
 import Link from "next/link";
+import { useEffect, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   BadgeCheck,
@@ -9,12 +13,129 @@ import {
   ShieldCheck,
   User,
 } from "lucide-react";
+import { FeaturePill, MobilePage, SecureNotice } from "@/app/_components/della-ui";
+import { getSupabaseClient } from "@/lib/supabase";
+import { requestNotificationPermission, saveFCMToken } from "@/lib/notifications";
 
 export default function LoginPage() {
+  const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState("");
+  const [isSubmitting, startTransition] = useTransition();
+
+  function getNextPath() {
+    if (typeof window === "undefined") {
+      return "/home";
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    return params.get("next") ?? "/home";
+  }
+
+  useEffect(() => {
+    let active = true;
+
+    async function continueSession() {
+      const supabase = getSupabaseClient();
+
+      if (!supabase) {
+        return;
+      }
+
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!active || !session) {
+        return;
+      }
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", session.user.id)
+        .maybeSingle();
+
+      if (!active) {
+        return;
+      }
+
+      if (profile?.role === "provider") {
+        router.replace("/provider/dashboard");
+        return;
+      }
+
+      router.replace(getNextPath());
+    }
+
+    void continueSession();
+
+    return () => {
+      active = false;
+    };
+  }, [router]);
+
+  function handleSubmit() {
+    startTransition(async () => {
+      setError("");
+      const supabase = getSupabaseClient();
+
+      if (!supabase) {
+        setError("Supabase is not configured yet.");
+        return;
+      }
+
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (signInError || !data.user) {
+        setError(signInError?.message || "Unable to sign in.");
+        return;
+      }
+
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", data.user.id)
+        .maybeSingle();
+
+      if (profileError) {
+        setError(profileError.message || "Unable to load your account.");
+        return;
+      }
+
+      try {
+        const fcmToken = await requestNotificationPermission();
+
+        if (fcmToken) {
+          console.log("[FCM] Received token after login.");
+          const saveResult = await saveFCMToken(fcmToken);
+
+          if (!saveResult.success) {
+            console.error("[FCM] Failed to persist token:", saveResult.error);
+          }
+        } else {
+          console.warn("[FCM] No token available after login.");
+        }
+      } catch (notificationError) {
+        console.error("[FCM] Notification setup failed after login:", notificationError);
+      }
+
+      if (profile?.role === "provider") {
+        router.replace("/provider/dashboard");
+        return;
+      }
+
+      router.replace(getNextPath());
+    });
+  }
+
   return (
-    <main className="min-h-[100dvh] overflow-x-hidden bg-[#F6FFF8]">
-      <div className="mx-auto min-h-[100dvh] w-full max-w-[430px] bg-[#F6FFF8] px-5 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
-        <div className="relative min-h-[100dvh] bg-[#F6FFF8] pb-8">
+    <MobilePage className="relative bg-[#F6FFF8] pb-8">
           <section className="relative overflow-hidden px-1 pt-6">
             <div className="absolute right-[-24%] top-[5%] h-[75%] w-[78%] rounded-full bg-[#ECF8EE]" />
             <div className="absolute left-[45%] top-[34%] h-[55%] w-[72%] rounded-full bg-[#F1FAF3]" />
@@ -37,11 +158,10 @@ export default function LoginPage() {
                 </p>
               </div>
 
-              <div className="mt-8 inline-flex items-center gap-3 rounded-full bg-[#E8F7EA] px-5 py-3 text-[#15803D] shadow-[0_8px_18px_rgba(22,163,74,0.05)]">
-                <BadgeCheck className="h-5 w-5 text-[#16A34A]" />
-                <span className="text-[15px] font-semibold">
-                  Trusted • Verified • Reliable
-                </span>
+              <div className="mt-8 flex flex-wrap gap-2.5">
+                <FeaturePill icon={<BadgeCheck className="h-4 w-4 text-[#16A34A]" />} label="Trusted" />
+                <FeaturePill icon={<ShieldCheck className="h-4 w-4 text-[#16A34A]" />} label="Verified" />
+                <FeaturePill icon={<Headphones className="h-4 w-4 text-[#16A34A]" />} label="Reliable" />
               </div>
 
               <div className="mt-7">
@@ -57,7 +177,7 @@ export default function LoginPage() {
             </div>
           </section>
 
-          <section className="relative z-20 -mt-3 rounded-[28px] bg-white px-6 py-7 shadow-[0_16px_36px_rgba(15,23,42,0.08)]">
+          <section className="relative z-20 -mt-3 rounded-[28px] border border-[#E2EAE4] bg-white px-5 py-6 shadow-[0_16px_36px_rgba(15,23,42,0.08)] sm:px-6 sm:py-7">
             <div>
               <label className="block text-[16px] font-extrabold text-[#0F172A]">
                 Email or Phone
@@ -65,8 +185,10 @@ export default function LoginPage() {
               <div className="mt-3 flex h-[58px] items-center rounded-[18px] border border-[#DDE5E0] bg-white px-5 shadow-[0_4px_10px_rgba(15,23,42,0.02)]">
                 <User className="mr-4 h-5 w-5 text-[#16A34A]" />
                 <input
-                  type="text"
+                  type="email"
                   placeholder="Enter email or phone number"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
                   className="h-full flex-1 border-0 bg-transparent text-[16px] text-[#0F172A] outline-none placeholder:text-[#94A3B8]"
                 />
               </div>
@@ -79,13 +201,16 @@ export default function LoginPage() {
               <div className="mt-3 flex h-[58px] items-center rounded-[18px] border border-[#DDE5E0] bg-white px-5 shadow-[0_4px_10px_rgba(15,23,42,0.02)]">
                 <Lock className="mr-4 h-5 w-5 text-[#16A34A]" />
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   placeholder="Enter password"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
                   className="h-full flex-1 border-0 bg-transparent text-[16px] text-[#0F172A] outline-none placeholder:text-[#94A3B8]"
                 />
                 <button
                   type="button"
-                  aria-label="Hide password"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  onClick={() => setShowPassword((current) => !current)}
                   className="ml-4 text-[#94A3B8]"
                 >
                   <EyeOff className="h-5 w-5" />
@@ -94,17 +219,25 @@ export default function LoginPage() {
             </div>
 
             <div className="mt-4 flex justify-end">
-              <Link href="/login" className="text-[15px] font-extrabold text-[#16A34A]">
+              <Link href="/forgot-password" className="text-[15px] font-extrabold text-[#16A34A]">
                 Forgot Password?
               </Link>
             </div>
 
-            <Link
-              href="/home"
+            {error ? (
+              <p className="mt-4 rounded-[14px] border border-[#fecaca] bg-[#fff1f2] px-4 py-3 text-[13px] font-semibold text-[#dc2626]">
+                {error}
+              </p>
+            ) : null}
+
+            <button
+              type="button"
+              onClick={handleSubmit}
+              disabled={isSubmitting}
               className="mt-8 inline-flex h-[56px] w-full items-center justify-center rounded-[20px] bg-[#16A34A] text-[18px] font-extrabold text-white shadow-[0_14px_28px_rgba(22,163,74,0.16)]"
             >
-              Continue
-            </Link>
+              {isSubmitting ? "Signing in..." : "Continue"}
+            </button>
 
             <div className="mt-8 flex items-center gap-5">
               <div className="h-px flex-1 bg-[#E2E8F0]" />
@@ -120,7 +253,7 @@ export default function LoginPage() {
             </p>
           </section>
 
-          <section className="mt-7 rounded-[26px] bg-[#FBFFFC] px-5 py-5 shadow-[0_12px_28px_rgba(15,23,42,0.045)]">
+          <section className="mt-7 rounded-[26px] border border-[#E3ECE5] bg-[#FBFFFC] px-5 py-5 shadow-[0_12px_28px_rgba(15,23,42,0.045)]">
             <div className="grid grid-cols-3 gap-0">
               <TrustItem
                 icon={<ShieldCheck className="h-6 w-6 text-[#16A34A]" />}
@@ -142,13 +275,8 @@ export default function LoginPage() {
             </div>
           </section>
 
-          <div className="mt-7 flex items-center justify-center gap-3 pb-5 text-center text-[15px] text-[#64748B]">
-            <ShieldCheck className="h-5 w-5 text-[#16A34A]" />
-            <span>DELLA is committed to your safety and satisfaction.</span>
-          </div>
-        </div>
-      </div>
-    </main>
+          <SecureNotice />
+    </MobilePage>
   );
 }
 

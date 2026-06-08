@@ -4,7 +4,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/auth-provider";
 
 export function LoginPage() {
-  const { access, authError, loading, signIn } = useAuth();
+  const { access, initialized, session, signIn } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [email, setEmail] = useState("");
@@ -13,29 +13,35 @@ export function LoginPage() {
   const [formError, setFormError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (loading) {
+    if (!initialized || !session) {
       return;
-    }
-
-    if (access === "allowed") {
-      const from = (location.state as { from?: { pathname?: string } } | null)?.from;
-      navigate(from?.pathname ?? "/", { replace: true });
     }
 
     if (access === "denied") {
       navigate("/blocked", { replace: true });
+      return;
     }
-  }, [access, loading, location.state, navigate]);
+
+    if (access !== "allowed") {
+      return;
+    }
+
+    const from = (location.state as { from?: { pathname?: string } } | null)?.from;
+    navigate(from?.pathname ?? "/", { replace: true });
+  }, [access, initialized, session, location.state, navigate]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSubmitting(true);
     setFormError(null);
-    const error = await signIn(email, password);
-    setSubmitting(false);
+    try {
+      const error = await signIn(email, password);
 
-    if (error) {
-      setFormError(error);
+      if (error) {
+        setFormError(error);
+      }
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -88,9 +94,7 @@ export function LoginPage() {
           </div>
 
           <p className="mt-5 text-sm leading-7 text-slate-500">
-            Sign in with your Supabase account. Access is granted only if your
-            `profiles.role` is one of `super_admin`, `admin`, `manager`, or
-            `customer_care`.
+            Sign in with your Supabase account.
           </p>
 
           <form className="mt-8 space-y-4" onSubmit={handleSubmit}>
@@ -99,8 +103,12 @@ export function LoginPage() {
               <input
                 type="email"
                 value={email}
-                onChange={(event) => setEmail(event.target.value)}
+                onChange={(event) => {
+                  setEmail(event.target.value);
+                  setFormError(null);
+                }}
                 placeholder="admin@dellaapp.com"
+                autoComplete="username"
                 className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-slate-950 outline-none transition focus:border-emerald-400 focus:bg-white"
                 required
               />
@@ -110,16 +118,26 @@ export function LoginPage() {
               <input
                 type="password"
                 value={password}
-                onChange={(event) => setPassword(event.target.value)}
+                onChange={(event) => {
+                  setPassword(event.target.value);
+                  setFormError(null);
+                }}
                 placeholder="Enter your password"
+                autoComplete="current-password"
                 className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-slate-950 outline-none transition focus:border-emerald-400 focus:bg-white"
                 required
               />
             </label>
 
-            {formError || authError ? (
+            <div className="flex justify-end">
+              <Link to="/forgot-password" className="text-sm font-semibold text-emerald-700">
+                Forgot password?
+              </Link>
+            </div>
+
+            {formError ? (
               <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-                {formError ?? authError}
+                {formError}
               </div>
             ) : null}
 
@@ -128,14 +146,11 @@ export function LoginPage() {
               disabled={submitting}
               className="w-full rounded-2xl bg-[linear-gradient(135deg,#0f8b3d,#16a34a)] px-4 py-3.5 font-semibold text-white shadow-[0_18px_40px_rgba(15,139,61,0.35)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-70"
             >
-              {submitting ? "Signing in..." : "Sign in to admin"}
+              {submitting || (session && access !== "allowed")
+                ? "Checking access..."
+                : "Sign in to admin"}
             </button>
           </form>
-
-          <div className="mt-6 rounded-[24px] border border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
-            Normal customers and providers are blocked automatically after login.
-            If you need admin access, update the role in the shared `profiles` table.
-          </div>
 
           <p className="mt-6 text-sm text-slate-500">
             Main marketplace:{" "}

@@ -1,6 +1,7 @@
 export type CustomerProfile = {
   firstName: string;
   lastName: string;
+  sex: "" | "Male" | "Female";
   dateOfBirth: string;
   email: string;
   phoneNumber: string;
@@ -41,6 +42,16 @@ export type PaymentHistoryItem = {
   paidAt: string;
   paymentMethod: string;
   status: "paid" | "refunded";
+};
+
+export type NotificationItem = {
+  id: string;
+  bookingId?: string;
+  type: string;
+  title: string;
+  body: string;
+  isRead: boolean;
+  createdAt: string;
 };
 
 export type Address = {

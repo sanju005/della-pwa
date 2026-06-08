@@ -212,17 +212,17 @@ export const users: UserRow[] = [
   },
   {
     id: "USR-1003",
-    name: "Alicia Wong",
+    name: "Ahmad Faiz",
     email: "alicia.wong@dellaapp.com",
-    role: "customer_care",
+    role: "customer",
     status: "Active",
-    city: "Subang",
+    city: "Subang Jaya",
     joined: "18 May 2026",
   },
   {
     id: "USR-1004",
-    name: "Ravi Kumar",
-    email: "ravi.kumar@dellaapp.com",
+    name: "Ramesh Kumar",
+    email: "ramesh.kumar@dellaapp.com",
     role: "provider",
     status: "Suspended",
     city: "Shah Alam",
@@ -230,9 +230,9 @@ export const users: UserRow[] = [
   },
   {
     id: "USR-1005",
-    name: "Nadia Hassan",
-    email: "nadia.hassan@dellaapp.com",
-    role: "manager",
+    name: "Jason Tan",
+    email: "jason.tan@dellaapp.com",
+    role: "customer",
     status: "Active",
     city: "Mont Kiara",
     joined: "10 May 2026",
@@ -240,6 +240,15 @@ export const users: UserRow[] = [
 ];
 
 export const providers: ProviderRow[] = [
+  {
+    id: "PRV-2034",
+    provider: "Ahmad Bin Hassan",
+    service: "Home Cleaning",
+    rating: "4.8",
+    status: "Active",
+    zone: "Kuala Lumpur",
+    verification: "Verified",
+  },
   {
     id: "PRO-2001",
     provider: "Maya Devi",

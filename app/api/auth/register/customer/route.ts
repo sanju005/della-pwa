@@ -1,8 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import {
-  getAppBaseUrl,
-  getSupabasePublishableKey,
   getSupabaseServiceKey,
   getSupabaseUrl,
 } from "@/lib/supabase-env";
@@ -11,27 +9,27 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 type CustomerSignupPayload = {
-  fullName?: string;
+  firstName?: string;
+  lastName?: string;
+  sex?: string;
   email?: string;
   phoneNumber?: string;
   password?: string;
   confirmPassword?: string;
 };
 
-function getPublicSupabaseClient() {
-  const url = getSupabaseUrl();
-  const anonKey = getSupabasePublishableKey();
+function toSignupErrorMessage(errorMessage?: string) {
+  const normalizedMessage = errorMessage?.trim().toLowerCase() ?? "";
 
-  if (!url || !anonKey) {
-    return null;
+  if (normalizedMessage.includes("email rate limit exceeded")) {
+    return "Too many verification emails were requested. Please wait a few minutes and try again.";
   }
 
-  return createClient(url, anonKey, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
-  });
+  if (normalizedMessage.includes("user already registered")) {
+    return "An account with this email already exists. Try logging in instead.";
+  }
+
+  return errorMessage || "Unable to create your account.";
 }
 
 function getAdminSupabaseClient() {
@@ -67,13 +65,16 @@ function normalizePhone(phoneNumber: string) {
 export async function POST(request: Request) {
   const payload = (await request.json()) as CustomerSignupPayload;
 
-  const fullName = payload.fullName?.trim() ?? "";
+  const firstName = payload.firstName?.trim() ?? "";
+  const lastName = payload.lastName?.trim() ?? "";
+  const sex = payload.sex === "Male" || payload.sex === "Female" ? payload.sex : "";
+  const fullName = [firstName, lastName].filter(Boolean).join(" ").trim();
   const email = payload.email?.trim().toLowerCase() ?? "";
   const phoneNumber = payload.phoneNumber?.trim() ?? "";
   const password = payload.password ?? "";
   const confirmPassword = payload.confirmPassword ?? "";
 
-  if (!fullName || !email || !phoneNumber || !password || !confirmPassword) {
+  if (!firstName || !lastName || !sex || !email || !phoneNumber || !password || !confirmPassword) {
     return NextResponse.json(
       { error: "Please fill in all required fields." },
       { status: 400 }
@@ -94,37 +95,31 @@ export async function POST(request: Request) {
     );
   }
 
-  const publicClient = getPublicSupabaseClient();
   const adminClient = getAdminSupabaseClient();
 
-  if (!publicClient || !adminClient) {
+  if (!adminClient) {
     return NextResponse.json(
       { error: "Supabase is not configured yet." },
       { status: 500 }
     );
   }
 
-  const appBaseUrl = getAppBaseUrl();
-  const emailRedirectTo = new URL(
-    "/login",
-    appBaseUrl ?? request.url
-  ).toString();
-
-  const { data, error } = await publicClient.auth.signUp({
+  const { data, error } = await adminClient.auth.admin.createUser({
     email,
     password,
-    options: {
-      emailRedirectTo,
-      data: {
-        full_name: fullName,
-        role: "customer",
-      },
+    email_confirm: true,
+    user_metadata: {
+      full_name: fullName,
+      first_name: firstName,
+      last_name: lastName,
+      sex,
+      role: "customer",
     },
   });
 
   if (error) {
     return NextResponse.json(
-      { error: error.message || "Unable to create your account." },
+      { error: toSignupErrorMessage(error.message) },
       { status: 400 }
     );
   }
@@ -136,18 +131,34 @@ export async function POST(request: Request) {
     );
   }
 
+  if (!data.user.email_confirmed_at) {
+    const { error: confirmError } = await adminClient.auth.admin.updateUserById(
+      data.user.id,
+      {
+        email_confirm: true,
+      }
+    );
+
+    if (confirmError) {
+      return NextResponse.json(
+        { error: "Account created, but email confirmation setup failed." },
+        { status: 500 }
+      );
+    }
+  }
+
   const normalizedPhone = normalizePhone(phoneNumber);
 
   const { error: profileError } = await adminClient
     .from("profiles")
-    .update({
+    .upsert({
+      id: data.user.id,
       full_name: fullName,
       email,
       role: "customer",
       phone: normalizedPhone,
       status: "pending",
-    })
-    .eq("id", data.user.id);
+    }, { onConflict: "id" });
 
   if (profileError) {
     return NextResponse.json(
@@ -161,6 +172,8 @@ export async function POST(request: Request) {
     .upsert(
       {
         id: data.user.id,
+        first_name: firstName,
+        last_name: lastName,
         country: "Malaysia",
       },
       { onConflict: "id" }
@@ -176,6 +189,6 @@ export async function POST(request: Request) {
   return NextResponse.json({
     success: true,
     email,
-    requiresEmailVerification: true,
+    requiresEmailVerification: false,
   });
 }

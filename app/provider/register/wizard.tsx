@@ -7,6 +7,7 @@ import {
   availabilityDays,
   createDefaultProviderRegistration,
   documentTypes,
+  sexOptions,
   serviceIcons,
   serviceSpecialties,
   timePresets,
@@ -342,7 +343,9 @@ function BasicProfileStep({
         </div>
       </div>
 
-      <InputField label="Full Name" value={data.basicProfile.fullName} onChange={(value) => updateBasic("fullName", value)} />
+      <InputField label="First Name" value={data.basicProfile.firstName} onChange={(value) => updateBasic("firstName", value)} />
+      <InputField label="Last Name" value={data.basicProfile.lastName} onChange={(value) => updateBasic("lastName", value)} />
+      <SelectField label="Sex" value={data.basicProfile.sex} onChange={(value) => updateBasic("sex", value)} options={sexOptions} placeholder="Select sex" />
       <InputField label="Marketing Name" hint="e.g. Ex Chef Amina" value={data.basicProfile.marketingName} onChange={(value) => updateBasic("marketingName", value)} />
       <InputField label="Date of Birth" value={data.basicProfile.dateOfBirth} onChange={(value) => updateBasic("dateOfBirth", value)} rightIcon={<CalendarIcon className="h-4 w-4 text-[#6b7280]" />} />
       <InputField label="Residential Address" value={data.basicProfile.residentialAddress} onChange={(value) => updateBasic("residentialAddress", value)} />
@@ -399,8 +402,8 @@ function AccountDetailsStep({
           </div>
         </div>
       </div>
-      <InputField label="Password" value={data.account.password} onChange={(value) => updateAccount("password", value)} rightIcon={<EyeIcon className="h-4 w-4 text-[#6b7280]" />} />
-      <InputField label="Retype Password" value={data.account.confirmPassword} onChange={(value) => updateAccount("confirmPassword", value)} rightIcon={<EyeIcon className="h-4 w-4 text-[#6b7280]" />} />
+      <InputField label="Password" value={data.account.password} onChange={(value) => updateAccount("password", value)} rightIcon={<EyeIcon className="h-4 w-4 text-[#6b7280]" />} type="password" />
+      <InputField label="Retype Password" value={data.account.confirmPassword} onChange={(value) => updateAccount("confirmPassword", value)} rightIcon={<EyeIcon className="h-4 w-4 text-[#6b7280]" />} type="password" />
     </div>
   );
 }
@@ -619,7 +622,8 @@ function ReviewStep({ data }: { data: ProviderRegistrationData }) {
   return (
     <div className="space-y-5">
       <ReviewCard title="Profile">
-        <ReviewLine icon={<UserIcon className="h-4 w-4" />} text={`${data.basicProfile.fullName} (${data.basicProfile.marketingName})`} />
+        <ReviewLine icon={<UserIcon className="h-4 w-4" />} text={`${getProviderFullName(data)} (${data.basicProfile.marketingName})`} />
+        <ReviewLine icon={<UserIcon className="h-4 w-4" />} text={`Sex: ${data.basicProfile.sex || "Not selected"}`} />
         <ReviewLine icon={<PhoneIcon className="h-4 w-4" />} text={`${data.account.phoneCountryCode} ${data.account.phoneNumber}`} />
         <ReviewLine icon={<PinIcon className="h-4 w-4" />} text={data.basicProfile.serviceLocation} />
         <ReviewLine icon={<RangeIcon className="h-4 w-4" />} text={`${data.providerLocation.radius} KM`} />
@@ -781,7 +785,7 @@ function SuccessStep({
       </div>
 
       <Link
-        href={registrationId ? `/provider/dashboard/${registrationId}` : "/provider/dashboard"}
+        href="/provider/dashboard"
         className="inline-flex h-12 w-full items-center justify-center rounded-[12px] bg-[#16a34a] text-[15px] font-extrabold text-white shadow-[0_16px_30px_rgba(22,163,74,0.2)]"
       >
         Go to Dashboard
@@ -823,6 +827,7 @@ function InputField({
   hint,
   rightIcon,
   compact = false,
+  type = "text",
 }: {
   label: string;
   value: string;
@@ -830,7 +835,11 @@ function InputField({
   hint?: string;
   rightIcon?: React.ReactNode;
   compact?: boolean;
+  type?: string;
 }) {
+  const [showPassword, setShowPassword] = useState(false);
+  const isPasswordField = type === "password";
+
   return (
     <label className="block">
       <span className="mb-2 block text-[13px] font-semibold text-[#111827]">
@@ -839,11 +848,25 @@ function InputField({
       {hint ? <p className="-mt-1 mb-2 text-[11px] text-[#6b7280]">{hint}</p> : null}
       <div className="flex items-center rounded-[12px] border border-[#dfe8e2] px-4 shadow-[0_8px_20px_rgba(15,23,42,0.03)]">
         <input
+          type={isPasswordField && showPassword ? "text" : type}
           value={value}
           onChange={(event) => onChange(event.target.value)}
           className={`${compact ? "h-10" : "h-11"} w-full border-0 bg-transparent text-[14px] text-[#111827] outline-none`}
         />
-        {rightIcon ? <span className="ml-3">{rightIcon}</span> : null}
+        {rightIcon ? (
+          <button
+            type="button"
+            aria-label={isPasswordField && showPassword ? "Hide password" : "Show password"}
+            onClick={() => {
+              if (isPasswordField) {
+                setShowPassword((current) => !current);
+              }
+            }}
+            className="ml-3"
+          >
+            {rightIcon}
+          </button>
+        ) : null}
       </div>
     </label>
   );
@@ -854,11 +877,13 @@ function SelectField({
   value,
   onChange,
   options,
+  placeholder,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   options: string[];
+  placeholder?: string;
 }) {
   return (
     <label className="block">
@@ -869,6 +894,9 @@ function SelectField({
           onChange={(event) => onChange(event.target.value)}
           className="h-11 w-full appearance-none border-0 bg-transparent text-[14px] text-[#111827] outline-none"
         >
+          {placeholder ? (
+            <option value="">{placeholder}</option>
+          ) : null}
           {options.map((option) => (
             <option key={option} value={option}>
               {option}
@@ -1147,6 +1175,13 @@ function buttonLabel(step: FlowStep) {
     default:
       return "Continue";
   }
+}
+
+function getProviderFullName(data: ProviderRegistrationData) {
+  return [data.basicProfile.firstName, data.basicProfile.lastName]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
 }
 
 function screenHeading(step: FlowStep) {
