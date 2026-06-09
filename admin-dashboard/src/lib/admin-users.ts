@@ -5,6 +5,7 @@ import type { DashboardBooking, PaymentRow, UserDetailRecord, UserMetric, UserRo
 
 type ProfileRelation =
   | {
+      date_of_birth?: string | null;
       city?: string | null;
       state?: string | null;
       country?: string | null;
@@ -13,6 +14,7 @@ type ProfileRelation =
       approval_status?: string | null;
     }
   | Array<{
+      date_of_birth?: string | null;
       city?: string | null;
       state?: string | null;
       country?: string | null;
@@ -224,6 +226,35 @@ function formatDateTime(value: string | null | undefined) {
     hour: "numeric",
     minute: "2-digit",
   }).format(date);
+}
+
+function formatDateOfBirth(value: string | null | undefined) {
+  if (!value) {
+    return "";
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  const now = new Date();
+  let age = now.getFullYear() - date.getFullYear();
+  const hasBirthdayPassed =
+    now.getMonth() > date.getMonth() ||
+    (now.getMonth() === date.getMonth() && now.getDate() >= date.getDate());
+
+  if (!hasBirthdayPassed) {
+    age -= 1;
+  }
+
+  const dateLabel = new Intl.DateTimeFormat("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }).format(date);
+
+  return age >= 0 ? `${dateLabel} (${age} years)` : dateLabel;
 }
 
 function formatSchedule(dateValue?: string | null, timeValue?: string | null) {
@@ -584,6 +615,7 @@ async function fetchProfiles() {
       phone,
       created_at,
       customer_profiles (
+        date_of_birth,
         city,
         state,
         country
@@ -620,6 +652,7 @@ async function fetchProfileById(userId: string) {
       phone,
       created_at,
       customer_profiles (
+        date_of_birth,
         city,
         state,
         country
@@ -709,6 +742,7 @@ export async function getUserProfileWithFallback(userId: string): Promise<UserPr
   const role = liveProfile.role?.trim() || mockDetail?.role || "customer";
   const status = formatStatus(liveProfile.status, role);
   const city = extractCity(liveProfile) || mockDetail?.city || "Malaysia";
+  const customerProfile = relationNode(liveProfile.customer_profiles);
   const profileNames = await fetchRelatedProfileNamesForUser(userId, role);
   const liveBookings = await tryFetchLiveBookings(userId, role, profileNames);
   const livePayments = await tryFetchLivePayments(userId, role, profileNames);
@@ -733,6 +767,7 @@ export async function getUserProfileWithFallback(userId: string): Promise<UserPr
       role,
       status,
       phone: liveProfile.phone?.trim() || baseDetail.phone,
+      dob: formatDateOfBirth(customerProfile?.date_of_birth) || baseDetail.dob,
       city,
       joined: formatDate(liveProfile.created_at),
       registeredAt: formatDateTime(liveProfile.created_at),

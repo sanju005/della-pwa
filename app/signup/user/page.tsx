@@ -17,6 +17,7 @@ export default function SignupUserPage() {
   const [isSubmitting, startTransition] = useTransition();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
+  const [dateOfBirth, setDateOfBirth] = useState("");
   const [sex, setSex] = useState<"" | "Male" | "Female">("");
   const [email, setEmail] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -26,7 +27,7 @@ export default function SignupUserPage() {
   const [error, setError] = useState("");
 
   const handleSubmit = () => {
-    if (!firstName || !lastName || !sex || !email || !phoneNumber || !password || !confirmPassword) {
+    if (!firstName || !lastName || !dateOfBirth || !sex || !email || !phoneNumber || !password || !confirmPassword) {
       setError("Please fill in all required fields.");
       return;
     }
@@ -47,6 +48,7 @@ export default function SignupUserPage() {
         body: JSON.stringify({
           firstName,
           lastName,
+          dateOfBirth,
           sex,
           email,
           phoneNumber,
@@ -106,6 +108,14 @@ export default function SignupUserPage() {
           onChange={(value) => setSex(value as "" | "Male" | "Female")}
           icon={<Icons.User className="h-5 w-5" />}
           options={["Male", "Female"]}
+        />
+        <ControlledField
+          label="Date of Birth"
+          placeholder=""
+          value={dateOfBirth}
+          onChange={setDateOfBirth}
+          icon={<CalendarIcon className="h-5 w-5" />}
+          type="date"
         />
         <ControlledField
           label="Email"
@@ -354,6 +364,15 @@ function ChevronDownIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" className={className}>
       <path d="m5 7 5 5 5-5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function CalendarIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className}>
+      <rect x="3" y="5" width="18" height="16" rx="2" />
+      <path d="M16 3v4M8 3v4M3 10h18" strokeLinecap="round" />
     </svg>
   );
 }

@@ -11,6 +11,7 @@ export const dynamic = "force-dynamic";
 type CustomerSignupPayload = {
   firstName?: string;
   lastName?: string;
+  dateOfBirth?: string;
   sex?: string;
   email?: string;
   phoneNumber?: string;
@@ -67,6 +68,7 @@ export async function POST(request: Request) {
 
   const firstName = payload.firstName?.trim() ?? "";
   const lastName = payload.lastName?.trim() ?? "";
+  const dateOfBirth = payload.dateOfBirth?.trim() ?? "";
   const sex = payload.sex === "Male" || payload.sex === "Female" ? payload.sex : "";
   const fullName = [firstName, lastName].filter(Boolean).join(" ").trim();
   const email = payload.email?.trim().toLowerCase() ?? "";
@@ -74,7 +76,7 @@ export async function POST(request: Request) {
   const password = payload.password ?? "";
   const confirmPassword = payload.confirmPassword ?? "";
 
-  if (!firstName || !lastName || !sex || !email || !phoneNumber || !password || !confirmPassword) {
+  if (!firstName || !lastName || !dateOfBirth || !sex || !email || !phoneNumber || !password || !confirmPassword) {
     return NextResponse.json(
       { error: "Please fill in all required fields." },
       { status: 400 }
@@ -157,7 +159,7 @@ export async function POST(request: Request) {
       email,
       role: "customer",
       phone: normalizedPhone,
-      status: "pending",
+      status: "active",
     }, { onConflict: "id" });
 
   if (profileError) {
@@ -174,6 +176,7 @@ export async function POST(request: Request) {
         id: data.user.id,
         first_name: firstName,
         last_name: lastName,
+        date_of_birth: dateOfBirth,
         country: "Malaysia",
       },
       { onConflict: "id" }
