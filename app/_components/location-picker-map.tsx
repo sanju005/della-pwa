@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { divIcon, type LatLngExpression } from "leaflet";
 import {
+  Circle,
   MapContainer,
   Marker,
   TileLayer,
@@ -14,6 +15,7 @@ type LocationPickerMapProps = {
   latitude: number;
   longitude: number;
   onChange: (coords: { latitude: number; longitude: number }) => void;
+  radiusKm?: number;
 };
 
 const pinIcon = divIcon({
@@ -67,6 +69,7 @@ export function LocationPickerMap({
   latitude,
   longitude,
   onChange,
+  radiusKm = 0,
 }: LocationPickerMapProps) {
   const center: LatLngExpression = [latitude, longitude];
 
@@ -83,6 +86,18 @@ export function LocationPickerMap({
       />
       <RecenterMap latitude={latitude} longitude={longitude} />
       <MapEvents onChange={onChange} />
+      {radiusKm > 0 ? (
+        <Circle
+          center={center}
+          radius={radiusKm * 1000}
+          pathOptions={{
+            color: "#2563eb",
+            weight: 2,
+            fillColor: "#2563eb",
+            fillOpacity: 0.12,
+          }}
+        />
+      ) : null}
       <Marker
         draggable
         position={center}

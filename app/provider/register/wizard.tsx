@@ -553,6 +553,20 @@ function BasicProfileStep({
           <p className="mt-3 text-[13px] text-[#374151]">
             {data.basicProfile.serviceLocation || "Current location not loaded yet."}
           </p>
+          <div className="mt-3 overflow-hidden rounded-[16px] border border-[#dfe8e2] bg-white">
+            <div className="h-[15rem] w-full bg-[#eef9f0]">
+              <DynamicLocationPickerMap
+                latitude={data.providerLocation.latitude}
+                longitude={data.providerLocation.longitude}
+                radiusKm={data.providerLocation.radius}
+                onChange={({ latitude, longitude }) => {
+                  void applyResolvedLocation(latitude, longitude).catch(() => {
+                    setSubmitError("Unable to convert location into an address.");
+                  });
+                }}
+              />
+            </div>
+          </div>
         </div>
       </div>
 
@@ -823,8 +837,6 @@ function ProviderLocationStep({
 }) {
   const [isResolvingAddress, setIsResolvingAddress] = useState(false);
 
-  const circleSize = 28 + data.providerLocation.radius * 4.5;
-
   const updateMapLocation = async (latitude: number, longitude: number) => {
     setIsResolvingAddress(true);
 
@@ -862,13 +874,10 @@ function ProviderLocationStep({
           <DynamicLocationPickerMap
             latitude={data.providerLocation.latitude}
             longitude={data.providerLocation.longitude}
+            radiusKm={data.providerLocation.radius}
             onChange={({ latitude, longitude }) => {
               void updateMapLocation(latitude, longitude);
             }}
-          />
-          <div
-            className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-[#49bf73] bg-[#16a34a]/8"
-            style={{ width: `${circleSize}px`, height: `${circleSize}px` }}
           />
           <span className="absolute right-4 top-4 rounded-full bg-white px-3 py-1.5 text-[13px] font-bold text-[#16a34a] shadow-[0_8px_18px_rgba(15,23,42,0.08)]">
             {data.providerLocation.radius} KM
