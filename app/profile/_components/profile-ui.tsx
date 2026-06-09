@@ -723,18 +723,52 @@ export function BookingsScreen({ bookings, initialTab = "upcoming" }: BookingsPr
 }
 
 export function SettingsScreen({ groups }: SettingsProps) {
+  const router = useRouter();
+  const [isLoggingOut, startLogoutTransition] = useTransition();
+  const [logoutError, setLogoutError] = useState("");
+
+  const handleLogout = () => {
+    startLogoutTransition(async () => {
+      setLogoutError("");
+      const client = getSupabaseClient();
+
+      if (!client) {
+        setLogoutError("Supabase is not configured yet.");
+        return;
+      }
+
+      const { error } = await client.auth.signOut();
+
+      if (error) {
+        setLogoutError(error.message || "Unable to log out right now.");
+        return;
+      }
+
+      router.replace("/login");
+      router.refresh();
+    });
+  };
+
   return (
     <ProfileShell title="Settings" showBack backHref="/profile" showBottomNav>
       <div className="space-y-4">
         <LocationSettingsCard />
+        {logoutError ? (
+          <p className="rounded-[14px] border border-[#fecaca] bg-[#fff1f2] px-4 py-3 text-[13px] font-semibold text-[#dc2626]">
+            {logoutError}
+          </p>
+        ) : null}
         {groups.map((group) => (
           <SectionCard key={group.title} title={group.title}>
             {group.items.map((item, index) => (
-              <div
+              <button
                 key={item.id}
-                className={`flex items-center justify-between gap-3 py-4 text-[14px] ${
+                type="button"
+                onClick={item.id === "logout" ? handleLogout : undefined}
+                disabled={item.id === "logout" ? isLoggingOut : false}
+                className={`flex w-full items-center justify-between gap-3 py-4 text-left text-[14px] ${
                   index > 0 ? "border-t border-[#edf1ef]" : ""
-                }`}
+                } disabled:opacity-60`}
               >
                 <div className="flex items-center gap-3">
                   <span
@@ -751,11 +785,11 @@ export function SettingsScreen({ groups }: SettingsProps) {
                       item.tone === "danger" ? "text-[#ef4444]" : "text-[#111827]"
                     }`}
                   >
-                    {item.label}
+                    {item.id === "logout" && isLoggingOut ? "Logging out..." : item.label}
                   </span>
                 </div>
                 <ChevronRightIcon className="h-4 w-4 text-[#6b7280]" />
-              </div>
+              </button>
             ))}
           </SectionCard>
         ))}
