@@ -141,8 +141,33 @@ export function ProfileOverviewScreen({ initialData }: OverviewProps) {
   const [profile, setProfile] = useState(initialData.profile);
   const [bookingSummary, setBookingSummary] = useState(initialData.bookingSummary);
   const [paymentSummary, setPaymentSummary] = useState(initialData.paymentSummary);
+  const [logoutError, setLogoutError] = useState("");
+  const [isLoggingOut, startLogoutTransition] = useTransition();
+  const router = useRouter();
 
   const fullName = `${profile.firstName} ${profile.lastName}`.trim();
+
+  const handleLogout = () => {
+    startLogoutTransition(async () => {
+      setLogoutError("");
+      const client = getSupabaseClient();
+
+      if (!client) {
+        setLogoutError("Supabase is not configured yet.");
+        return;
+      }
+
+      const { error } = await client.auth.signOut();
+
+      if (error) {
+        setLogoutError(error.message || "Unable to log out right now.");
+        return;
+      }
+
+      router.replace("/login");
+      router.refresh();
+    });
+  };
 
   useEffect(() => {
     let active = true;
@@ -287,6 +312,20 @@ export function ProfileOverviewScreen({ initialData }: OverviewProps) {
           value={paymentSummary.lastPaymentLabel}
         />
       </SectionCard>
+
+      <section className="mt-4 rounded-[18px] border border-[#f3d2d2] bg-[#fff7f7] p-4 shadow-[0_10px_26px_rgba(15,23,42,0.04)]">
+        <button
+          type="button"
+          onClick={handleLogout}
+          disabled={isLoggingOut}
+          className="inline-flex h-12 w-full items-center justify-center rounded-[14px] bg-[#ef4444] px-4 text-[15px] font-extrabold text-white shadow-[0_12px_24px_rgba(239,68,68,0.18)] disabled:opacity-70"
+        >
+          {isLoggingOut ? "Logging out..." : "Log Out"}
+        </button>
+        {logoutError ? (
+          <p className="mt-3 text-[13px] font-semibold text-[#dc2626]">{logoutError}</p>
+        ) : null}
+      </section>
     </ProfileShell>
   );
 }
