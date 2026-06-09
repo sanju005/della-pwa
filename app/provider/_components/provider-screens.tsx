@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Bell,
   BriefcaseBusiness,
@@ -34,6 +34,7 @@ import {
   MobilePage,
   StatusBadge,
 } from "@/app/_components/della-ui";
+import { getSupabaseClient } from "@/lib/supabase";
 
 import {
   formatCompactCurrency,
@@ -49,6 +50,30 @@ import {
   ProviderBottomNav,
   useProviderAppData,
 } from "./provider-app";
+
+const ALL_DAYS = [
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+  "Sunday",
+] as const;
+
+async function getProviderAccessToken() {
+  const client = getSupabaseClient();
+
+  if (!client) {
+    return null;
+  }
+
+  const {
+    data: { session },
+  } = await client.auth.getSession();
+
+  return session?.access_token ?? null;
+}
 
 function LoadingOrError(state: ReturnType<typeof useProviderAppData>) {
   if (state.loading) {
@@ -215,7 +240,10 @@ export function DashboardScreen() {
     (booking) => booking.bookingStatus === "on_the_way" || booking.bookingStatus === "arrived",
   );
   const confirmedBookings = state.bookings.filter(
-    (booking) => booking.customerStatusLabel === "Confirmed",
+    (booking) =>
+      booking.customerStatusLabel === "Confirmed" ||
+      booking.customerStatusLabel === "On the Way" ||
+      booking.customerStatusLabel === "Arrived",
   );
   const todayKey = getTodayKey();
   const todayBookings = state.bookings
@@ -941,12 +969,92 @@ export function MessagesScreen() {
       }
     >
       <section className="rounded-[26px] bg-white p-5 shadow-[0_18px_44px_rgba(15,23,42,0.08)] ring-1 ring-[#e6eee8]">
-        <div className="space-y-3">
-          {state.notifications.length === 0 ? (
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-[17px] font-black text-[#0f172a]">Customer Conversations</h2>
+            <p className="mt-1 text-[13px] text-[#64748b]">
+              Real booking notes and latest customer messages.
+            </p>
+          </div>
+          <span className="rounded-full bg-[#eef9f1] px-3 py-1 text-[12px] font-bold text-[#16a34a]">
+            {state.messages.length}
+          </span>
+        </div>
+        <div className="mt-4 space-y-3">
+          {state.messages.length === 0 ? (
             <EmptyState
               title="No messages yet"
-              description="Booking updates and alerts will appear here once customers start interacting with you."
+              description="Customer notes and booking conversations will appear here once someone books your service."
               icon={<MessageCircleMore className="h-6 w-6" />}
+            />
+          ) : (
+            state.messages.map((item) => (
+              <div
+                key={item.bookingId}
+                className={`rounded-[20px] border p-4 ${
+                  item.unreadCount > 0 ? "border-[#bbf7d0] bg-[#f6fff8]" : "border-[#e7eee8] bg-[#fbfffc]"
+                }`}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-[14px] font-black text-[#0f172a]">
+                      {item.customerName}
+                    </p>
+                    <p className="mt-1 text-[12px] font-semibold text-[#16a34a]">
+                      {item.serviceLabel}
+                    </p>
+                    <p className="mt-2 text-[13px] leading-6 text-[#64748b]">{item.preview}</p>
+                    <div className="mt-3 space-y-1 text-[12px] text-[#64748b]">
+                      <div className="flex items-center gap-2">
+                        <CalendarDays className="h-4 w-4 text-[#16a34a]" />
+                        <span>{item.schedule}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <MapPin className="h-4 w-4 text-[#16a34a]" />
+                        <span>{item.location}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[11px] font-semibold text-[#94a3b8]">
+                      {formatRelativeDate(item.lastMessageAt)}
+                    </p>
+                    {item.unreadCount > 0 ? (
+                      <span className="mt-2 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[#16a34a] px-1 text-[10px] font-extrabold text-white">
+                        {item.unreadCount}
+                      </span>
+                    ) : null}
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <AppButton href={`/provider/bookings?booking=${item.bookingId}`} className="w-full" tone="secondary">
+                    Open Booking
+                  </AppButton>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </section>
+
+      <section className="rounded-[26px] bg-white p-5 shadow-[0_18px_44px_rgba(15,23,42,0.08)] ring-1 ring-[#e6eee8]">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-[17px] font-black text-[#0f172a]">System Alerts</h2>
+            <p className="mt-1 text-[13px] text-[#64748b]">
+              Booking status updates and provider notifications.
+            </p>
+          </div>
+          <span className="rounded-full bg-[#eef9f1] px-3 py-1 text-[12px] font-bold text-[#16a34a]">
+            {state.notifications.length}
+          </span>
+        </div>
+        <div className="mt-4 space-y-3">
+          {state.notifications.length === 0 ? (
+            <EmptyState
+              title="No alerts yet"
+              description="System updates will appear here when bookings change."
+              icon={<Bell className="h-6 w-6" />}
             />
           ) : (
             state.notifications.map((item) => (
@@ -961,16 +1069,9 @@ export function MessagesScreen() {
                     <p className="truncate text-[14px] font-black text-[#0f172a]">{item.title}</p>
                     <p className="mt-1 text-[13px] leading-6 text-[#64748b]">{item.body}</p>
                   </div>
-                  <div className="text-right">
-                    <p className="text-[11px] font-semibold text-[#94a3b8]">
-                      {formatRelativeDate(item.createdAt)}
-                    </p>
-                    {!item.isRead ? (
-                      <span className="mt-2 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[#16a34a] px-1 text-[10px] font-extrabold text-white">
-                        1
-                      </span>
-                    ) : null}
-                  </div>
+                  <p className="text-[11px] font-semibold text-[#94a3b8]">
+                    {formatRelativeDate(item.createdAt)}
+                  </p>
                 </div>
               </div>
             ))
@@ -1020,7 +1121,13 @@ export function EarningsScreen() {
         </p>
         <p className="mt-2 text-[2rem] font-black tracking-[-0.06em]">{formatCurrency(total)}</p>
         <div className="mt-4">
-          <AppButton tone="secondary" className="w-full bg-white text-[#0f172a]">
+          <AppButton
+            tone="secondary"
+            className="w-full bg-white text-[#0f172a]"
+            onClick={() =>
+              state.setNotice("Withdrawals are routed through admin during testing. Your earnings total is live.")
+            }
+          >
             Withdraw
           </AppButton>
         </div>
@@ -1070,6 +1177,16 @@ export function EarningsScreen() {
 
 export function ServicesScreen() {
   const state = useProviderAppData();
+  const [editingServiceId, setEditingServiceId] = useState("");
+  const [form, setForm] = useState({
+    serviceType: "",
+    yearsExperience: "",
+    hourlyRate: "",
+    dailyRate: "",
+    specialties: "",
+  });
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState("");
   const fallback = LoadingOrError(state);
 
   if (fallback) {
@@ -1077,6 +1194,66 @@ export function ServicesScreen() {
   }
 
   const data = state.data!;
+
+  async function saveService() {
+    const accessToken = await getProviderAccessToken();
+
+    if (!accessToken) {
+      state.setError("Your session expired. Please log in again.");
+      return;
+    }
+
+    if (!form.serviceType.trim() && !editingServiceId) {
+      setMessage("Service type is required.");
+      return;
+    }
+
+    setSaving(true);
+    setMessage("");
+    state.setError("");
+
+    const endpoint = editingServiceId
+      ? `/api/provider/services/${editingServiceId}`
+      : "/api/provider/services";
+    const method = editingServiceId ? "PATCH" : "POST";
+    const response = await fetch(endpoint, {
+      method,
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({
+        serviceType: form.serviceType,
+        yearsExperience: form.yearsExperience,
+        hourlyRate: Number(form.hourlyRate || 0),
+        dailyRate: Number(form.dailyRate || 0),
+        specialties: form.specialties
+          .split(",")
+          .map((item) => item.trim())
+          .filter(Boolean),
+      }),
+    });
+
+    const result = (await response.json()) as { success?: true; error?: string };
+
+    if (!response.ok || !result.success) {
+      setMessage(result.error || "Unable to save service.");
+      setSaving(false);
+      return;
+    }
+
+    await state.reloadWorkspace();
+    setSaving(false);
+    setEditingServiceId("");
+    setForm({
+      serviceType: "",
+      yearsExperience: "",
+      hourlyRate: "",
+      dailyRate: "",
+      specialties: "",
+    });
+    setMessage(editingServiceId ? "Service updated." : "New service added.");
+  }
 
   return (
     <PageShell title="My Services" subtitle="Manage the services and pricing visible to customers.">
@@ -1102,6 +1279,17 @@ export function ServicesScreen() {
                   </div>
                   <button
                     type="button"
+                    onClick={() => {
+                      setEditingServiceId(service.id);
+                      setForm({
+                        serviceType: formatServiceLabel(service.serviceType),
+                        yearsExperience: service.yearsExperience,
+                        hourlyRate: String(service.hourlyRate),
+                        dailyRate: String(service.dailyRate),
+                        specialties: service.specialties.join(", "),
+                      });
+                      setMessage("");
+                    }}
                     className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#eef9f1] text-[#16a34a]"
                   >
                     <PencilLine className="h-4 w-4" />
@@ -1119,8 +1307,96 @@ export function ServicesScreen() {
             ))
           )}
         </div>
-        <div className="mt-5">
-          <AppButton className="w-full">Add New Service</AppButton>
+        <div className="mt-5 rounded-[22px] border border-[#e7eee8] bg-[#fbfffc] p-4">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-[16px] font-black text-[#0f172a]">
+                {editingServiceId ? "Edit Service" : "Add New Service"}
+              </h2>
+              <p className="mt-1 text-[12px] text-[#64748b]">
+                Save pricing and specialties directly to your provider listing.
+              </p>
+            </div>
+            {editingServiceId ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingServiceId("");
+                  setForm({
+                    serviceType: "",
+                    yearsExperience: "",
+                    hourlyRate: "",
+                    dailyRate: "",
+                    specialties: "",
+                  });
+                  setMessage("");
+                }}
+                className="text-[12px] font-bold text-[#16a34a]"
+              >
+                Cancel
+              </button>
+            ) : null}
+          </div>
+          <div className="mt-4 grid grid-cols-1 gap-3">
+            <label className="rounded-[18px] border border-[#e7eee8] bg-white p-4">
+              <span className="text-[12px] font-bold text-[#64748b]">Service Type</span>
+              <input
+                value={form.serviceType}
+                onChange={(event) => setForm((current) => ({ ...current, serviceType: event.target.value }))}
+                readOnly={Boolean(editingServiceId)}
+                className="mt-2 block w-full bg-transparent text-[14px] font-semibold text-[#0f172a] outline-none read-only:text-[#94a3b8]"
+                placeholder="Chef, Maid, Driver"
+              />
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <label className="rounded-[18px] border border-[#e7eee8] bg-white p-4">
+                <span className="text-[12px] font-bold text-[#64748b]">Hourly Rate</span>
+                <input
+                  value={form.hourlyRate}
+                  onChange={(event) => setForm((current) => ({ ...current, hourlyRate: event.target.value }))}
+                  className="mt-2 block w-full bg-transparent text-[14px] font-semibold text-[#0f172a] outline-none"
+                  placeholder="40"
+                />
+              </label>
+              <label className="rounded-[18px] border border-[#e7eee8] bg-white p-4">
+                <span className="text-[12px] font-bold text-[#64748b]">Daily Rate</span>
+                <input
+                  value={form.dailyRate}
+                  onChange={(event) => setForm((current) => ({ ...current, dailyRate: event.target.value }))}
+                  className="mt-2 block w-full bg-transparent text-[14px] font-semibold text-[#0f172a] outline-none"
+                  placeholder="250"
+                />
+              </label>
+            </div>
+            <label className="rounded-[18px] border border-[#e7eee8] bg-white p-4">
+              <span className="text-[12px] font-bold text-[#64748b]">Experience</span>
+              <input
+                value={form.yearsExperience}
+                onChange={(event) => setForm((current) => ({ ...current, yearsExperience: event.target.value }))}
+                className="mt-2 block w-full bg-transparent text-[14px] font-semibold text-[#0f172a] outline-none"
+                placeholder="5 Years"
+              />
+            </label>
+            <label className="rounded-[18px] border border-[#e7eee8] bg-white p-4">
+              <span className="text-[12px] font-bold text-[#64748b]">Specialties</span>
+              <input
+                value={form.specialties}
+                onChange={(event) => setForm((current) => ({ ...current, specialties: event.target.value }))}
+                className="mt-2 block w-full bg-transparent text-[14px] font-semibold text-[#0f172a] outline-none"
+                placeholder="Malay, Arabic, Event catering"
+              />
+            </label>
+          </div>
+          {message ? (
+            <p className="mt-4 rounded-[16px] border border-[#dbeee2] bg-[#f6fff8] px-4 py-3 text-[13px] font-semibold text-[#15803d]">
+              {message}
+            </p>
+          ) : null}
+          <div className="mt-5">
+            <AppButton className="w-full" disabled={saving} onClick={() => void saveService()}>
+              {saving ? "Saving..." : editingServiceId ? "Save Changes" : "Add New Service"}
+            </AppButton>
+          </div>
         </div>
       </section>
     </PageShell>
@@ -1130,22 +1406,75 @@ export function ServicesScreen() {
 export function AvailabilityScreen() {
   const state = useProviderAppData();
   const [enabled, setEnabled] = useState(true);
-  const [days, setDays] = useState<Record<string, boolean>>({
-    Monday: true,
-    Tuesday: true,
-    Wednesday: true,
-    Thursday: true,
-    Friday: true,
-    Saturday: true,
-    Sunday: true,
-  });
+  const [days, setDays] = useState<Record<string, boolean>>(
+    Object.fromEntries(ALL_DAYS.map((day) => [day, false])) as Record<string, boolean>,
+  );
   const [startTime, setStartTime] = useState("08:00");
   const [endTime, setEndTime] = useState("20:00");
   const [saved, setSaved] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    const nextDays = Object.fromEntries(ALL_DAYS.map((day) => [day, false])) as Record<string, boolean>;
+
+    state.availability.forEach((entry) => {
+      nextDays[entry.day] = true;
+    });
+
+    setDays(nextDays);
+    setEnabled(state.availabilityEnabled);
+
+    const firstEntry = state.availability[0];
+    if (firstEntry) {
+      setStartTime(firstEntry.startTime);
+      setEndTime(firstEntry.endTime);
+    }
+  }, [state.availability, state.availabilityEnabled]);
+
   const fallback = LoadingOrError(state);
 
   if (fallback) {
     return fallback;
+  }
+
+  async function saveAvailability() {
+    const accessToken = await getProviderAccessToken();
+
+    if (!accessToken) {
+      state.setError("Your session expired. Please log in again.");
+      return;
+    }
+
+    setSaving(true);
+    setSaved("");
+    state.setError("");
+
+    const response = await fetch("/api/provider/availability", {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({
+        enabled,
+        days: ALL_DAYS.filter((day) => days[day]),
+        startTime,
+        endTime,
+        timeMode: "custom",
+      }),
+    });
+
+    const result = (await response.json()) as { error?: string };
+
+    if (!response.ok) {
+      state.setError(result.error || "Unable to save availability.");
+      setSaving(false);
+      return;
+    }
+
+    await state.reloadWorkspace();
+    setSaved(enabled ? "Availability saved to your live provider profile." : "Provider visibility is now paused.");
+    setSaving(false);
   }
 
   return (
@@ -1185,13 +1514,7 @@ export function AvailabilityScreen() {
               type="button"
               onClick={() =>
                 setDays({
-                  Monday: true,
-                  Tuesday: true,
-                  Wednesday: true,
-                  Thursday: true,
-                  Friday: true,
-                  Saturday: true,
-                  Sunday: true,
+                  ...Object.fromEntries(ALL_DAYS.map((day) => [day, true])),
                 })
               }
               className="text-[12px] font-bold text-[#16a34a]"
@@ -1249,9 +1572,10 @@ export function AvailabilityScreen() {
         <div className="mt-5">
           <AppButton
             className="w-full"
-            onClick={() => setSaved("Availability saved on this device for testing.")}
+            disabled={saving}
+            onClick={() => void saveAvailability()}
           >
-            Save Availability
+            {saving ? "Saving..." : "Save Availability"}
           </AppButton>
         </div>
       </section>
@@ -1293,14 +1617,38 @@ export function ReviewsScreen() {
       <section className="rounded-[26px] bg-white p-5 shadow-[0_18px_44px_rgba(15,23,42,0.08)] ring-1 ring-[#e6eee8]">
         <h2 className="text-[17px] font-black text-[#0f172a]">Review Feed</h2>
         <p className="mt-1 text-[13px] text-[#64748b]">
-          Detailed review records will appear here when the review table is connected.
+          Live customer feedback from your Supabase review records.
         </p>
         <div className="mt-4">
-          <EmptyState
-            title="Detailed reviews are not connected yet"
-            description="Your rating summary is live, and this screen is ready for the review table once it is added."
-            icon={<Star className="h-6 w-6" />}
-          />
+          {state.reviews.length === 0 ? (
+            <EmptyState
+              title="No reviews yet"
+              description="Completed bookings will show up here once customers start leaving feedback."
+              icon={<Star className="h-6 w-6" />}
+            />
+          ) : (
+            <div className="space-y-3">
+              {state.reviews.map((review) => (
+                <div
+                  key={review.id}
+                  className="rounded-[20px] border border-[#e7eee8] bg-[#fbfffc] p-4"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-[14px] font-black text-[#0f172a]">{review.customerName}</p>
+                      <p className="mt-1 text-[12px] text-[#64748b]">{review.createdLabel}</p>
+                    </div>
+                    <div className="flex items-center gap-1 text-[#f5b301]">
+                      {Array.from({ length: review.rating }).map((_, index) => (
+                        <Star key={`${review.id}-${index}`} className="h-4 w-4 fill-current" />
+                      ))}
+                    </div>
+                  </div>
+                  <p className="mt-3 text-[13px] leading-6 text-[#475569]">{review.comment}</p>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
     </PageShell>
@@ -1317,6 +1665,15 @@ export function ProfileScreen() {
 
   const data = state.data!;
   const displayName = data.marketingName || data.fullName || "Provider";
+  const verificationCount = [
+    data.emailVerified,
+    data.phoneVerified,
+    data.identityVerified,
+    data.kycVerified,
+    data.backgroundCheckVerified,
+  ].filter(Boolean).length;
+  const providerBadgeLabel =
+    verificationCount >= 3 ? "Verified Provider" : `${data.approvalStatus} Provider`;
 
   return (
     <PageShell
@@ -1353,7 +1710,7 @@ export function ProfileScreen() {
           </h2>
           <span className="mt-2 inline-flex items-center gap-2 rounded-full bg-[#eef9f1] px-4 py-2 text-[12px] font-bold text-[#16a34a]">
             <ShieldCheck className="h-4 w-4" />
-            Verified Provider
+            {providerBadgeLabel}
           </span>
         </div>
 

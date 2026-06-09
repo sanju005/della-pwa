@@ -100,6 +100,36 @@ function toTitleCase(value: string | null | undefined) {
     .join(" ");
 }
 
+function isMissingProviderProfileColumnError(message?: string) {
+  const normalized = message?.trim().toLowerCase() ?? "";
+
+  return normalized.includes("column") && normalized.includes("verification_status");
+}
+
+async function upsertProviderProfile(
+  adminClient: NonNullable<ReturnType<typeof getAdminSupabaseClient>>,
+  payload: Record<string, unknown>,
+) {
+  const withVerificationStatus = {
+    verification_status: "partially_verified",
+    ...payload,
+  };
+
+  const write = await adminClient
+    .from("provider_profiles")
+    .upsert(withVerificationStatus, { onConflict: "id" });
+
+  if (!write.error || !isMissingProviderProfileColumnError(write.error.message)) {
+    return write;
+  }
+
+  const { verification_status: _verificationStatus, ...fallbackPayload } = withVerificationStatus;
+
+  return adminClient
+    .from("provider_profiles")
+    .upsert(fallbackPayload, { onConflict: "id" });
+}
+
 async function verifyProviderRequest(request: Request) {
   const adminClient = getAdminSupabaseClient();
 
@@ -262,9 +292,7 @@ async function ensureProviderProfile(
     is_visible: true,
   };
 
-  const { error } = await adminClient
-    .from("provider_profiles")
-    .upsert(bootstrapPayload, { onConflict: "id" });
+  const { error } = await upsertProviderProfile(adminClient, bootstrapPayload);
 
   if (error) {
     return null;
@@ -375,17 +403,12 @@ export async function PATCH(request: Request) {
   );
 
   if (Object.keys(providerPayload).length > 0) {
-    const { error } = await verified.adminClient
-      .from("provider_profiles")
-      .upsert(
-        {
-          id: verified.profile.id,
-          approval_status: "pending_review",
-          is_visible: true,
-          ...providerPayload,
-        },
-        { onConflict: "id" },
-      );
+    const { error } = await upsertProviderProfile(verified.adminClient, {
+      id: verified.profile.id,
+      approval_status: "pending_review",
+      is_visible: true,
+      ...providerPayload,
+    });
 
     if (error) {
       return NextResponse.json({ error: error.message || "Unable to update listing." }, { status: 500 });

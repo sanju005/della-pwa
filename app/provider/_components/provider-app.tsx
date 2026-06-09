@@ -84,6 +84,37 @@ export type ProviderNotificationItem = {
   createdAt: string;
 };
 
+export type ProviderAvailabilityItem = {
+  id: string;
+  day: string;
+  dayKey: string;
+  timeMode: string;
+  startTime: string;
+  endTime: string;
+};
+
+export type ProviderMessageThread = {
+  bookingId: string;
+  customerId: string;
+  customerName: string;
+  serviceLabel: string;
+  location: string;
+  schedule: string;
+  preview: string;
+  lastMessageAt: string;
+  lastSenderRole: "customer" | "provider" | "admin" | "system";
+  unreadCount: number;
+};
+
+export type ProviderReviewItem = {
+  id: string;
+  customerName: string;
+  rating: number;
+  comment: string;
+  createdAt: string;
+  createdLabel: string;
+};
+
 export function formatCurrency(value: number) {
   return `RM ${value.toLocaleString("en-MY", {
     minimumFractionDigits: 2,
@@ -198,8 +229,99 @@ export function useProviderAppData() {
   const [notice, setNotice] = useState("");
   const [bookings, setBookings] = useState<ProviderBookingItem[]>([]);
   const [notifications, setNotifications] = useState<ProviderNotificationItem[]>([]);
+  const [availability, setAvailability] = useState<ProviderAvailabilityItem[]>([]);
+  const [availabilityEnabled, setAvailabilityEnabled] = useState(true);
+  const [messages, setMessages] = useState<ProviderMessageThread[]>([]);
+  const [reviews, setReviews] = useState<ProviderReviewItem[]>([]);
   const [actionBookingId, setActionBookingId] = useState("");
   const [, startTransition] = useTransition();
+
+  async function loadWorkspace(accessToken: string) {
+    setError("");
+
+    const [
+      profileResponse,
+      bookingsResponse,
+      notificationsResponse,
+      availabilityResponse,
+      messagesResponse,
+      reviewsResponse,
+    ] = await Promise.all([
+      fetch("/api/provider/me", {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      }),
+      fetch("/api/provider/bookings", {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      }),
+      fetch("/api/notifications", {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      }),
+      fetch("/api/provider/availability", {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      }),
+      fetch("/api/provider/messages", {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      }),
+      fetch("/api/provider/reviews", {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      }),
+    ]);
+
+    const profileResult = (await profileResponse.json()) as
+      | ProviderDashboardData
+      | { error?: string };
+    const bookingsResult = (await bookingsResponse.json()) as
+      | { bookings: ProviderBookingItem[] }
+      | { error?: string };
+    const notificationsResult = (await notificationsResponse.json()) as
+      | { notifications: ProviderNotificationItem[] }
+      | { error?: string };
+    const availabilityResult = (await availabilityResponse.json()) as
+      | { enabled: boolean; entries: ProviderAvailabilityItem[] }
+      | { error?: string };
+    const messagesResult = (await messagesResponse.json()) as
+      | { threads: ProviderMessageThread[] }
+      | { error?: string };
+    const reviewsResult = (await reviewsResponse.json()) as
+      | { reviews: ProviderReviewItem[] }
+      | { error?: string };
+
+    if (!profileResponse.ok || !("providerId" in profileResult)) {
+      setError(
+        "error" in profileResult && profileResult.error
+          ? profileResult.error
+          : "Unable to load provider data.",
+      );
+      setLoading(false);
+      return false;
+    }
+
+    setData(profileResult);
+    setBookings(
+      bookingsResponse.ok && "bookings" in bookingsResult ? bookingsResult.bookings : [],
+    );
+    setNotifications(
+      notificationsResponse.ok && "notifications" in notificationsResult
+        ? notificationsResult.notifications
+        : [],
+    );
+    setAvailabilityEnabled(
+      availabilityResponse.ok && "enabled" in availabilityResult
+        ? availabilityResult.enabled
+        : true,
+    );
+    setAvailability(
+      availabilityResponse.ok && "entries" in availabilityResult ? availabilityResult.entries : [],
+    );
+    setMessages(
+      messagesResponse.ok && "threads" in messagesResult ? messagesResult.threads : [],
+    );
+    setReviews(
+      reviewsResponse.ok && "reviews" in reviewsResult ? reviewsResult.reviews : [],
+    );
+    setLoading(false);
+    return true;
+  }
 
   useEffect(() => {
     let active = true;
@@ -227,52 +349,11 @@ export function useProviderAppData() {
         return;
       }
 
-      const [profileResponse, bookingsResponse, notificationsResponse] = await Promise.all([
-        fetch("/api/provider/me", {
-          headers: { Authorization: `Bearer ${session.access_token}` },
-        }),
-        fetch("/api/provider/bookings", {
-          headers: { Authorization: `Bearer ${session.access_token}` },
-        }),
-        fetch("/api/notifications", {
-          headers: { Authorization: `Bearer ${session.access_token}` },
-        }),
-      ]);
-
-      const profileResult = (await profileResponse.json()) as
-        | ProviderDashboardData
-        | { error?: string };
-      const bookingsResult = (await bookingsResponse.json()) as
-        | { bookings: ProviderBookingItem[] }
-        | { error?: string };
-      const notificationsResult = (await notificationsResponse.json()) as
-        | { notifications: ProviderNotificationItem[] }
-        | { error?: string };
-
       if (!active) {
         return;
       }
 
-      if (!profileResponse.ok || !("providerId" in profileResult)) {
-        setError(
-          "error" in profileResult && profileResult.error
-            ? profileResult.error
-            : "Unable to load provider data.",
-        );
-        setLoading(false);
-        return;
-      }
-
-      setData(profileResult);
-      setBookings(
-        bookingsResponse.ok && "bookings" in bookingsResult ? bookingsResult.bookings : [],
-      );
-      setNotifications(
-        notificationsResponse.ok && "notifications" in notificationsResult
-          ? notificationsResult.notifications
-          : [],
-      );
-      setLoading(false);
+      await loadWorkspace(session.access_token);
     }
 
     void load();
@@ -282,11 +363,11 @@ export function useProviderAppData() {
     };
   }, [router]);
 
-  async function reloadBookings() {
+  async function reloadWorkspace() {
     const client = getSupabaseClient();
 
     if (!client) {
-      return;
+      return false;
     }
 
     const {
@@ -294,19 +375,10 @@ export function useProviderAppData() {
     } = await client.auth.getSession();
 
     if (!session) {
-      return;
+      return false;
     }
 
-    const response = await fetch("/api/provider/bookings", {
-      headers: { Authorization: `Bearer ${session.access_token}` },
-    });
-    const result = (await response.json()) as
-      | { bookings: ProviderBookingItem[] }
-      | { error?: string };
-
-    if (response.ok && "bookings" in result) {
-      setBookings(result.bookings);
-    }
+    return loadWorkspace(session.access_token);
   }
 
   function handleBookingAction(
@@ -354,7 +426,7 @@ export function useProviderAppData() {
         return;
       }
 
-      await reloadBookings();
+      await reloadWorkspace();
       setNotice(status === "accepted" ? "Booking accepted." : "Booking updated.");
       setActionBookingId("");
     });
@@ -376,12 +448,17 @@ export function useProviderAppData() {
     data,
     bookings,
     notifications,
+    availability,
+    availabilityEnabled,
+    messages,
+    reviews,
     loading,
     error,
     notice,
     actionBookingId,
     setError,
     setNotice,
+    reloadWorkspace,
     handleBookingAction,
     handleSignOut,
   };
