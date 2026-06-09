@@ -103,15 +103,16 @@ export function ProviderRegistrationWizard() {
       body: JSON.stringify(data),
     });
 
-    const result = (await response.json()) as
-      | {
-          id: string;
-          status: string;
-          phoneVerified: boolean;
-          emailVerified: boolean;
-          identityVerified: boolean;
-        }
-      | { error?: string };
+        const result = (await response.json()) as
+          | {
+              id: string;
+              status: string;
+              phoneVerified: boolean;
+              emailVerified: boolean;
+              identityVerified: boolean;
+              verificationSetupFailed?: boolean;
+            }
+          | { error?: string };
 
     if (!response.ok || !("id" in result)) {
       throw new Error(
@@ -1244,11 +1245,11 @@ function SubmissionChoiceStep({
           </div>
         </div>
         <h2 className="mt-5 text-[24px] font-extrabold tracking-[-0.04em] text-[#111827]">
-          Your Listing Is Submitted
+          Your Listing Has Been Submitted
         </h2>
         <p className="mt-2 text-[14px] leading-6 text-[#4b5563]">
           Registration ID: {registrationId || "Pending"}.
-          Start verification now for phone, email, and document checks, or skip for now and view your own profile.
+          Verify your account now, or go straight to your own profile.
         </p>
       </div>
 
@@ -1257,14 +1258,14 @@ function SubmissionChoiceStep({
         onClick={onStartVerification}
         className="inline-flex h-12 w-full items-center justify-center rounded-[12px] bg-[#16a34a] text-[15px] font-extrabold text-white shadow-[0_16px_30px_rgba(22,163,74,0.2)]"
       >
-        Start Verification
+        Verify Account
       </button>
 
       <Link
         href="/provider/dashboard"
         className="inline-flex h-12 w-full items-center justify-center rounded-[12px] border border-[#d8e4dc] bg-white text-[15px] font-extrabold text-[#111827] shadow-[0_10px_22px_rgba(15,23,42,0.04)]"
       >
-        Skip For Now
+        Go to Profile
       </Link>
     </div>
   );

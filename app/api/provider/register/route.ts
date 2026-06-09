@@ -321,12 +321,7 @@ export async function POST(request: Request) {
       identityVerified,
     );
 
-    if (verificationResult.error) {
-      return NextResponse.json(
-        { error: "Account created, but provider verification setup failed." },
-        { status: 500 }
-      );
-    }
+    const verificationSetupFailed = Boolean(verificationResult.error);
 
     const providerServicesPayload = payload.selectedServices.map((service) => {
       const details = payload.serviceDetails[service];
@@ -394,9 +389,10 @@ export async function POST(request: Request) {
     return NextResponse.json({
       id: record.id,
       status: record.status,
-      phoneVerified: record.phoneVerified,
-      emailVerified: record.emailVerified,
-      identityVerified: record.identityVerified,
+      phoneVerified: verificationSetupFailed ? false : record.phoneVerified,
+      emailVerified: verificationSetupFailed ? false : record.emailVerified,
+      identityVerified: verificationSetupFailed ? false : record.identityVerified,
+      verificationSetupFailed,
     });
   } catch (error) {
     return NextResponse.json(
