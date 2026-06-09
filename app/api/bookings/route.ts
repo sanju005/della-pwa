@@ -12,6 +12,10 @@ import {
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+function isProviderRole(role: string | null | undefined) {
+  return role === "provider" || role === "service_provider";
+}
+
 type BookingBody = {
   providerId?: string;
   providerName?: string;
@@ -195,7 +199,7 @@ async function verifyCustomerRequest(request: Request) {
     };
   }
 
-  if ((profile as ProfileRow).role === "provider") {
+  if (isProviderRole((profile as ProfileRow).role)) {
     return {
       error: NextResponse.json(
         { error: "This account is a provider account." },

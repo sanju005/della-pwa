@@ -17,6 +17,10 @@ import { FeaturePill, MobilePage, SecureNotice } from "@/app/_components/della-u
 import { getSupabaseClient } from "@/lib/supabase";
 import { requestNotificationPermission, saveFCMToken } from "@/lib/notifications";
 
+function isProviderRole(role: string | null | undefined) {
+  return role === "provider" || role === "service_provider";
+}
+
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -62,7 +66,7 @@ export default function LoginPage() {
         return;
       }
 
-      if (profile?.role === "provider") {
+      if (isProviderRole(profile?.role)) {
         router.replace("/provider/dashboard");
         return;
       }
@@ -125,7 +129,7 @@ export default function LoginPage() {
         console.error("[FCM] Notification setup failed after login:", notificationError);
       }
 
-      if (profile?.role === "provider") {
+      if (isProviderRole(profile?.role)) {
         router.replace("/provider/dashboard");
         return;
       }

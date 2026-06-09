@@ -9,6 +9,10 @@ import {
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+function isProviderRole(role: string | null | undefined) {
+  return role === "provider" || role === "service_provider";
+}
+
 type ProviderServiceRow = {
   id: string;
   service_type: string | null;
@@ -128,7 +132,7 @@ async function verifyProviderRequest(request: Request) {
     return { error: NextResponse.json({ error: "Provider profile was not found." }, { status: 404 }) };
   }
 
-  if (profile.role !== "provider") {
+  if (!isProviderRole(profile.role)) {
     return { error: NextResponse.json({ error: "This account is not a provider." }, { status: 403 }) };
   }
 

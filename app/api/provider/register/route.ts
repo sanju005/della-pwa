@@ -11,6 +11,8 @@ import {
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+const PROVIDER_ROLE = "service_provider";
+
 function toSignupErrorMessage(errorMessage?: string) {
   const normalizedMessage = errorMessage?.trim().toLowerCase() ?? "";
 
@@ -197,7 +199,7 @@ export async function POST(request: Request) {
         first_name: payload.basicProfile.firstName.trim(),
         last_name: payload.basicProfile.lastName.trim(),
         sex,
-        role: "provider",
+        role: PROVIDER_ROLE,
         marketing_name: payload.basicProfile.marketingName.trim(),
       },
     });
@@ -243,7 +245,7 @@ export async function POST(request: Request) {
         id: providerId,
         full_name: fullName,
         email: payload.account.email.trim().toLowerCase(),
-        role: "provider",
+        role: PROVIDER_ROLE,
         phone: normalizedPhone,
         avatar_url: payload.basicProfile.avatarDataUrl?.trim() || null,
         status: "pending",

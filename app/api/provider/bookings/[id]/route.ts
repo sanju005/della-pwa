@@ -10,6 +10,10 @@ import {
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+function isProviderRole(role: string | null | undefined) {
+  return role === "provider" || role === "service_provider";
+}
+
 type ProfileRow = {
   id: string;
   full_name: string | null;
@@ -112,7 +116,7 @@ async function verifyProviderRequest(request: Request) {
     };
   }
 
-  if ((profile as ProfileRow).role !== "provider") {
+  if (!isProviderRole((profile as ProfileRow).role)) {
     return {
       error: NextResponse.json(
         { error: "This account is not a provider account." },
