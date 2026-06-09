@@ -489,10 +489,10 @@ export function ProviderBottomNav() {
           active: pathname === "/provider/messages",
         },
         {
-          href: "/provider/earnings",
-          label: "Wallet",
+          href: "/provider/tasks",
+          label: "Tasks",
           icon: <Wallet className="h-5 w-5" />,
-          active: pathname === "/provider/earnings",
+          active: pathname === "/provider/tasks",
         },
         {
           href: "/provider/profile",

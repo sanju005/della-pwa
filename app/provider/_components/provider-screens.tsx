@@ -1175,6 +1175,141 @@ export function EarningsScreen() {
   );
 }
 
+export function TasksScreen() {
+  const state = useProviderAppData();
+  const fallback = LoadingOrError(state);
+
+  if (fallback) {
+    return fallback;
+  }
+
+  const ongoing = state.bookings.filter(
+    (booking) => booking.bookingStatus === "accepted" || booking.bookingStatus === "on_the_way" || booking.bookingStatus === "arrived",
+  );
+  const completedToday = state.bookings.filter(
+    (booking) =>
+      booking.scheduledDate === getTodayKey() &&
+      ["completed", "paid", "review_requested", "reviewed"].includes(booking.bookingStatus),
+  );
+
+  return (
+    <PageShell title="Tasks" subtitle="Your live ongoing provider tasks and quick actions.">
+      <section className="grid grid-cols-2 gap-3">
+        <MetricCard
+          label="Ongoing"
+          value={String(ongoing.length)}
+          meta="Accepted and active"
+          accent="text-[#0f172a]"
+        />
+        <MetricCard
+          label="Completed Today"
+          value={String(completedToday.length)}
+          meta="Finished today"
+          accent="text-[#0f172a]"
+        />
+      </section>
+
+      <section className="rounded-[26px] bg-white p-5 shadow-[0_18px_44px_rgba(15,23,42,0.08)] ring-1 ring-[#e6eee8]">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-[17px] font-black text-[#0f172a]">Ongoing Tasks</h2>
+            <p className="mt-1 text-[13px] text-[#64748b]">
+              These are the jobs you should work on right now.
+            </p>
+          </div>
+          <Link href="/provider/bookings" className="text-[13px] font-bold text-[#16a34a]">
+            All bookings
+          </Link>
+        </div>
+        <div className="mt-4 space-y-3">
+          {ongoing.length === 0 ? (
+            <EmptyState
+              title="No ongoing tasks"
+              description="Accepted or in-progress jobs will show here automatically."
+              icon={<BriefcaseBusiness className="h-6 w-6" />}
+            />
+          ) : (
+            ongoing.map((booking) => (
+              <div
+                key={booking.id}
+                className="rounded-[20px] border border-[#e7eee8] bg-[#fbfffc] p-4"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-[15px] font-black text-[#0f172a]">{booking.serviceLabel}</p>
+                    <p className="mt-1 text-[13px] text-[#475569]">{booking.customerName}</p>
+                  </div>
+                  <StatusBadge label={booking.statusLabel} tone={providerStatusTone(booking.bookingStatus)} />
+                </div>
+                <div className="mt-3 space-y-2 text-[13px] text-[#475569]">
+                  <div className="flex items-center gap-2">
+                    <CalendarDays className="h-4 w-4 text-[#16a34a]" />
+                    <span>{booking.schedule}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4 text-[#16a34a]" />
+                    <span>{booking.location}</span>
+                  </div>
+                </div>
+                <div className="mt-4 flex gap-3">
+                  {booking.bookingStatus === "accepted" ? (
+                    <AppButton
+                      className="flex-1"
+                      disabled={state.actionBookingId === booking.id}
+                      onClick={() =>
+                        state.handleBookingAction(
+                          booking.id,
+                          "on_the_way",
+                          "Provider started travel to customer",
+                        )
+                      }
+                    >
+                      Start Task
+                    </AppButton>
+                  ) : null}
+                  {booking.bookingStatus === "on_the_way" ? (
+                    <AppButton
+                      className="flex-1"
+                      disabled={state.actionBookingId === booking.id}
+                      onClick={() =>
+                        state.handleBookingAction(
+                          booking.id,
+                          "arrived",
+                          "Provider arrived at customer location",
+                        )
+                      }
+                    >
+                      Mark Arrived
+                    </AppButton>
+                  ) : null}
+                  {booking.bookingStatus === "arrived" ? (
+                    <AppButton
+                      className="flex-1"
+                      disabled={state.actionBookingId === booking.id}
+                      onClick={() =>
+                        state.handleBookingAction(
+                          booking.id,
+                          "completed",
+                          "Provider completed the task",
+                        )
+                      }
+                    >
+                      Complete Task
+                    </AppButton>
+                  ) : null}
+                  <AppButton href={`/provider/bookings?booking=${booking.id}`} tone="secondary" className="flex-1">
+                    Open Booking
+                  </AppButton>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </section>
+    </PageShell>
+  );
+}
+
 export function ServicesScreen() {
   const state = useProviderAppData();
   const [editingServiceId, setEditingServiceId] = useState("");
