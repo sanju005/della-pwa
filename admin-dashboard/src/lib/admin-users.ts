@@ -6,6 +6,7 @@ import type { DashboardBooking, PaymentRow, UserDetailRecord, UserMetric, UserRo
 type ProfileRelation =
   | {
       date_of_birth?: string | null;
+      sex?: string | null;
       city?: string | null;
       state?: string | null;
       country?: string | null;
@@ -15,6 +16,7 @@ type ProfileRelation =
     }
   | Array<{
       date_of_birth?: string | null;
+      sex?: string | null;
       city?: string | null;
       state?: string | null;
       country?: string | null;
@@ -616,6 +618,7 @@ async function fetchProfiles() {
       created_at,
       customer_profiles (
         date_of_birth,
+        sex,
         city,
         state,
         country
@@ -653,6 +656,7 @@ async function fetchProfileById(userId: string) {
       created_at,
       customer_profiles (
         date_of_birth,
+        sex,
         city,
         state,
         country
@@ -768,6 +772,10 @@ export async function getUserProfileWithFallback(userId: string): Promise<UserPr
       status,
       phone: liveProfile.phone?.trim() || baseDetail.phone,
       dob: formatDateOfBirth(customerProfile?.date_of_birth) || baseDetail.dob,
+      gender:
+        customerProfile?.sex === "Male" || customerProfile?.sex === "Female"
+          ? customerProfile.sex
+          : baseDetail.gender,
       city,
       joined: formatDate(liveProfile.created_at),
       registeredAt: formatDateTime(liveProfile.created_at),

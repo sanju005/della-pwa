@@ -24,6 +24,7 @@ type CustomerProfileRow = {
   first_name: string | null;
   last_name: string | null;
   date_of_birth: string | null;
+  sex: string | null;
   phone_number: string | null;
   country_code: string | null;
   city: string | null;
@@ -199,7 +200,12 @@ function buildCustomerProfile(
       fallbackLastName,
       fallbackName.lastName,
     ]),
-    sex: fallbackSex === "Male" || fallbackSex === "Female" ? fallbackSex : "",
+    sex:
+      customerProfile?.sex === "Male" || customerProfile?.sex === "Female"
+        ? customerProfile.sex
+        : fallbackSex === "Male" || fallbackSex === "Female"
+          ? fallbackSex
+          : "",
     dateOfBirth: customerProfile?.date_of_birth?.trim() || "",
     avatarUrl: profile.avatar_url?.trim() || "",
     email: profile.email?.trim() || "",
@@ -277,7 +283,7 @@ export async function GET(request: Request) {
   const [customerProfileResult, bookingsResult, paymentsResult] = await Promise.all([
     verified.adminClient
       .from("customer_profiles")
-      .select("id, first_name, last_name, date_of_birth, phone_number, country_code, city, region, state, country, verified, completion")
+      .select("id, first_name, last_name, date_of_birth, sex, phone_number, country_code, city, region, state, country, verified, completion")
       .eq("id", verified.profile.id)
       .maybeSingle(),
     verified.adminClient
@@ -402,6 +408,7 @@ export async function PATCH(request: Request) {
     first_name: firstName || null,
     last_name: lastName || null,
     date_of_birth: payload.dateOfBirth?.trim() || null,
+    sex: sex || null,
     phone_number: phoneNumber || null,
     country_code: countryCode,
     city: payload.city?.trim() || null,
@@ -433,7 +440,7 @@ export async function PATCH(request: Request) {
 
   const refreshedCustomerProfileResult = await verified.adminClient
     .from("customer_profiles")
-    .select("id, first_name, last_name, date_of_birth, phone_number, country_code, city, region, state, country, verified, completion")
+    .select("id, first_name, last_name, date_of_birth, sex, phone_number, country_code, city, region, state, country, verified, completion")
     .eq("id", verified.profile.id)
     .maybeSingle();
 

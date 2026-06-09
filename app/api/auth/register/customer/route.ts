@@ -180,6 +180,7 @@ export async function POST(request: Request) {
         first_name: firstName,
         last_name: lastName,
         date_of_birth: dateOfBirth,
+        sex,
         country: "Malaysia",
       },
       { onConflict: "id" }
