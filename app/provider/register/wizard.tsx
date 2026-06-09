@@ -49,7 +49,6 @@ const DynamicLocationPickerMap = dynamic(
 
 type FlowStep =
   | { type: "basic"; label: string }
-  | { type: "account"; label: string }
   | { type: "services"; label: string }
   | { type: "service-detail"; label: string; service: ProviderService }
   | { type: "availability"; label: string }
@@ -77,7 +76,6 @@ export function ProviderRegistrationWizard() {
 
     return [
       { type: "basic", label: "Basic Profile" },
-      { type: "account", label: "Account Details" },
       { type: "services", label: "Select Services" },
       ...dynamicServiceSteps,
       { type: "availability", label: "Availability" },
@@ -92,7 +90,37 @@ export function ProviderRegistrationWizard() {
   const activeStep = steps[Math.min(stepIndex, steps.length - 1)];
 
   const goNext = () => {
+    if (activeStep.type === "basic") {
+      if (
+        !data.basicProfile.firstName.trim() ||
+        !data.basicProfile.lastName.trim() ||
+        !data.basicProfile.sex ||
+        !data.basicProfile.dateOfBirth.trim() ||
+        !data.basicProfile.residentialAddress.trim() ||
+        !data.account.email.trim() ||
+        !data.account.phoneNumber.trim() ||
+        !data.account.password ||
+        !data.account.confirmPassword
+      ) {
+        setSubmitError("Please fill in all required fields before continuing.");
+        return;
+      }
+
+      if (data.account.password !== data.account.confirmPassword) {
+        setSubmitError("Passwords do not match.");
+        return;
+      }
+
+      if (data.account.password.length < 8) {
+        setSubmitError("Password must be at least 8 characters long.");
+        return;
+      }
+
+      setSubmitError("");
+    }
+
     if (activeStep.type === "services" && data.selectedServices.length === 0) {
+      setSubmitError("Please select at least one service before continuing.");
       return;
     }
 
@@ -282,20 +310,9 @@ export function ProviderRegistrationWizard() {
               <BasicProfileStep
                 data={data}
                 updateBasic={updateBasic}
-                updateProviderLocation={(field, value) =>
-                  setData((current) => ({
-                    ...current,
-                    providerLocation: {
-                      ...current.providerLocation,
-                      [field]: value,
-                    },
-                  }))
-                }
+                updateAccount={updateAccount}
                 setSubmitError={setSubmitError}
               />
-            ) : null}
-            {activeStep.type === "account" ? (
-              <AccountDetailsStep data={data} updateAccount={updateAccount} />
             ) : null}
             {activeStep.type === "services" ? (
               <SelectServicesStep
@@ -318,6 +335,7 @@ export function ProviderRegistrationWizard() {
             {activeStep.type === "location" ? (
               <ProviderLocationStep
                 data={data}
+                setSubmitError={setSubmitError}
                 onUpdate={(field, value) =>
                   setData((current) => ({
                     ...current,
@@ -376,7 +394,7 @@ export function ProviderRegistrationWizard() {
 function BasicProfileStep({
   data,
   updateBasic,
-  updateProviderLocation,
+  updateAccount,
   setSubmitError,
 }: {
   data: ProviderRegistrationData;
@@ -384,75 +402,13 @@ function BasicProfileStep({
     field: keyof ProviderRegistrationData["basicProfile"],
     value: string | number
   ) => void;
-  updateProviderLocation: (
-    field: keyof ProviderRegistrationData["providerLocation"],
-    value: string | number
+  updateAccount: (
+    field: keyof ProviderRegistrationData["account"],
+    value: string
   ) => void;
   setSubmitError: (value: string) => void;
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [isLocating, setIsLocating] = useState(false);
-
-  const applyResolvedLocation = async (latitude: number, longitude: number) => {
-    const response = await fetch(
-      `/api/location/reverse?lat=${latitude}&lng=${longitude}`,
-      { cache: "no-store" }
-    );
-
-    const resolved = (await response.json()) as ReverseLocationResponse;
-    const locationLabel =
-      resolved.formattedAddress?.trim() ||
-      resolved.label?.trim() ||
-      `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
-
-    updateBasic("serviceLocation", locationLabel);
-    updateProviderLocation("areaLabel", locationLabel);
-    updateProviderLocation("latitude", latitude);
-    updateProviderLocation("longitude", longitude);
-    updateProviderLocation("formattedAddress", resolved.formattedAddress?.trim() || locationLabel);
-    updateProviderLocation("road", resolved.road?.trim() || "");
-    updateProviderLocation("suburb", resolved.suburb?.trim() || "");
-    updateProviderLocation("city", resolved.city?.trim() || "");
-    updateProviderLocation("state", resolved.state?.trim() || "");
-    updateProviderLocation("postcode", resolved.postcode?.trim() || "");
-    updateProviderLocation("country", resolved.country?.trim() || "");
-    updateProviderLocation("houseNumber", resolved.houseNumber?.trim() || "");
-  };
-
-  const requestCurrentLocation = () => {
-    if (typeof navigator === "undefined" || !navigator.geolocation) {
-      setSubmitError("Location is not supported on this device.");
-      return;
-    }
-
-    setIsLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setSubmitError("");
-        void applyResolvedLocation(
-          position.coords.latitude,
-          position.coords.longitude,
-        )
-          .catch(() => {
-            setSubmitError("Unable to convert location into an address.");
-          })
-          .finally(() => {
-            setIsLocating(false);
-          });
-      },
-      () => {
-        setIsLocating(false);
-        setSubmitError("Unable to get current location. Please allow location access.");
-      },
-      { enableHighAccuracy: true, timeout: 10000 },
-    );
-  };
-
-  useEffect(() => {
-    if (!data.basicProfile.serviceLocation) {
-      requestCurrentLocation();
-    }
-  }, [data.basicProfile.serviceLocation]);
 
   const handleAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -539,65 +495,11 @@ function BasicProfileStep({
         rows={3}
       />
 
-      <div>
-        <p className="mb-2 text-[13px] font-semibold text-[#111827]">Service Location</p>
-        <div className="rounded-[14px] border border-[#dfe8e2] bg-[linear-gradient(180deg,#f6fbf7_0%,#eef8ef_100%)] p-3">
-          <button
-            type="button"
-            onClick={requestCurrentLocation}
-            className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-2 text-[12px] font-bold text-[#16a34a] shadow-[0_8px_20px_rgba(15,23,42,0.03)]"
-          >
-            <PinIcon className="h-4 w-4" />
-            {isLocating ? "Getting location..." : "Select current location"}
-          </button>
-          <p className="mt-3 text-[13px] text-[#374151]">
-            {data.basicProfile.serviceLocation || "Current location not loaded yet."}
-          </p>
-          <div className="mt-3 overflow-hidden rounded-[16px] border border-[#dfe8e2] bg-white">
-            <div className="h-[15rem] w-full bg-[#eef9f0]">
-              <DynamicLocationPickerMap
-                latitude={data.providerLocation.latitude}
-                longitude={data.providerLocation.longitude}
-                radiusKm={data.providerLocation.radius}
-                onChange={({ latitude, longitude }) => {
-                  void applyResolvedLocation(latitude, longitude).catch(() => {
-                    setSubmitError("Unable to convert location into an address.");
-                  });
-                }}
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <RangeField
-        label="Service Radius"
-        value={data.basicProfile.serviceRadius}
-        min={5}
-        max={30}
-        suffix="KM"
-        onChange={(value) => {
-          updateBasic("serviceRadius", value);
-          updateProviderLocation("radius", value);
-        }}
+      <InputField
+        label="Email"
+        value={data.account.email}
+        onChange={(value) => updateAccount("email", value)}
       />
-    </div>
-  );
-}
-
-function AccountDetailsStep({
-  data,
-  updateAccount,
-}: {
-  data: ProviderRegistrationData;
-  updateAccount: (
-    field: keyof ProviderRegistrationData["account"],
-    value: string
-  ) => void;
-}) {
-  return (
-    <div className="space-y-4">
-      <InputField label="Email" value={data.account.email} onChange={(value) => updateAccount("email", value)} />
       <div>
         <p className="mb-2 text-[13px] font-semibold text-[#111827]">Phone</p>
         <div className="flex gap-2">
@@ -615,8 +517,20 @@ function AccountDetailsStep({
           </div>
         </div>
       </div>
-      <InputField label="Password" value={data.account.password} onChange={(value) => updateAccount("password", value)} rightIcon={<EyeIcon className="h-4 w-4 text-[#6b7280]" />} type="password" />
-      <InputField label="Retype Password" value={data.account.confirmPassword} onChange={(value) => updateAccount("confirmPassword", value)} rightIcon={<EyeIcon className="h-4 w-4 text-[#6b7280]" />} type="password" />
+      <InputField
+        label="Password"
+        value={data.account.password}
+        onChange={(value) => updateAccount("password", value)}
+        rightIcon={<EyeIcon className="h-4 w-4 text-[#6b7280]" />}
+        type="password"
+      />
+      <InputField
+        label="Retype Password"
+        value={data.account.confirmPassword}
+        onChange={(value) => updateAccount("confirmPassword", value)}
+        rightIcon={<EyeIcon className="h-4 w-4 text-[#6b7280]" />}
+        type="password"
+      />
     </div>
   );
 }
@@ -827,15 +741,18 @@ function AvailabilityStep({
 
 function ProviderLocationStep({
   data,
+  setSubmitError,
   onUpdate,
 }: {
   data: ProviderRegistrationData;
+  setSubmitError: (value: string) => void;
   onUpdate: (
     field: keyof ProviderRegistrationData["providerLocation"],
     value: string | number
   ) => void;
 }) {
   const [isResolvingAddress, setIsResolvingAddress] = useState(false);
+  const [isLocating, setIsLocating] = useState(false);
 
   const updateMapLocation = async (latitude: number, longitude: number) => {
     setIsResolvingAddress(true);
@@ -867,8 +784,58 @@ function ProviderLocationStep({
     }
   };
 
+  const requestCurrentLocation = () => {
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      setSubmitError("Location is not supported on this device.");
+      return;
+    }
+
+    setIsLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setSubmitError("");
+        void updateMapLocation(
+          position.coords.latitude,
+          position.coords.longitude,
+        ).finally(() => {
+          setIsLocating(false);
+        });
+      },
+      () => {
+        setIsLocating(false);
+        setSubmitError("Unable to get current location. Please allow location access.");
+      },
+      { enableHighAccuracy: true, timeout: 10000 },
+    );
+  };
+
+  useEffect(() => {
+    if (!data.providerLocation.areaLabel.trim()) {
+      requestCurrentLocation();
+    }
+  }, [data.providerLocation.areaLabel]);
+
   return (
     <div className="space-y-4">
+      <div className="flex items-center justify-between rounded-[14px] border border-[#dfe8e2] bg-[#f6fbf7] p-3">
+        <div className="min-w-0">
+          <p className="text-[13px] font-semibold text-[#111827]">
+            {data.providerLocation.areaLabel || "Current location not loaded yet."}
+          </p>
+          <p className="mt-1 text-[12px] text-[#6b7280]">
+            Providers will be visible to users inside this service radius.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={requestCurrentLocation}
+          className="ml-3 inline-flex shrink-0 items-center gap-2 rounded-full bg-white px-3 py-2 text-[12px] font-bold text-[#16a34a] shadow-[0_8px_20px_rgba(15,23,42,0.03)]"
+        >
+          <PinIcon className="h-4 w-4" />
+          {isLocating ? "Locating..." : "Use Current Location"}
+        </button>
+      </div>
+
       <div className="overflow-hidden rounded-[18px] border border-[#dfe8e2] bg-[linear-gradient(180deg,#f7fbf7_0%,#eff7ef_100%)]">
         <div className="relative h-[18rem] overflow-hidden">
           <DynamicLocationPickerMap
@@ -1615,8 +1582,6 @@ function screenHeading(step: FlowStep) {
   switch (step.type) {
     case "basic":
       return "Create Your Profile";
-    case "account":
-      return "Account Details";
     case "services":
       return "Select Services";
     case "service-detail":
@@ -1639,9 +1604,7 @@ function screenHeading(step: FlowStep) {
 function screenSubtitle(step: FlowStep) {
   switch (step.type) {
     case "basic":
-      return "Let's start with your basic information";
-    case "account":
-      return "Add your contact and login details";
+      return "Add your profile, contact, and login details";
     case "services":
       return "Select one or more services you provide";
     case "service-detail":
