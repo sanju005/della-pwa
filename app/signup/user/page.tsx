@@ -1,9 +1,10 @@
 "use client";
 
 import type { ReactNode } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 
 import {
   Icons,
@@ -19,12 +20,38 @@ export default function SignupUserPage() {
   const [lastName, setLastName] = useState("");
   const [dateOfBirth, setDateOfBirth] = useState("");
   const [sex, setSex] = useState<"" | "Male" | "Female">("");
+  const [avatarDataUrl, setAvatarDataUrl] = useState("");
   const [email, setEmail] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [error, setError] = useState("");
+
+  const handleAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      setError("Please choose a JPG or PNG image for the profile photo.");
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      setError("Profile photo must be 2MB or smaller.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setError("");
+      setAvatarDataUrl(typeof reader.result === "string" ? reader.result : "");
+    };
+    reader.readAsDataURL(file);
+  };
 
   const handleSubmit = () => {
     if (!firstName || !lastName || !dateOfBirth || !sex || !email || !phoneNumber || !password || !confirmPassword) {
@@ -50,6 +77,7 @@ export default function SignupUserPage() {
           lastName,
           dateOfBirth,
           sex,
+          avatarDataUrl,
           email,
           phoneNumber,
           password,
@@ -88,6 +116,7 @@ export default function SignupUserPage() {
       />
 
       <div className="mt-8 space-y-4">
+        <ProfileImageField value={avatarDataUrl} onChange={handleAvatarChange} />
         <ControlledField
           label="First Name"
           placeholder="Enter your first name"
@@ -109,13 +138,11 @@ export default function SignupUserPage() {
           icon={<Icons.User className="h-5 w-5" />}
           options={["Male", "Female"]}
         />
-        <ControlledField
+        <ControlledDateField
           label="Date of Birth"
-          placeholder=""
           value={dateOfBirth}
           onChange={setDateOfBirth}
           icon={<CalendarIcon className="h-5 w-5" />}
-          type="date"
         />
         <ControlledField
           label="Email"
@@ -195,6 +222,97 @@ export default function SignupUserPage() {
         </Link>
       </p>
     </RegisterShell>
+  );
+}
+
+function ProfileImageField({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-2 block text-[15px] font-semibold text-[#111827]">
+        Profile Image
+      </span>
+      <div className="rounded-[18px] border border-[#d9e2dd] bg-white p-4 shadow-[0_8px_20px_rgba(15,23,42,0.03)]">
+        <div className="flex items-center gap-4">
+          <div className="relative flex h-18 w-18 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#eff9f0]">
+            {value ? (
+              <Image src={value} alt="Profile preview" fill unoptimized className="object-cover" />
+            ) : (
+              <Icons.User className="h-8 w-8 text-[#16a34a]" />
+            )}
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-[14px] font-semibold text-[#111827]">Add a profile photo</p>
+            <p className="mt-1 text-[12px] text-[#6b7280]">
+              JPG or PNG, up to 2MB. Good for testing and profile preview.
+            </p>
+            <input
+              type="file"
+              accept="image/png,image/jpeg,image/jpg"
+              onChange={onChange}
+              className="mt-3 block w-full text-[13px] text-[#4b5563] file:mr-3 file:rounded-[10px] file:border-0 file:bg-[#16a34a] file:px-3 file:py-2 file:font-bold file:text-white"
+            />
+          </div>
+        </div>
+      </div>
+    </label>
+  );
+}
+
+function ControlledDateField({
+  label,
+  value,
+  onChange,
+  icon,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  icon: ReactNode;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const openPicker = () => {
+    const input = inputRef.current;
+    if (!input) {
+      return;
+    }
+
+    input.focus();
+    const pickerInput = input as HTMLInputElement & { showPicker?: () => void };
+    pickerInput.showPicker?.();
+  };
+
+  return (
+    <label className="block">
+      <span className="mb-2 block text-[15px] font-semibold text-[#111827]">
+        {label}
+      </span>
+      <div className="flex h-13 items-center rounded-[14px] border border-[#d9e2dd] bg-white px-4 shadow-[0_8px_20px_rgba(15,23,42,0.03)]">
+        <span className="mr-3 text-[#16a34a]">{icon}</span>
+        <input
+          ref={inputRef}
+          type="date"
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          onClick={openPicker}
+          className="h-full flex-1 border-0 bg-transparent text-[15px] text-[#111827] outline-none"
+        />
+        <button
+          type="button"
+          onClick={openPicker}
+          aria-label="Open date picker"
+          className="ml-3 text-[#6b7280]"
+        >
+          <CalendarIcon className="h-5 w-5" />
+        </button>
+      </div>
+    </label>
   );
 }
 

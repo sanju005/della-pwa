@@ -16,6 +16,7 @@ type ProfileRow = {
   role: string | null;
   status: string | null;
   phone: string | null;
+  avatar_url: string | null;
 };
 
 type CustomerProfileRow = {
@@ -154,7 +155,7 @@ async function verifyCustomerRequest(request: Request) {
 
   const { data: profile, error: profileError } = await adminClient
     .from("profiles")
-    .select("id, full_name, email, role, status, phone")
+    .select("id, full_name, email, role, status, phone, avatar_url")
     .eq("id", user.id)
     .maybeSingle();
 
@@ -200,6 +201,7 @@ function buildCustomerProfile(
     ]),
     sex: fallbackSex === "Male" || fallbackSex === "Female" ? fallbackSex : "",
     dateOfBirth: customerProfile?.date_of_birth?.trim() || "",
+    avatarUrl: profile.avatar_url?.trim() || "",
     email: profile.email?.trim() || "",
     phoneNumber: phoneParts.phoneNumber,
     countryCode: phoneParts.countryCode,
@@ -423,7 +425,7 @@ export async function PATCH(request: Request) {
 
   const refreshedProfileResult = await verified.adminClient
     .from("profiles")
-    .select("id, full_name, email, role, status, phone")
+    .select("id, full_name, email, role, status, phone, avatar_url")
     .eq("id", verified.profile.id)
     .maybeSingle();
 

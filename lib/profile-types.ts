@@ -3,6 +3,7 @@ export type CustomerProfile = {
   lastName: string;
   sex: "" | "Male" | "Female";
   dateOfBirth: string;
+  avatarUrl?: string;
   email: string;
   phoneNumber: string;
   countryCode: string;

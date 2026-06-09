@@ -13,6 +13,7 @@ type CustomerSignupPayload = {
   lastName?: string;
   dateOfBirth?: string;
   sex?: string;
+  avatarDataUrl?: string;
   email?: string;
   phoneNumber?: string;
   password?: string;
@@ -70,6 +71,7 @@ export async function POST(request: Request) {
   const lastName = payload.lastName?.trim() ?? "";
   const dateOfBirth = payload.dateOfBirth?.trim() ?? "";
   const sex = payload.sex === "Male" || payload.sex === "Female" ? payload.sex : "";
+  const avatarDataUrl = payload.avatarDataUrl?.trim() ?? "";
   const fullName = [firstName, lastName].filter(Boolean).join(" ").trim();
   const email = payload.email?.trim().toLowerCase() ?? "";
   const phoneNumber = payload.phoneNumber?.trim() ?? "";
@@ -159,6 +161,7 @@ export async function POST(request: Request) {
       email,
       role: "customer",
       phone: normalizedPhone,
+      avatar_url: avatarDataUrl || null,
       status: "active",
     }, { onConflict: "id" });
 

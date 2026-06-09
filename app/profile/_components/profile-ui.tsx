@@ -1751,11 +1751,23 @@ function ProfileSummaryCard({
   return (
     <div className="rounded-[18px] border border-[#e4ece7] bg-white p-4 shadow-[0_10px_26px_rgba(15,23,42,0.04)]">
       <div className="flex items-center gap-4">
-        <AvatarCircle
-          initials={customerInitials(profile)}
-          size="lg"
-          accent="from-emerald-500 to-green-700"
-        />
+        {profile.avatarUrl ? (
+          <div className="relative h-[4.5rem] w-[4.5rem] shrink-0 overflow-hidden rounded-full shadow-[0_12px_24px_rgba(15,23,42,0.18)]">
+            <Image
+              src={profile.avatarUrl}
+              alt={fullName || "Customer profile"}
+              fill
+              unoptimized
+              className="object-cover"
+            />
+          </div>
+        ) : (
+          <AvatarCircle
+            initials={customerInitials(profile)}
+            size="lg"
+            accent="from-emerald-500 to-green-700"
+          />
+        )}
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-3">
             <div>

@@ -19,6 +19,7 @@ const mockProfile: CustomerProfile = {
   lastName: "Kumar",
   sex: "Male",
   dateOfBirth: "15/04/1995",
+  avatarUrl: "",
   email: "sanju@gmail.com",
   phoneNumber: "12-345 6789",
   countryCode: "+60",
