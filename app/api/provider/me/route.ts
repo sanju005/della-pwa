@@ -277,6 +277,8 @@ type UpdatePayload = {
   serviceLocation?: string;
   serviceRadiusKm?: number;
   bio?: string;
+  phoneVerified?: boolean;
+  identityVerified?: boolean;
 };
 
 export async function PATCH(request: Request) {
@@ -319,6 +321,47 @@ export async function PATCH(request: Request) {
 
     if (error) {
       return NextResponse.json({ error: error.message || "Unable to update listing." }, { status: 500 });
+    }
+  }
+
+  if (
+    typeof payload.phoneVerified === "boolean" ||
+    typeof payload.identityVerified === "boolean"
+  ) {
+    const verificationPayload = {
+      phone_verified: payload.phoneVerified,
+      email_verified: Boolean(verified.authUser.email_confirmed_at),
+      identity_verified: payload.identityVerified,
+      kyc_verified: payload.identityVerified,
+    };
+
+    const byProviderId = await verified.adminClient
+      .from("provider_verifications")
+      .upsert(
+        {
+          provider_id: verified.profile.id,
+          ...verificationPayload,
+        },
+        { onConflict: "provider_id" },
+      );
+
+    if (byProviderId.error) {
+      const byId = await verified.adminClient
+        .from("provider_verifications")
+        .upsert(
+          {
+            id: verified.profile.id,
+            ...verificationPayload,
+          },
+          { onConflict: "id" },
+        );
+
+      if (byId.error) {
+        return NextResponse.json(
+          { error: byId.error.message || "Unable to update provider verification." },
+          { status: 500 },
+        );
+      }
     }
   }
 

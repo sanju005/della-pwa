@@ -14,6 +14,7 @@ import {
   serviceSpecialties,
   timePresets,
 } from "@/lib/provider-registration-config";
+import { getSupabaseClient } from "@/lib/supabase";
 import type {
   ProviderRegistrationData,
   ProviderService,
@@ -54,6 +55,7 @@ type FlowStep =
   | { type: "availability"; label: string }
   | { type: "location"; label: string }
   | { type: "review"; label: string }
+  | { type: "submitted"; label: string }
   | { type: "verification"; label: string }
   | { type: "identity"; label: string }
   | { type: "success"; label: string };
@@ -65,7 +67,9 @@ export function ProviderRegistrationWizard() {
   const [stepIndex, setStepIndex] = useState(0);
   const [registrationId, setRegistrationId] = useState("");
   const [submitError, setSubmitError] = useState("");
+  const [invalidBasicFields, setInvalidBasicFields] = useState<string[]>([]);
   const [isSubmitting, startTransition] = useTransition();
+  const [hasProviderSession, setHasProviderSession] = useState(false);
 
   const steps = useMemo<FlowStep[]>(() => {
     const dynamicServiceSteps = data.selectedServices.map((service) => ({
@@ -81,6 +85,7 @@ export function ProviderRegistrationWizard() {
       { type: "availability", label: "Availability" },
       { type: "location", label: "Provider Location" },
       { type: "review", label: "Review & Submit" },
+      { type: "submitted", label: "Listing Submitted" },
       { type: "verification", label: "Verification - Step 1" },
       { type: "identity", label: "Verification - Step 2" },
       { type: "success", label: "Success" },
@@ -89,33 +94,86 @@ export function ProviderRegistrationWizard() {
 
   const activeStep = steps[Math.min(stepIndex, steps.length - 1)];
 
+  const submitRegistration = async () => {
+    const response = await fetch("/api/provider/register", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+    });
+
+    const result = (await response.json()) as
+      | {
+          id: string;
+          status: string;
+          phoneVerified: boolean;
+          emailVerified: boolean;
+          identityVerified: boolean;
+        }
+      | { error?: string };
+
+    if (!response.ok || !("id" in result)) {
+      throw new Error(
+        "error" in result && result.error
+          ? result.error
+          : "Unable to submit registration."
+      );
+    }
+
+    const client = getSupabaseClient();
+
+    if (!client) {
+      throw new Error("Supabase is not configured yet.");
+    }
+
+    const signInResult = await client.auth.signInWithPassword({
+      email: data.account.email.trim().toLowerCase(),
+      password: data.account.password,
+    });
+
+    if (signInResult.error) {
+      throw new Error(signInResult.error.message || "Unable to sign in to the new provider account.");
+    }
+
+    setHasProviderSession(true);
+    setRegistrationId(result.id);
+    return result;
+  };
+
   const goNext = () => {
     if (activeStep.type === "basic") {
-      if (
-        !data.basicProfile.firstName.trim() ||
-        !data.basicProfile.lastName.trim() ||
-        !data.basicProfile.sex ||
-        !data.basicProfile.dateOfBirth.trim() ||
-        !data.basicProfile.residentialAddress.trim() ||
-        !data.account.email.trim() ||
-        !data.account.phoneNumber.trim() ||
-        !data.account.password ||
-        !data.account.confirmPassword
-      ) {
+      const missingFields = [
+        !data.basicProfile.firstName.trim() ? "firstName" : null,
+        !data.basicProfile.lastName.trim() ? "lastName" : null,
+        !data.basicProfile.sex ? "sex" : null,
+        !data.basicProfile.dateOfBirth.trim() ? "dateOfBirth" : null,
+        !data.basicProfile.residentialAddress.trim() ? "residentialAddress" : null,
+        !data.account.email.trim() ? "email" : null,
+        !data.account.phoneNumber.trim() ? "phoneNumber" : null,
+        !data.account.password ? "password" : null,
+        !data.account.confirmPassword ? "confirmPassword" : null,
+      ].filter((value): value is string => Boolean(value));
+
+      if (missingFields.length > 0) {
+        setInvalidBasicFields(missingFields);
         setSubmitError("Please fill in all required fields before continuing.");
         return;
       }
 
       if (data.account.password !== data.account.confirmPassword) {
+        setInvalidBasicFields(["password", "confirmPassword"]);
         setSubmitError("Passwords do not match.");
         return;
       }
 
       if (data.account.password.length < 8) {
+        setInvalidBasicFields(["password"]);
         setSubmitError("Password must be at least 8 characters long.");
         return;
       }
 
+      setInvalidBasicFields([]);
       setSubmitError("");
     }
 
@@ -124,38 +182,73 @@ export function ProviderRegistrationWizard() {
       return;
     }
 
-    if (activeStep.type === "identity") {
+    if (activeStep.type === "review") {
       startTransition(async () => {
         setSubmitError("");
-
-        const response = await fetch("/api/provider/register", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(data),
-        });
-
-        const result = (await response.json()) as
-          | {
-              id: string;
-              status: string;
-              phoneVerified: boolean;
-              emailVerified: boolean;
-              identityVerified: boolean;
-            }
-          | { error?: string };
-
-        if (!response.ok || !("id" in result)) {
+        try {
+          await submitRegistration();
+          setStepIndex((current) => Math.min(current + 1, steps.length - 1));
+        } catch (error) {
           setSubmitError(
-            "error" in result && result.error
-              ? result.error
+            error instanceof Error
+              ? error.message
               : "Unable to submit registration."
           );
           return;
         }
+      });
 
-        setRegistrationId(result.id);
+      return;
+    }
+
+    if (activeStep.type === "identity") {
+      startTransition(async () => {
+        setSubmitError("");
+
+        if (!hasProviderSession) {
+          setSubmitError("Please submit the listing first before starting verification.");
+          return;
+        }
+
+        const client = getSupabaseClient();
+
+        if (!client) {
+          setSubmitError("Supabase is not configured yet.");
+          return;
+        }
+
+        const {
+          data: { session },
+        } = await client.auth.getSession();
+
+        if (!session) {
+          setSubmitError("Your provider session expired. Please log in again.");
+          return;
+        }
+
+        const response = await fetch("/api/provider/me", {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            phoneVerified: data.verification.phoneOtp.join("") === "123456",
+            identityVerified: Boolean(
+              data.verification.documentType &&
+                data.verification.frontImageName &&
+                data.verification.backImageName
+            ),
+          }),
+        });
+
+        const result = (await response.json()) as { error?: string };
+
+        if (!response.ok) {
+          setSubmitError(result.error || "Unable to submit verification.");
+          return;
+        }
+
         setStepIndex((current) => Math.min(current + 1, steps.length - 1));
       });
 
@@ -311,6 +404,12 @@ export function ProviderRegistrationWizard() {
                 data={data}
                 updateBasic={updateBasic}
                 updateAccount={updateAccount}
+                invalidFields={invalidBasicFields}
+                clearInvalidField={(field) =>
+                  setInvalidBasicFields((current) =>
+                    current.filter((item) => item !== field)
+                  )
+                }
                 setSubmitError={setSubmitError}
               />
             ) : null}
@@ -354,6 +453,14 @@ export function ProviderRegistrationWizard() {
               />
             ) : null}
             {activeStep.type === "review" ? <ReviewStep data={data} /> : null}
+            {activeStep.type === "submitted" ? (
+              <SubmissionChoiceStep
+                registrationId={registrationId}
+                onStartVerification={() =>
+                  setStepIndex((current) => Math.min(current + 1, steps.length - 1))
+                }
+              />
+            ) : null}
             {activeStep.type === "verification" ? (
               <VerificationStep data={data} onUpdate={updateVerification} />
             ) : null}
@@ -374,7 +481,7 @@ export function ProviderRegistrationWizard() {
               </p>
             ) : null}
 
-            {activeStep.type !== "success" ? (
+            {activeStep.type !== "success" && activeStep.type !== "submitted" ? (
               <button
                 type="button"
                 onClick={goNext}
@@ -395,6 +502,8 @@ function BasicProfileStep({
   data,
   updateBasic,
   updateAccount,
+  invalidFields,
+  clearInvalidField,
   setSubmitError,
 }: {
   data: ProviderRegistrationData;
@@ -406,6 +515,8 @@ function BasicProfileStep({
     field: keyof ProviderRegistrationData["account"],
     value: string
   ) => void;
+  invalidFields: string[];
+  clearInvalidField: (field: string) => void;
   setSubmitError: (value: string) => void;
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -430,6 +541,7 @@ function BasicProfileStep({
     const reader = new FileReader();
     reader.onload = () => {
       setSubmitError("");
+      clearInvalidField("profileImage");
       updateBasic("profileImageName", file.name);
       updateBasic(
         "avatarDataUrl",
@@ -479,26 +591,64 @@ function BasicProfileStep({
         </div>
       </label>
 
-      <InputField label="First Name" value={data.basicProfile.firstName} onChange={(value) => updateBasic("firstName", value)} />
-      <InputField label="Last Name" value={data.basicProfile.lastName} onChange={(value) => updateBasic("lastName", value)} />
-      <SelectField label="Sex" value={data.basicProfile.sex} onChange={(value) => updateBasic("sex", value)} options={sexOptions} placeholder="Select sex" />
+      <InputField
+        label="First Name"
+        value={data.basicProfile.firstName}
+        invalid={invalidFields.includes("firstName")}
+        onChange={(value) => {
+          clearInvalidField("firstName");
+          updateBasic("firstName", value);
+        }}
+      />
+      <InputField
+        label="Last Name"
+        value={data.basicProfile.lastName}
+        invalid={invalidFields.includes("lastName")}
+        onChange={(value) => {
+          clearInvalidField("lastName");
+          updateBasic("lastName", value);
+        }}
+      />
+      <SelectField
+        label="Sex"
+        value={data.basicProfile.sex}
+        invalid={invalidFields.includes("sex")}
+        onChange={(value) => {
+          clearInvalidField("sex");
+          updateBasic("sex", value);
+        }}
+        options={sexOptions}
+        placeholder="Select sex"
+      />
       <InputField label="Marketing Name" hint="e.g. Ex Chef Amina" value={data.basicProfile.marketingName} onChange={(value) => updateBasic("marketingName", value)} />
       <DateInputField
         label="Date of Birth"
         value={data.basicProfile.dateOfBirth}
-        onChange={(value) => updateBasic("dateOfBirth", value)}
+        invalid={invalidFields.includes("dateOfBirth")}
+        onChange={(value) => {
+          clearInvalidField("dateOfBirth");
+          updateBasic("dateOfBirth", value);
+        }}
       />
       <TextAreaField
         label="Residential Address"
         value={data.basicProfile.residentialAddress}
-        onChange={(value) => updateBasic("residentialAddress", value)}
+        invalid={invalidFields.includes("residentialAddress")}
+        onChange={(value) => {
+          clearInvalidField("residentialAddress");
+          updateBasic("residentialAddress", value);
+        }}
         rows={3}
       />
 
       <InputField
         label="Email"
         value={data.account.email}
-        onChange={(value) => updateAccount("email", value)}
+        invalid={invalidFields.includes("email")}
+        onChange={(value) => {
+          clearInvalidField("email");
+          updateAccount("email", value);
+        }}
       />
       <div>
         <p className="mb-2 text-[13px] font-semibold text-[#111827]">Phone</p>
@@ -508,10 +658,13 @@ function BasicProfileStep({
             <span>{data.account.phoneCountryCode}</span>
             <ChevronDownIcon className="ml-auto h-4 w-4 text-[#6b7280]" />
           </div>
-          <div className="flex flex-1 items-center rounded-[12px] border border-[#dfe8e2] px-4">
+          <div className={`flex flex-1 items-center rounded-[12px] border px-4 ${invalidFields.includes("phoneNumber") ? "border-[#ef4444] bg-[#fff5f5]" : "border-[#dfe8e2]"}`}>
             <input
               value={data.account.phoneNumber}
-              onChange={(event) => updateAccount("phoneNumber", event.target.value)}
+              onChange={(event) => {
+                clearInvalidField("phoneNumber");
+                updateAccount("phoneNumber", event.target.value);
+              }}
               className="h-11 w-full border-0 bg-transparent text-[14px] text-[#111827] outline-none"
             />
           </div>
@@ -520,14 +673,22 @@ function BasicProfileStep({
       <InputField
         label="Password"
         value={data.account.password}
-        onChange={(value) => updateAccount("password", value)}
+        invalid={invalidFields.includes("password")}
+        onChange={(value) => {
+          clearInvalidField("password");
+          updateAccount("password", value);
+        }}
         rightIcon={<EyeIcon className="h-4 w-4 text-[#6b7280]" />}
         type="password"
       />
       <InputField
         label="Retype Password"
         value={data.account.confirmPassword}
-        onChange={(value) => updateAccount("confirmPassword", value)}
+        invalid={invalidFields.includes("confirmPassword")}
+        onChange={(value) => {
+          clearInvalidField("confirmPassword");
+          updateAccount("confirmPassword", value);
+        }}
         rightIcon={<EyeIcon className="h-4 w-4 text-[#6b7280]" />}
         type="password"
       />
@@ -994,10 +1155,10 @@ function SuccessStep({
           <CheckIcon className="h-10 w-10" />
         </div>
         <h2 className="mt-5 text-[24px] font-extrabold tracking-[-0.04em] text-[#111827]">
-          Congratulations!
+          Verification Submitted
         </h2>
         <p className="mt-2 text-[14px] leading-6 text-[#4b5563]">
-          Your provider registration has been submitted successfully.
+          Your verification details were submitted successfully. Your listing can stay visible while checks are in progress.
         </p>
       </div>
 
@@ -1055,7 +1216,51 @@ function SuccessStep({
         href="/provider/dashboard"
         className="inline-flex h-12 w-full items-center justify-center rounded-[12px] bg-[#16a34a] text-[15px] font-extrabold text-white shadow-[0_16px_30px_rgba(22,163,74,0.2)]"
       >
-        Go to Dashboard
+        View My Profile
+      </Link>
+    </div>
+  );
+}
+
+function SubmissionChoiceStep({
+  registrationId,
+  onStartVerification,
+}: {
+  registrationId: string;
+  onStartVerification: () => void;
+}) {
+  return (
+    <div className="space-y-6">
+      <div className="rounded-[22px] border border-[#d7efdd] bg-[linear-gradient(180deg,#fbfffc_0%,#f2fbf4_100%)] p-6 text-center shadow-[0_16px_36px_rgba(22,163,74,0.08)]">
+        <div className="relative mx-auto flex h-24 w-24 items-center justify-center">
+          <span className="absolute inset-0 animate-ping rounded-full bg-[#16a34a]/15" />
+          <span className="absolute inset-2 rounded-full bg-[#16a34a]/10" />
+          <div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-[#16a34a] text-white shadow-[0_18px_30px_rgba(22,163,74,0.24)]">
+            <CheckIcon className="h-8 w-8" />
+          </div>
+        </div>
+        <h2 className="mt-5 text-[24px] font-extrabold tracking-[-0.04em] text-[#111827]">
+          Your Listing Is Submitted
+        </h2>
+        <p className="mt-2 text-[14px] leading-6 text-[#4b5563]">
+          Registration ID: {registrationId || "Pending"}.
+          Start verification now for phone, email, and document checks, or skip for now and view your own profile.
+        </p>
+      </div>
+
+      <button
+        type="button"
+        onClick={onStartVerification}
+        className="inline-flex h-12 w-full items-center justify-center rounded-[12px] bg-[#16a34a] text-[15px] font-extrabold text-white shadow-[0_16px_30px_rgba(22,163,74,0.2)]"
+      >
+        Start Verification
+      </button>
+
+      <Link
+        href="/provider/dashboard"
+        className="inline-flex h-12 w-full items-center justify-center rounded-[12px] border border-[#d8e4dc] bg-white text-[15px] font-extrabold text-[#111827] shadow-[0_10px_22px_rgba(15,23,42,0.04)]"
+      >
+        Skip For Now
       </Link>
     </div>
   );
@@ -1095,6 +1300,7 @@ function InputField({
   rightIcon,
   compact = false,
   type = "text",
+  invalid = false,
 }: {
   label: string;
   value: string;
@@ -1103,6 +1309,7 @@ function InputField({
   rightIcon?: React.ReactNode;
   compact?: boolean;
   type?: string;
+  invalid?: boolean;
 }) {
   const [showPassword, setShowPassword] = useState(false);
   const isPasswordField = type === "password";
@@ -1113,7 +1320,7 @@ function InputField({
         {label}
       </span>
       {hint ? <p className="-mt-1 mb-2 text-[11px] text-[#6b7280]">{hint}</p> : null}
-      <div className="flex items-center rounded-[12px] border border-[#dfe8e2] px-4 shadow-[0_8px_20px_rgba(15,23,42,0.03)]">
+      <div className={`flex items-center rounded-[12px] border px-4 shadow-[0_8px_20px_rgba(15,23,42,0.03)] ${invalid ? "border-[#ef4444] bg-[#fff5f5]" : "border-[#dfe8e2]"}`}>
         <input
           type={isPasswordField && showPassword ? "text" : type}
           value={value}
@@ -1143,10 +1350,12 @@ function DateInputField({
   label,
   value,
   onChange,
+  invalid = false,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
+  invalid?: boolean;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -1168,7 +1377,7 @@ function DateInputField({
       <span className="mb-2 block text-[13px] font-semibold text-[#111827]">
         {label}
       </span>
-      <div className="flex items-center rounded-[12px] border border-[#dfe8e2] px-4 shadow-[0_8px_20px_rgba(15,23,42,0.03)]">
+      <div className={`flex items-center rounded-[12px] border px-4 shadow-[0_8px_20px_rgba(15,23,42,0.03)] ${invalid ? "border-[#ef4444] bg-[#fff5f5]" : "border-[#dfe8e2]"}`}>
         <input
           ref={inputRef}
           type="date"
@@ -1195,18 +1404,20 @@ function TextAreaField({
   value,
   onChange,
   rows = 3,
+  invalid = false,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   rows?: number;
+  invalid?: boolean;
 }) {
   return (
     <label className="block">
       <span className="mb-2 block text-[13px] font-semibold text-[#111827]">
         {label}
       </span>
-      <div className="rounded-[12px] border border-[#dfe8e2] px-4 py-3 shadow-[0_8px_20px_rgba(15,23,42,0.03)]">
+      <div className={`rounded-[12px] border px-4 py-3 shadow-[0_8px_20px_rgba(15,23,42,0.03)] ${invalid ? "border-[#ef4444] bg-[#fff5f5]" : "border-[#dfe8e2]"}`}>
         <textarea
           rows={rows}
           value={value}
@@ -1224,17 +1435,19 @@ function SelectField({
   onChange,
   options,
   placeholder,
+  invalid = false,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   options: string[];
   placeholder?: string;
+  invalid?: boolean;
 }) {
   return (
     <label className="block">
       <span className="mb-2 block text-[13px] font-semibold text-[#111827]">{label}</span>
-      <div className="flex items-center rounded-[12px] border border-[#dfe8e2] px-4 shadow-[0_8px_20px_rgba(15,23,42,0.03)]">
+      <div className={`flex items-center rounded-[12px] border px-4 shadow-[0_8px_20px_rgba(15,23,42,0.03)] ${invalid ? "border-[#ef4444] bg-[#fff5f5]" : "border-[#dfe8e2]"}`}>
         <select
           value={value}
           onChange={(event) => onChange(event.target.value)}
@@ -1592,6 +1805,8 @@ function screenHeading(step: FlowStep) {
       return "Provider Location";
     case "review":
       return "Review & Submit";
+    case "submitted":
+      return "Listing Submitted";
     case "verification":
       return "Verify Your Account";
     case "identity":
@@ -1615,12 +1830,14 @@ function screenSubtitle(step: FlowStep) {
       return "Set your service area";
     case "review":
       return "Please review your information";
+    case "submitted":
+      return "Choose whether to verify now or later";
     case "verification":
       return "Let's verify your contact information";
     case "identity":
       return "Upload your identity document";
     case "success":
-      return "Pending admin approval";
+      return "Verification saved successfully";
   }
 }
 
