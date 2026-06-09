@@ -278,6 +278,9 @@ export async function GET(request: Request) {
       bookingStatus: row.booking_status,
       statusLabel: providerStatusLabel(row.booking_status),
       bucket: toBucket(row.booking_status),
+      scheduledDate: row.scheduled_date,
+      scheduledStartTime: row.scheduled_start_time,
+      scheduledEndTime: row.scheduled_end_time,
       schedule: formatDateTimeLabel(
         row.scheduled_date,
         row.scheduled_start_time,

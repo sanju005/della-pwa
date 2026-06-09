@@ -1,32 +1,32 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
-  BadgeCheck,
   Bell,
+  BriefcaseBusiness,
   CalendarDays,
+  CreditCard,
   LogOut,
-  Mail,
   MapPin,
-  MessageSquareText,
-  PencilLine,
-  Phone,
-  Route,
-  Save,
+  Menu,
+  MessageCircleMore,
   ShieldCheck,
+  Star,
+  UserRound,
   Wallet,
 } from "lucide-react";
 
 import {
-  disablePushNotifications,
-  getPushSetupState,
-  requestNotificationPermission,
-  saveFCMToken,
-  type PushSetupState,
-} from "@/lib/notifications";
-import { AppButton, EmptyState as SharedEmptyState, LoadingState as SharedLoadingState, StatusBadge as SharedStatusBadge } from "@/app/_components/della-ui";
+  AppButton,
+  BottomNav,
+  EmptyState,
+  LoadingState,
+  MobilePage,
+  StatusBadge,
+} from "@/app/_components/della-ui";
 import { getSupabaseClient } from "@/lib/supabase";
 
 type ProviderDashboardData = {
@@ -34,11 +34,14 @@ type ProviderDashboardData = {
   fullName: string;
   email: string;
   phone: string;
+  avatarUrl: string;
   accountStatus: string;
   marketingName: string;
   serviceLocation: string;
   serviceRadiusKm: number;
   bio: string;
+  averageRating: number;
+  totalReviews: number;
   approvalStatus: string;
   isVisible: boolean;
   emailVerified: boolean;
@@ -77,6 +80,9 @@ type ProviderBookingItem = {
     | "cancelled";
   statusLabel: string;
   bucket: "requests" | "active" | "completed" | "closed";
+  scheduledDate: string;
+  scheduledStartTime: string;
+  scheduledEndTime: string;
   schedule: string;
   customerNote: string;
   providerResponseNote: string;
@@ -93,29 +99,100 @@ type ProviderNotificationItem = {
   createdAt: string;
 };
 
-function VerificationPill({
-  label,
-  active,
-}: {
-  label: string;
-  active: boolean;
-}) {
-  return (
-    <span
-      className={`inline-flex items-center gap-2 rounded-full px-3 py-2 text-[12px] font-semibold ${
-        active
-          ? "bg-[#EAF8EE] text-[#15803D]"
-          : "bg-[#F3F4F6] text-[#6B7280]"
-      }`}
-    >
-      <span
-        className={`h-2.5 w-2.5 rounded-full ${
-          active ? "bg-[#16A34A]" : "bg-[#9CA3AF]"
-        }`}
-      />
-      {label}
-    </span>
-  );
+function formatCurrency(value: number) {
+  return `RM ${value.toLocaleString("en-MY", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+}
+
+function formatCompactCurrency(value: number) {
+  if (value === 0) {
+    return "RM 0";
+  }
+
+  return `RM ${value.toLocaleString("en-MY", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  })}`;
+}
+
+function formatServiceLabel(value: string) {
+  return value
+    .replaceAll("_", " ")
+    .split(" ")
+    .filter(Boolean)
+    .map((part) => `${part.charAt(0).toUpperCase()}${part.slice(1)}`)
+    .join(" ");
+}
+
+function formatTimeLabel(date: string, time: string) {
+  return new Intl.DateTimeFormat("en-MY", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  }).format(new Date(`${date}T${time}`));
+}
+
+function formatRelativeDate(value: string) {
+  const date = new Date(value);
+  const now = new Date();
+  const diffMinutes = Math.max(0, Math.round((now.getTime() - date.getTime()) / 60000));
+
+  if (diffMinutes < 60) {
+    return `${diffMinutes || 1} min ago`;
+  }
+
+  const diffHours = Math.round(diffMinutes / 60);
+  if (diffHours < 24) {
+    return `${diffHours} hr ago`;
+  }
+
+  const diffDays = Math.round(diffHours / 24);
+  return `${diffDays} day${diffDays === 1 ? "" : "s"} ago`;
+}
+
+function statusTone(status: ProviderBookingItem["bookingStatus"]) {
+  switch (status) {
+    case "accepted":
+    case "on_the_way":
+    case "arrived":
+      return "accepted" as const;
+    case "completed":
+    case "paid":
+    case "review_requested":
+    case "reviewed":
+      return "completed" as const;
+    case "declined":
+      return "declined" as const;
+    case "cancelled":
+      return "cancelled" as const;
+    default:
+      return "pending" as const;
+  }
+}
+
+function getInitials(name: string) {
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join("");
+}
+
+function getGreeting() {
+  const hour = new Date().getHours();
+
+  if (hour < 12) {
+    return "Good Morning,";
+  }
+
+  if (hour < 18) {
+    return "Good Afternoon,";
+  }
+
+  return "Good Evening,";
 }
 
 export function ProviderDashboardClient() {
@@ -124,24 +201,10 @@ export function ProviderDashboardClient() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
-  const [editing, setEditing] = useState(false);
   const [bookings, setBookings] = useState<ProviderBookingItem[]>([]);
   const [notifications, setNotifications] = useState<ProviderNotificationItem[]>([]);
-  const [bookingsLoading, setBookingsLoading] = useState(true);
   const [actionBookingId, setActionBookingId] = useState("");
-  const [isSaving, startTransition] = useTransition();
-  const [pushState, setPushState] = useState<PushSetupState>({
-    permission: "default",
-    hasSavedToken: false,
-  });
-  const [pushBusy, setPushBusy] = useState(false);
-  const [form, setForm] = useState({
-    fullName: "",
-    marketingName: "",
-    serviceLocation: "",
-    serviceRadiusKm: "0",
-    bio: "",
-  });
+  const [, startTransition] = useTransition();
 
   useEffect(() => {
     let active = true;
@@ -169,23 +232,27 @@ export function ProviderDashboardClient() {
         return;
       }
 
-      const response = await fetch("/api/provider/me", {
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
-      });
-      const bookingsResponse = await fetch("/api/provider/bookings", {
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
-      });
-      const notificationsResponse = await fetch("/api/notifications", {
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
-      });
+      const [profileResponse, bookingsResponse, notificationsResponse] = await Promise.all([
+        fetch("/api/provider/me", {
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
+        }),
+        fetch("/api/provider/bookings", {
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
+        }),
+        fetch("/api/notifications", {
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
+        }),
+      ]);
 
-      const result = (await response.json()) as ProviderDashboardData | { error?: string };
+      const profileResult = (await profileResponse.json()) as
+        | ProviderDashboardData
+        | { error?: string };
       const bookingsResult = (await bookingsResponse.json()) as
         | { bookings: ProviderBookingItem[] }
         | { error?: string };
@@ -197,31 +264,25 @@ export function ProviderDashboardClient() {
         return;
       }
 
-      if (!response.ok || !("providerId" in result)) {
-        setError("error" in result && result.error ? result.error : "Unable to load provider dashboard.");
+      if (!profileResponse.ok || !("providerId" in profileResult)) {
+        setError(
+          "error" in profileResult && profileResult.error
+            ? profileResult.error
+            : "Unable to load provider dashboard.",
+        );
         setLoading(false);
         return;
       }
 
-      setData(result);
-      setForm({
-        fullName: result.fullName,
-        marketingName: result.marketingName,
-        serviceLocation: result.serviceLocation,
-        serviceRadiusKm: String(result.serviceRadiusKm),
-        bio: result.bio,
-      });
-      if (bookingsResponse.ok && "bookings" in bookingsResult) {
-        setBookings(bookingsResult.bookings);
-      }
-      if (notificationsResponse.ok && "notifications" in notificationsResult) {
-        setNotifications(notificationsResult.notifications);
-      }
-      const nextPushState = await getPushSetupState();
-      if (active) {
-        setPushState(nextPushState);
-      }
-      setBookingsLoading(false);
+      setData(profileResult);
+      setBookings(
+        bookingsResponse.ok && "bookings" in bookingsResult ? bookingsResult.bookings : [],
+      );
+      setNotifications(
+        notificationsResponse.ok && "notifications" in notificationsResult
+          ? notificationsResult.notifications
+          : [],
+      );
       setLoading(false);
     }
 
@@ -231,27 +292,6 @@ export function ProviderDashboardClient() {
       active = false;
     };
   }, [router]);
-
-  const serviceSummary = useMemo(() => {
-    return data?.services.map((service) => ({
-      ...service,
-      label: service.serviceType
-        .replaceAll("_", " ")
-        .split(" ")
-        .map((part) => `${part.charAt(0).toUpperCase()}${part.slice(1)}`)
-        .join(" "),
-    })) ?? [];
-  }, [data]);
-
-  const bookingGroups = useMemo(
-    () => ({
-      requests: bookings.filter((booking) => booking.bucket === "requests"),
-      active: bookings.filter((booking) => booking.bucket === "active"),
-      completed: bookings.filter((booking) => booking.bucket === "completed"),
-      closed: bookings.filter((booking) => booking.bucket === "closed"),
-    }),
-    [bookings]
-  );
 
   useEffect(() => {
     const client = getSupabaseClient();
@@ -264,7 +304,7 @@ export function ProviderDashboardClient() {
     let sessionToken = "";
 
     const channel = client
-      .channel(`provider-notifications-${data.providerId}`)
+      .channel(`provider-dashboard-${data.providerId}`)
       .on(
         "postgres_changes",
         {
@@ -280,14 +320,10 @@ export function ProviderDashboardClient() {
 
           const [bookingsResponse, notificationsResponse] = await Promise.all([
             fetch("/api/provider/bookings", {
-              headers: {
-                Authorization: `Bearer ${sessionToken}`,
-              },
+              headers: { Authorization: `Bearer ${sessionToken}` },
             }),
             fetch("/api/notifications", {
-              headers: {
-                Authorization: `Bearer ${sessionToken}`,
-              },
+              headers: { Authorization: `Bearer ${sessionToken}` },
             }),
           ]);
 
@@ -304,21 +340,15 @@ export function ProviderDashboardClient() {
 
           if (active && notificationsResponse.ok && "notifications" in notificationsResult) {
             setNotifications(notificationsResult.notifications);
-            const latest = notificationsResult.notifications[0];
-            if (latest && !latest.isRead) {
-              setNotice(latest.title);
-            }
           }
-        }
+        },
       )
       .subscribe();
 
-    void client.auth.getSession().then(({ data }) => {
-      if (!active) {
-        return;
+    void client.auth.getSession().then(({ data: authData }) => {
+      if (active) {
+        sessionToken = authData.session?.access_token ?? "";
       }
-
-      sessionToken = data.session?.access_token ?? "";
     });
 
     return () => {
@@ -329,6 +359,7 @@ export function ProviderDashboardClient() {
 
   async function handleSignOut() {
     const client = getSupabaseClient();
+
     if (!client) {
       router.replace("/login");
       return;
@@ -336,55 +367,6 @@ export function ProviderDashboardClient() {
 
     await client.auth.signOut();
     router.replace("/login");
-  }
-
-  function handleSave() {
-    const client = getSupabaseClient();
-
-    startTransition(async () => {
-      setError("");
-      setNotice("");
-
-      if (!client) {
-        setError("Supabase is not configured yet.");
-        return;
-      }
-
-      const {
-        data: { session },
-      } = await client.auth.getSession();
-
-      if (!session) {
-        router.replace("/login");
-        return;
-      }
-
-      const response = await fetch("/api/provider/me", {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({
-          fullName: form.fullName,
-          marketingName: form.marketingName,
-          serviceLocation: form.serviceLocation,
-          serviceRadiusKm: Number(form.serviceRadiusKm),
-          bio: form.bio,
-        }),
-      });
-
-      const result = (await response.json()) as ProviderDashboardData | { error?: string };
-
-      if (!response.ok || !("providerId" in result)) {
-        setError("error" in result && result.error ? result.error : "Unable to update listing.");
-        return;
-      }
-
-      setData(result);
-      setEditing(false);
-      setNotice("Provider listing updated.");
-    });
   }
 
   function handleBookingAction(bookingId: string, status: ProviderBookingItem["bookingStatus"], note = "") {
@@ -444,87 +426,85 @@ export function ProviderDashboardClient() {
         setBookings(refreshResult.bookings);
       }
 
-      setNotice("Booking updated.");
+      setNotice(status === "accepted" ? "Booking accepted." : "Booking updated.");
       setActionBookingId("");
     });
   }
 
-  function handleEnablePush() {
-    setPushBusy(true);
-    setNotice("");
+  const serviceSummary = useMemo(() => {
+    return (data?.services ?? []).map((service) => ({
+      ...service,
+      label: formatServiceLabel(service.serviceType),
+    }));
+  }, [data?.services]);
 
-    startTransition(async () => {
-      try {
-        const token = await requestNotificationPermission();
+  const pendingRequest = useMemo(
+    () => bookings.find((booking) => booking.bucket === "requests") ?? null,
+    [bookings],
+  );
 
-        if (!token) {
-          const state = await getPushSetupState();
-          setPushState(state);
-          setNotice(
-            state.permission === "denied"
-              ? "Push is blocked in this browser. Please allow notifications in browser settings."
-              : "Push permission was not granted."
-          );
-          return;
-        }
+  const todayKey = useMemo(
+    () =>
+      new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Asia/Kuala_Lumpur",
+      }).format(new Date()),
+    [],
+  );
 
-        const result = await saveFCMToken(token);
+  const todayBookings = useMemo(
+    () =>
+      bookings
+        .filter(
+          (booking) =>
+            booking.scheduledDate === todayKey &&
+            booking.bookingStatus !== "declined" &&
+            booking.bookingStatus !== "cancelled",
+        )
+        .sort((left, right) =>
+          `${left.scheduledDate}T${left.scheduledStartTime}`.localeCompare(
+            `${right.scheduledDate}T${right.scheduledStartTime}`,
+          ),
+        ),
+    [bookings, todayKey],
+  );
 
-        if (!result.success) {
-          setError(result.error || "Unable to save push token.");
-          return;
-        }
+  const walletBalance = useMemo(
+    () =>
+      bookings
+        .filter((booking) =>
+          ["completed", "paid", "review_requested", "reviewed"].includes(booking.bookingStatus),
+        )
+        .reduce((sum, booking) => sum + booking.quotedAmount, 0),
+    [bookings],
+  );
 
-        setPushState({
-          permission: "granted",
-          hasSavedToken: true,
-        });
-        setNotice("Push notifications enabled on this device.");
-      } finally {
-        setPushBusy(false);
-      }
-    });
-  }
+  const todayEarnings = useMemo(
+    () =>
+      todayBookings
+        .filter((booking) =>
+          ["completed", "paid", "review_requested", "reviewed"].includes(booking.bookingStatus),
+        )
+        .reduce((sum, booking) => sum + booking.quotedAmount, 0),
+    [todayBookings],
+  );
 
-  function handleDisablePush() {
-    setPushBusy(true);
-    setNotice("");
-
-    startTransition(async () => {
-      try {
-        const result = await disablePushNotifications();
-
-        if (!result.success) {
-          setError(result.error || "Unable to disable push notifications.");
-          return;
-        }
-
-        const state = await getPushSetupState();
-        setPushState(state);
-        setNotice("Push notifications disabled for this device.");
-      } finally {
-        setPushBusy(false);
-      }
-    });
-  }
+  const unreadCount = notifications.filter((item) => !item.isRead).length;
 
   if (loading) {
     return (
-      <main className="min-h-[100dvh] bg-[#f6fff8] px-4 py-6">
-        <div className="mx-auto max-w-[430px]">
-          <SharedLoadingState
-            title="Loading provider dashboard"
-            description="We are preparing your live bookings, notifications, and profile details."
-          />
-        </div>
-      </main>
+      <MobilePage>
+        <LoadingState
+          title="Loading provider dashboard"
+          description="We are preparing your bookings, earnings, and schedule."
+        />
+      </MobilePage>
     );
   }
 
   if (!data) {
     return (
-      <main className="min-h-[100dvh] bg-[#f6fff8] px-4 py-6">
-        <div className="mx-auto max-w-[430px] rounded-[28px] border border-[#dbe8df] bg-white p-5 shadow-[0_20px_60px_rgba(22,163,74,0.08)]">
+      <MobilePage>
+        <section className="rounded-[28px] border border-[#dbe8df] bg-white p-5 shadow-[0_20px_60px_rgba(22,163,74,0.08)]">
           <h1 className="text-[28px] font-extrabold tracking-[-0.05em] text-[#16a34a]">
             Provider Dashboard
           </h1>
@@ -537,141 +517,320 @@ export function ProviderDashboardClient() {
           >
             Back to login
           </Link>
-        </div>
-      </main>
+        </section>
+      </MobilePage>
     );
   }
 
+  const displayName = data.marketingName || data.fullName || "Provider";
+  const availableNow = data.isVisible && data.accountStatus !== "Suspended";
+
   return (
-    <main className="min-h-[100dvh] bg-[#f6fff8] px-4 py-6">
-      <div className="mx-auto max-w-[430px] space-y-4">
-        <section className="rounded-[28px] border border-[#dbe8df] bg-white p-5 shadow-[0_20px_60px_rgba(22,163,74,0.08)]">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-[12px] font-bold uppercase tracking-[0.12em] text-[#16a34a]">
-                Provider Dashboard
-              </p>
-              <h1 className="mt-2 text-[28px] font-extrabold tracking-[-0.05em] text-[#111827]">
-                {data.marketingName || data.fullName}
-              </h1>
-              <p className="mt-1 text-[14px] text-[#4b5563]">{data.email}</p>
+    <MobilePage className="pb-28">
+      <section className="space-y-4">
+        <header className="flex items-center justify-between">
+          <Link
+            href="#profile"
+            className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-[#f4faf5] text-[#334155]"
+            aria-label="Open profile shortcuts"
+          >
+            <Menu className="h-5 w-5" />
+          </Link>
+          <div className="text-[2rem] font-black tracking-[-0.08em] text-[#16a34a]">
+            della
+          </div>
+          <Link
+            href="#messages"
+            className="relative inline-flex h-11 w-11 items-center justify-center rounded-full bg-[#f4faf5] text-[#334155]"
+            aria-label="View notifications"
+          >
+            <Bell className="h-5 w-5" />
+            {unreadCount > 0 ? (
+              <span className="absolute right-2 top-2 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[#16a34a] px-1 text-[10px] font-extrabold text-white">
+                {unreadCount}
+              </span>
+            ) : null}
+          </Link>
+        </header>
+
+        <section className="rounded-[30px] bg-white p-5 shadow-[0_18px_44px_rgba(15,23,42,0.08)] ring-1 ring-[#e6eee8]">
+          <div className="flex flex-col items-center text-center">
+            <div className="relative">
+              <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-full bg-[#ebf7ef] ring-4 ring-white shadow-[0_16px_30px_rgba(22,163,74,0.18)]">
+                {data.avatarUrl ? (
+                  <Image
+                    src={data.avatarUrl}
+                    alt={displayName}
+                    width={96}
+                    height={96}
+                    className="h-full w-full object-cover"
+                    unoptimized
+                  />
+                ) : (
+                  <span className="text-[1.4rem] font-black text-[#16a34a]">
+                    {getInitials(displayName)}
+                  </span>
+                )}
+              </div>
+              <span className="absolute -bottom-1 left-1/2 inline-flex -translate-x-1/2 items-center gap-1 rounded-full bg-white px-3 py-1 text-[11px] font-bold text-[#16a34a] shadow-[0_10px_24px_rgba(22,163,74,0.15)] ring-1 ring-[#e3eee6]">
+                <span className={`h-2.5 w-2.5 rounded-full ${availableNow ? "bg-[#16a34a]" : "bg-[#f59e0b]"}`} />
+                {availableNow ? "Available" : "Pending"}
+              </span>
             </div>
-            <button
-              type="button"
-              onClick={() => void handleSignOut()}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#dbe8df] text-[#16a34a]"
-              aria-label="Sign out"
-            >
-              <LogOut className="h-4.5 w-4.5" />
-            </button>
+
+            <p className="mt-6 text-[14px] text-[#64748b]">{getGreeting()}</p>
+            <h1 className="mt-1 text-[2rem] font-black tracking-[-0.06em] text-[#0f172a]">
+              {displayName}
+            </h1>
+            <div className="mt-2 flex items-center gap-1 text-[13px] text-[#475569]">
+              <Star className="h-4 w-4 fill-[#f5b301] text-[#f5b301]" />
+              <span className="font-bold">
+                {data.averageRating > 0 ? data.averageRating.toFixed(1) : "0.0"}
+              </span>
+              <span>
+                ({data.totalReviews} review{data.totalReviews === 1 ? "" : "s"})
+              </span>
+            </div>
+            <div className="mt-2 flex items-center gap-2 text-center text-[13px] text-[#64748b]">
+              <MapPin className="h-4 w-4 text-[#16a34a]" />
+              <span>{data.serviceLocation || "Location will appear here"}</span>
+            </div>
           </div>
 
-          <div className="mt-5 flex flex-wrap gap-2">
-            <VerificationPill label={`Account ${data.accountStatus}`} active={true} />
-            <VerificationPill label={data.emailVerified ? "Email Verified" : "Email Not Verified"} active={data.emailVerified} />
-            <VerificationPill label={data.approvalStatus === "Approved" ? "Admin Approved" : "Pending Admin Review"} active={data.approvalStatus === "Approved"} />
-            <VerificationPill label={data.isVisible ? "Listing Live" : "Listing Hidden"} active={data.isVisible} />
+          <div id="wallet" className="mt-5 rounded-[22px] border border-[#e5eee8] bg-[#fbfffc] p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-[#94a3b8]">
+                  Wallet Balance
+                </p>
+                <p className="mt-2 text-[1.85rem] font-black tracking-[-0.06em] text-[#0f172a]">
+                  {formatCurrency(walletBalance)}
+                </p>
+              </div>
+              <div className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-[#eef9f1] text-[#16a34a]">
+                <Wallet className="h-5 w-5" />
+              </div>
+            </div>
           </div>
 
-          <div className="mt-4 rounded-[18px] border border-[#e4ece7] bg-[#fbfffc] p-4 text-[13px] leading-6 text-[#4b5563]">
-            Your listing can stay live while verification is still in progress. The public verified badge only appears after the required checks are complete.
+          <div className="mt-4 grid grid-cols-3 gap-3">
+            <MetricCard
+              icon={<BriefcaseBusiness className="h-4 w-4 text-[#7c3aed]" />}
+              label="Bookings"
+              value={String(todayBookings.length)}
+              meta="Today"
+            />
+            <MetricCard
+              icon={<CreditCard className="h-4 w-4 text-[#16a34a]" />}
+              label="Earnings"
+              value={formatCompactCurrency(todayEarnings)}
+              meta="Today"
+            />
+            <MetricCard
+              icon={<Star className="h-4 w-4 fill-[#f5b301] text-[#f5b301]" />}
+              label="Rating"
+              value={data.averageRating > 0 ? data.averageRating.toFixed(1) : "0.0"}
+              meta={`From ${data.totalReviews || 0}`}
+            />
           </div>
-
-          {error ? (
-            <p className="mt-4 rounded-[14px] border border-[#fecaca] bg-[#fff1f2] px-4 py-3 text-[13px] font-semibold text-[#dc2626]">
-              {error}
-            </p>
-          ) : null}
-
-          {notice ? (
-            <p className="mt-4 rounded-[14px] border border-[#bbf7d0] bg-[#f0fdf4] px-4 py-3 text-[13px] font-semibold text-[#15803d]">
-              {notice}
-            </p>
-          ) : null}
         </section>
 
-        <section className="rounded-[24px] border border-[#dbe8df] bg-white p-5 shadow-[0_18px_50px_rgba(22,163,74,0.07)]">
-          <div className="flex items-center justify-between gap-3">
-            <h2 className="text-[18px] font-extrabold text-[#111827]">Push Notifications</h2>
-            <span
-              className={`rounded-full px-3 py-1 text-[12px] font-bold ${
-                pushState.permission === "granted" && pushState.hasSavedToken
-                  ? "bg-[#eef9f1] text-[#16a34a]"
-                  : "bg-[#eef2f7] text-[#64748b]"
-              }`}
-            >
-              {pushState.permission === "unsupported"
-                ? "Not supported"
-                : pushState.permission === "denied"
-                  ? "Blocked"
-                  : pushState.permission === "granted" && pushState.hasSavedToken
-                    ? "Enabled"
-                    : pushState.permission === "granted"
-                      ? "Ready to enable"
-                      : "Permission needed"}
-            </span>
-          </div>
-          <p className="mt-2 text-[13px] leading-6 text-[#4b5563]">
-            Get booking requests and status updates even when the app is closed.
+        {error ? (
+          <p className="rounded-[18px] border border-[#fecaca] bg-[#fff1f2] px-4 py-3 text-[13px] font-semibold text-[#dc2626]">
+            {error}
           </p>
-          <div className="mt-4 flex flex-wrap gap-2">
-            <button
-              type="button"
-              disabled={pushBusy || pushState.permission === "unsupported"}
-              onClick={handleEnablePush}
-              className="inline-flex h-10 items-center justify-center rounded-[12px] bg-[#16a34a] px-4 text-[13px] font-extrabold text-white disabled:opacity-60"
-            >
-              {pushBusy ? "Updating..." : "Enable Push"}
-            </button>
-            <button
-              type="button"
-              disabled={
-                pushBusy ||
-                (pushState.permission !== "granted" || !pushState.hasSavedToken)
-              }
-              onClick={handleDisablePush}
-              className="inline-flex h-10 items-center justify-center rounded-[12px] border border-[#dbe8df] bg-white px-4 text-[13px] font-extrabold text-[#111827] disabled:opacity-60"
-            >
-              Disable Push
-            </button>
+        ) : null}
+
+        {notice ? (
+          <p className="rounded-[18px] border border-[#bbf7d0] bg-[#f0fdf4] px-4 py-3 text-[13px] font-semibold text-[#15803d]">
+            {notice}
+          </p>
+        ) : null}
+
+        <section
+          id="messages"
+          className="rounded-[26px] bg-white p-5 shadow-[0_18px_44px_rgba(15,23,42,0.08)] ring-1 ring-[#e6eee8]"
+        >
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-[17px] font-black tracking-[-0.04em] text-[#0f172a]">
+                New Booking Request
+              </h2>
+              <p className="mt-1 text-[13px] text-[#64748b]">
+                Latest request that needs your action.
+              </p>
+            </div>
+            {pendingRequest ? (
+              <span className="text-[12px] font-semibold text-[#94a3b8]">
+                {formatRelativeDate(pendingRequest.createdAt)}
+              </span>
+            ) : null}
           </div>
+
+          {pendingRequest ? (
+            <div className="mt-4 rounded-[22px] border border-[#e7eee8] bg-[#fbfffc] p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-[15px] font-black text-[#0f172a]">
+                    {pendingRequest.serviceLabel}
+                  </p>
+                  <p className="mt-1 text-[13px] text-[#475569]">
+                    {pendingRequest.customerName}
+                  </p>
+                </div>
+                <p className="text-[1.15rem] font-black text-[#16a34a]">
+                  {formatCompactCurrency(pendingRequest.quotedAmount)}
+                </p>
+              </div>
+
+              <div className="mt-4 space-y-2 text-[13px] text-[#475569]">
+                <div className="flex items-center gap-2">
+                  <CalendarDays className="h-4 w-4 text-[#16a34a]" />
+                  <span>{pendingRequest.schedule}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <MapPin className="h-4 w-4 text-[#16a34a]" />
+                  <span>{pendingRequest.location}</span>
+                </div>
+                {pendingRequest.customerNote ? (
+                  <div className="flex items-start gap-2">
+                    <MessageCircleMore className="mt-0.5 h-4 w-4 text-[#16a34a]" />
+                    <span>{pendingRequest.customerNote}</span>
+                  </div>
+                ) : null}
+              </div>
+
+              <div className="mt-4 flex gap-3">
+                <AppButton
+                  className="flex-1"
+                  disabled={actionBookingId === pendingRequest.id}
+                  onClick={() =>
+                    handleBookingAction(
+                      pendingRequest.id,
+                      "declined",
+                      "Provider declined booking",
+                    )
+                  }
+                  tone="danger"
+                >
+                  Decline
+                </AppButton>
+                <AppButton
+                  className="flex-1"
+                  disabled={actionBookingId === pendingRequest.id}
+                  onClick={() =>
+                    handleBookingAction(
+                      pendingRequest.id,
+                      "accepted",
+                      "Provider accepted booking",
+                    )
+                  }
+                >
+                  Accept
+                </AppButton>
+              </div>
+            </div>
+          ) : (
+            <div className="mt-4">
+              <EmptyState
+                title="No new booking requests"
+                description="When customers book you, new requests will appear here for quick action."
+                icon={<Bell className="h-6 w-6" />}
+              />
+            </div>
+          )}
         </section>
 
-        <section className="rounded-[24px] border border-[#dbe8df] bg-white p-5 shadow-[0_18px_50px_rgba(22,163,74,0.07)]">
+        <section
+          id="bookings"
+          className="rounded-[26px] bg-white p-5 shadow-[0_18px_44px_rgba(15,23,42,0.08)] ring-1 ring-[#e6eee8]"
+        >
           <div className="flex items-center justify-between gap-3">
-            <h2 className="text-[18px] font-extrabold text-[#111827]">Live Notifications</h2>
-            <span className="rounded-full bg-[#eef9f1] px-3 py-1 text-[12px] font-bold text-[#16a34a]">
-              {notifications.filter((item) => !item.isRead).length} unread
-            </span>
+            <div>
+              <h2 className="text-[17px] font-black tracking-[-0.04em] text-[#0f172a]">
+                Today&apos;s Schedule
+              </h2>
+              <p className="mt-1 text-[13px] text-[#64748b]">
+                Your jobs lined up for today.
+              </p>
+            </div>
+            <Link href="#services" className="text-[13px] font-bold text-[#16a34a]">
+              View all
+            </Link>
           </div>
+
           <div className="mt-4 space-y-3">
-            {notifications.length === 0 ? (
-              <SharedEmptyState
-                title="No notifications yet"
-                description="New booking requests and task updates will appear here."
+            {todayBookings.length === 0 ? (
+              <EmptyState
+                title="No jobs scheduled today"
+                description="Your accepted and upcoming bookings for today will appear here."
+                icon={<CalendarDays className="h-6 w-6" />}
               />
             ) : (
-              notifications.slice(0, 5).map((item) => (
+              todayBookings.slice(0, 4).map((booking) => (
                 <div
-                  key={item.id}
-                  className={`rounded-[18px] border p-4 ${
-                    item.isRead
-                      ? "border-[#e4ece7] bg-[#fbfffc]"
-                      : "border-[#bbf7d0] bg-[#f6fff8]"
-                  }`}
+                  key={booking.id}
+                  className="flex items-center gap-3 rounded-[20px] border border-[#e7eee8] bg-[#fbfffc] px-3 py-3"
                 >
-                  <div className="flex items-start gap-3">
-                    <span className="mt-0.5 inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#eef9f1] text-[#16a34a]">
-                      <Bell className="h-4.5 w-4.5" />
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-[14px] font-extrabold text-[#111827]">
-                        {item.title}
-                      </p>
-                      <p className="mt-1 text-[13px] leading-6 text-[#4b5563]">
-                        {item.body}
-                      </p>
-                    </div>
+                  <div className="w-16 shrink-0 text-center">
+                    <p className="text-[12px] font-black text-[#7c3aed]">
+                      {formatTimeLabel(booking.scheduledDate, booking.scheduledStartTime)}
+                    </p>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[14px] font-black text-[#0f172a]">
+                      {booking.serviceLabel}
+                    </p>
+                    <p className="truncate text-[12px] text-[#64748b]">{booking.location}</p>
+                  </div>
+                  <StatusBadge label={booking.statusLabel} tone={statusTone(booking.bookingStatus)} />
+                </div>
+              ))
+            )}
+          </div>
+        </section>
+
+        <section
+          id="services"
+          className="rounded-[26px] bg-white p-5 shadow-[0_18px_44px_rgba(15,23,42,0.08)] ring-1 ring-[#e6eee8]"
+        >
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-[17px] font-black tracking-[-0.04em] text-[#0f172a]">
+                My Services
+              </h2>
+              <p className="mt-1 text-[13px] text-[#64748b]">
+                Service cards generated from your real provider profile.
+              </p>
+            </div>
+            <span className="rounded-full bg-[#eef9f1] px-3 py-1 text-[12px] font-bold text-[#16a34a]">
+              {serviceSummary.length} live
+            </span>
+          </div>
+
+          <div className="mt-4 space-y-3">
+            {serviceSummary.length === 0 ? (
+              <EmptyState
+                title="No services added yet"
+                description="Your registered services will appear here after setup."
+                icon={<BriefcaseBusiness className="h-6 w-6" />}
+              />
+            ) : (
+              serviceSummary.map((service) => (
+                <div
+                  key={service.id}
+                  className="flex items-center justify-between gap-3 rounded-[20px] border border-[#e7eee8] bg-[#fbfffc] px-4 py-4"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-[14px] font-black text-[#0f172a]">
+                      {service.label}
+                    </p>
+                    <p className="mt-1 text-[12px] text-[#64748b]">
+                      RM{service.hourlyRate}/hr • RM{service.dailyRate}/day
+                    </p>
+                  </div>
+                  <div className="text-right text-[12px] text-[#64748b]">
+                    <p>{service.yearsExperience || "Experience not set"}</p>
                   </div>
                 </div>
               ))
@@ -679,345 +838,114 @@ export function ProviderDashboardClient() {
           </div>
         </section>
 
-        <section className="rounded-[24px] border border-[#dbe8df] bg-white p-5 shadow-[0_18px_50px_rgba(22,163,74,0.07)]">
+        <section
+          id="profile"
+          className="rounded-[26px] bg-white p-5 shadow-[0_18px_44px_rgba(15,23,42,0.08)] ring-1 ring-[#e6eee8]"
+        >
           <div className="flex items-center justify-between gap-3">
-            <h2 className="text-[18px] font-extrabold text-[#111827]">Booking Requests</h2>
-            <span className="rounded-full bg-[#eef9f1] px-3 py-1 text-[12px] font-bold text-[#16a34a]">
-              {bookingGroups.requests.length} pending
-            </span>
-          </div>
-          <div className="mt-4 space-y-3">
-            {bookingsLoading ? (
-              <div className="rounded-[18px] border border-[#e4ece7] bg-[#fbfffc] p-4 text-[13px] text-[#6b7280]">
-                Loading bookings...
-              </div>
-            ) : bookingGroups.requests.length === 0 ? (
-              <SharedEmptyState
-                title="No pending booking requests"
-                description="When a customer books you, the request will appear here for acceptance or decline."
-              />
-            ) : (
-              bookingGroups.requests.map((booking) => (
-                <ProviderBookingCard
-                  key={booking.id}
-                  booking={booking}
-                  actionBookingId={actionBookingId}
-                  onAccept={() => handleBookingAction(booking.id, "accepted", "Provider accepted booking")}
-                  onDecline={() => handleBookingAction(booking.id, "declined", "Provider declined booking")}
-                />
-              ))
-            )}
-          </div>
-        </section>
-
-        <section className="rounded-[24px] border border-[#dbe8df] bg-white p-5 shadow-[0_18px_50px_rgba(22,163,74,0.07)]">
-          <div className="flex items-center justify-between gap-3">
-            <h2 className="text-[18px] font-extrabold text-[#111827]">Active Tasks</h2>
-            <span className="rounded-full bg-[#eef9f1] px-3 py-1 text-[12px] font-bold text-[#16a34a]">
-              {bookingGroups.active.length} active
-            </span>
-          </div>
-          <div className="mt-4 space-y-3">
-            {bookingGroups.active.length === 0 ? (
-              <SharedEmptyState
-                title="No active tasks right now"
-                description="Accepted bookings will move here once you start handling them."
-              />
-            ) : (
-              bookingGroups.active.map((booking) => (
-                <ProviderBookingCard
-                  key={booking.id}
-                  booking={booking}
-                  actionBookingId={actionBookingId}
-                  onAdvance={() =>
-                    handleBookingAction(
-                      booking.id,
-                      booking.bookingStatus === "accepted"
-                        ? "on_the_way"
-                        : booking.bookingStatus === "on_the_way"
-                          ? "arrived"
-                          : booking.bookingStatus === "arrived"
-                            ? "completed"
-                            : "accepted"
-                    )
-                  }
-                  advanceLabel={
-                    booking.bookingStatus === "accepted"
-                      ? "Mark On the Way"
-                      : booking.bookingStatus === "on_the_way"
-                        ? "Mark Arrived"
-                        : booking.bookingStatus === "arrived"
-                          ? "Mark Completed"
-                          : "Continue"
-                  }
-                />
-              ))
-            )}
-          </div>
-        </section>
-
-        <section className="rounded-[24px] border border-[#dbe8df] bg-white p-5 shadow-[0_18px_50px_rgba(22,163,74,0.07)]">
-          <div className="flex items-center justify-between gap-3">
-            <h2 className="text-[18px] font-extrabold text-[#111827]">Completion & Payment</h2>
-            <span className="rounded-full bg-[#eef9f1] px-3 py-1 text-[12px] font-bold text-[#16a34a]">
-              {bookingGroups.completed.length} to close
-            </span>
-          </div>
-          <div className="mt-4 space-y-3">
-            {bookingGroups.completed.length === 0 ? (
-              <SharedEmptyState
-                title="Nothing waiting for payment or review"
-                description="Completed jobs will move here until payment and review are handled."
-              />
-            ) : (
-              bookingGroups.completed.map((booking) => (
-                <ProviderBookingCard
-                  key={booking.id}
-                  booking={booking}
-                  actionBookingId={actionBookingId}
-                  onAdvance={() =>
-                    handleBookingAction(
-                      booking.id,
-                      booking.bookingStatus === "completed"
-                        ? "paid"
-                        : "review_requested"
-                    )
-                  }
-                  advanceLabel={
-                    booking.bookingStatus === "completed"
-                      ? "Mark Payment Done"
-                      : "Request Review"
-                  }
-                />
-              ))
-            )}
-          </div>
-        </section>
-
-        <section className="rounded-[24px] border border-[#dbe8df] bg-white p-5 shadow-[0_18px_50px_rgba(22,163,74,0.07)]">
-          <div className="flex items-center justify-between gap-3">
-            <h2 className="text-[18px] font-extrabold text-[#111827]">Manage Listing</h2>
+            <div>
+              <h2 className="text-[17px] font-black tracking-[-0.04em] text-[#0f172a]">
+                Profile Snapshot
+              </h2>
+              <p className="mt-1 text-[13px] text-[#64748b]">
+                Quick account and verification overview.
+              </p>
+            </div>
             <button
               type="button"
-              onClick={() => setEditing((current) => !current)}
-              className="inline-flex items-center gap-2 rounded-[12px] border border-[#dbe8df] px-3 py-2 text-[13px] font-bold text-[#16a34a]"
+              onClick={() => void handleSignOut()}
+              className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[#e5ece7] bg-white text-[#dc2626]"
+              aria-label="Log out"
             >
-              <PencilLine className="h-4 w-4" />
-              {editing ? "Cancel" : "Edit"}
+              <LogOut className="h-4.5 w-4.5" />
             </button>
           </div>
 
-          <div className="mt-5 space-y-4">
-            <Field label="Full Name" value={form.fullName} editing={editing} onChange={(value) => setForm((current) => ({ ...current, fullName: value }))} />
-            <Field label="Marketing Name" value={form.marketingName} editing={editing} onChange={(value) => setForm((current) => ({ ...current, marketingName: value }))} />
-            <Field label="Service Location" value={form.serviceLocation} editing={editing} onChange={(value) => setForm((current) => ({ ...current, serviceLocation: value }))} icon={<MapPin className="h-4 w-4 text-[#6b7280]" />} />
-            <Field label="Service Radius (KM)" value={form.serviceRadiusKm} editing={editing} onChange={(value) => setForm((current) => ({ ...current, serviceRadiusKm: value }))} />
-            <FieldArea label="Bio" value={form.bio} editing={editing} onChange={(value) => setForm((current) => ({ ...current, bio: value }))} />
-          </div>
-
-          {editing ? (
-            <button
-              type="button"
-              onClick={handleSave}
-              disabled={isSaving}
-              className="mt-5 inline-flex h-11 w-full items-center justify-center gap-2 rounded-[12px] bg-[#16a34a] px-4 text-[14px] font-extrabold text-white disabled:opacity-70"
-            >
-              <Save className="h-4 w-4" />
-              {isSaving ? "Saving..." : "Save Listing"}
-            </button>
-          ) : null}
-        </section>
-
-        <section className="rounded-[24px] border border-[#dbe8df] bg-white p-5 shadow-[0_18px_50px_rgba(22,163,74,0.07)]">
-          <h2 className="text-[18px] font-extrabold text-[#111827]">Verification Status</h2>
-          <div className="mt-4 grid gap-3">
-            <StatusRow icon={<Mail className="h-4.5 w-4.5 text-[#16a34a]" />} label="Email" value={data.emailVerified ? "Verified" : "Not verified"} />
-            <StatusRow icon={<Phone className="h-4.5 w-4.5 text-[#16a34a]" />} label="Phone" value={data.phoneVerified ? "Verified" : "Pending"} />
-            <StatusRow icon={<ShieldCheck className="h-4.5 w-4.5 text-[#16a34a]" />} label="Identity" value={data.identityVerified ? "Verified" : "Pending"} />
-            <StatusRow icon={<BadgeCheck className="h-4.5 w-4.5 text-[#16a34a]" />} label="Admin Approval" value={data.approvalStatus} />
-          </div>
-        </section>
-
-        <section className="rounded-[24px] border border-[#dbe8df] bg-white p-5 shadow-[0_18px_50px_rgba(22,163,74,0.07)]">
-          <h2 className="text-[18px] font-extrabold text-[#111827]">Services</h2>
           <div className="mt-4 space-y-3">
-            {serviceSummary.map((service) => (
-              <div key={service.id} className="rounded-[18px] border border-[#e4ece7] bg-[#fbfffc] p-4">
-                <p className="text-[15px] font-extrabold text-[#111827]">{service.label}</p>
-                <p className="mt-1 text-[13px] text-[#4b5563]">
-                  {service.yearsExperience || "Experience not set"} - RM{service.hourlyRate}/hr - RM{service.dailyRate}/day
-                </p>
-                <p className="mt-2 text-[12px] text-[#6b7280]">
-                  {service.specialties.length > 0
-                    ? service.specialties.join(", ")
-                    : "No specialties added yet."}
-                </p>
-              </div>
-            ))}
+            <InfoRow
+              icon={<ShieldCheck className="h-4.5 w-4.5 text-[#16a34a]" />}
+              label="Account Status"
+              value={data.accountStatus}
+            />
+            <InfoRow
+              icon={<CreditCard className="h-4.5 w-4.5 text-[#16a34a]" />}
+              label="Approval"
+              value={data.approvalStatus}
+            />
+            <InfoRow
+              icon={<UserRound className="h-4.5 w-4.5 text-[#16a34a]" />}
+              label="Visibility"
+              value={data.isVisible ? "Visible to customers" : "Hidden"}
+            />
+            <InfoRow
+              icon={<MapPin className="h-4.5 w-4.5 text-[#16a34a]" />}
+              label="Service Radius"
+              value={`${data.serviceRadiusKm} KM`}
+            />
           </div>
         </section>
-      </div>
-    </main>
+      </section>
+
+      <BottomNav
+        items={[
+          {
+            href: "/provider/dashboard",
+            label: "Home",
+            icon: <BriefcaseBusiness className="h-5 w-5" />,
+            active: true,
+          },
+          {
+            href: "#bookings",
+            label: "Bookings",
+            icon: <CalendarDays className="h-5 w-5" />,
+          },
+          {
+            href: "#messages",
+            label: "Messages",
+            icon: <MessageCircleMore className="h-5 w-5" />,
+          },
+          {
+            href: "#wallet",
+            label: "Wallet",
+            icon: <Wallet className="h-5 w-5" />,
+          },
+          {
+            href: "#profile",
+            label: "Profile",
+            icon: <UserRound className="h-5 w-5" />,
+          },
+        ]}
+      />
+    </MobilePage>
   );
 }
 
-function ProviderBookingCard({
-  booking,
-  actionBookingId,
-  onAccept,
-  onDecline,
-  onAdvance,
-  advanceLabel,
+function MetricCard({
+  icon,
+  label,
+  value,
+  meta,
 }: {
-  booking: ProviderBookingItem;
-  actionBookingId: string;
-  onAccept?: () => void;
-  onDecline?: () => void;
-  onAdvance?: () => void;
-  advanceLabel?: string;
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  meta: string;
 }) {
   return (
-    <div className="rounded-[18px] border border-[#e4ece7] bg-[#fbfffc] p-4">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-[15px] font-extrabold text-[#111827]">
-            {booking.serviceLabel}
-          </p>
-          <p className="mt-1 text-[13px] text-[#4b5563]">
-            {booking.customerName}
-          </p>
-        </div>
-        <SharedStatusBadge label={booking.statusLabel} tone={providerStatusTone(booking.bookingStatus)} />
-      </div>
-
-      <div className="mt-3 space-y-2 text-[13px] text-[#4b5563]">
-        <div className="flex items-center gap-2">
-          <CalendarDays className="h-4 w-4 text-[#16a34a]" />
-          <span>{booking.schedule}</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <MapPin className="h-4 w-4 text-[#16a34a]" />
-          <span>{booking.location}</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <Wallet className="h-4 w-4 text-[#16a34a]" />
-          <span>RM{booking.quotedAmount.toFixed(2)}</span>
-        </div>
-        {booking.customerNote ? (
-          <div className="flex items-start gap-2">
-            <MessageSquareText className="mt-0.5 h-4 w-4 text-[#16a34a]" />
-            <span>{booking.customerNote}</span>
-          </div>
-        ) : null}
-      </div>
-
-      <div className="mt-4 flex flex-wrap gap-2">
-        {onAccept ? (
-          <AppButton
-            disabled={actionBookingId === booking.id}
-            onClick={onAccept}
-            className="h-10"
-          >
-            Accept
-          </AppButton>
-        ) : null}
-        {onDecline ? (
-          <AppButton
-            disabled={actionBookingId === booking.id}
-            onClick={onDecline}
-            tone="danger"
-            className="h-10"
-          >
-            Decline
-          </AppButton>
-        ) : null}
-        {onAdvance && advanceLabel ? (
-          <AppButton
-            disabled={actionBookingId === booking.id}
-            onClick={onAdvance}
-            tone="secondary"
-            icon={<Route className="h-4 w-4 text-[#16a34a]" />}
-            className="h-10"
-          >
-            {advanceLabel}
-          </AppButton>
-        ) : null}
-      </div>
+    <div className="rounded-[20px] border border-[#e7eee8] bg-[#fbfffc] p-3">
+      <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#eef9f1]">
+        {icon}
+      </span>
+      <p className="mt-3 text-[1.15rem] font-black tracking-[-0.05em] text-[#0f172a]">
+        {value}
+      </p>
+      <p className="mt-1 text-[12px] font-semibold text-[#475569]">{label}</p>
+      <p className="mt-0.5 text-[11px] text-[#94a3b8]">{meta}</p>
     </div>
   );
 }
 
-function providerStatusTone(status: ProviderBookingItem["bookingStatus"]) {
-  switch (status) {
-    case "accepted":
-    case "paid":
-    case "review_requested":
-      return "accepted" as const;
-    case "declined":
-      return "declined" as const;
-    case "completed":
-      return "completed" as const;
-    case "cancelled":
-      return "cancelled" as const;
-    default:
-      return "pending" as const;
-  }
-}
-
-function Field({
-  label,
-  value,
-  editing,
-  onChange,
-  icon,
-}: {
-  label: string;
-  value: string;
-  editing: boolean;
-  onChange: (value: string) => void;
-  icon?: React.ReactNode;
-}) {
-  return (
-    <label className="block">
-      <span className="mb-2 block text-[13px] font-semibold text-[#111827]">{label}</span>
-      <div className="flex items-center rounded-[12px] border border-[#dfe8e2] px-4 shadow-[0_8px_20px_rgba(15,23,42,0.03)]">
-        <input
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
-          disabled={!editing}
-          className="h-11 w-full border-0 bg-transparent text-[14px] text-[#111827] outline-none disabled:text-[#6b7280]"
-        />
-        {icon ? <span className="ml-3">{icon}</span> : null}
-      </div>
-    </label>
-  );
-}
-
-function FieldArea({
-  label,
-  value,
-  editing,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  editing: boolean;
-  onChange: (value: string) => void;
-}) {
-  return (
-    <label className="block">
-      <span className="mb-2 block text-[13px] font-semibold text-[#111827]">{label}</span>
-      <textarea
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        disabled={!editing}
-        className="min-h-[110px] w-full rounded-[12px] border border-[#dfe8e2] px-4 py-3 text-[14px] text-[#111827] outline-none shadow-[0_8px_20px_rgba(15,23,42,0.03)] disabled:text-[#6b7280]"
-      />
-    </label>
-  );
-}
-
-function StatusRow({
+function InfoRow({
   icon,
   label,
   value,
@@ -1027,12 +955,12 @@ function StatusRow({
   value: string;
 }) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-[16px] border border-[#e4ece7] bg-[#fbfffc] px-4 py-3">
-      <div className="flex items-center gap-3 text-[14px] text-[#111827]">
+    <div className="flex items-center justify-between gap-3 rounded-[18px] border border-[#e7eee8] bg-[#fbfffc] px-4 py-3">
+      <div className="flex items-center gap-3 text-[14px] text-[#0f172a]">
         {icon}
         <span className="font-semibold">{label}</span>
       </div>
-      <span className="text-[13px] font-bold text-[#16a34a]">{value}</span>
+      <span className="text-right text-[13px] font-bold text-[#16a34a]">{value}</span>
     </div>
   );
 }

@@ -32,8 +32,10 @@ type ProviderProfileRow = {
   bio: string | null;
   approval_status: string | null;
   is_visible: boolean | null;
-  provider_services: ProviderServiceRow[] | null;
-  provider_verifications:
+  average_rating?: number | null;
+  total_reviews?: number | null;
+  provider_services?: ProviderServiceRow[] | null;
+  provider_verifications?:
     | {
         phone_verified: boolean | null;
         email_verified: boolean | null;
@@ -58,6 +60,7 @@ type ProfileRow = {
   role: string | null;
   status: string | null;
   phone: string | null;
+  avatar_url: string | null;
 };
 
 function getAdminSupabaseClient() {
@@ -124,7 +127,7 @@ async function verifyProviderRequest(request: Request) {
 
   const { data: profile, error: profileError } = await adminClient
     .from("profiles")
-    .select("id, full_name, email, role, status, phone")
+    .select("id, full_name, email, role, status, phone, avatar_url")
     .eq("id", user.id)
     .maybeSingle();
 
@@ -181,7 +184,7 @@ async function fetchProviderSnapshot(
   adminClient: NonNullable<ReturnType<typeof getAdminSupabaseClient>>,
   providerId: string,
 ) {
-  const { data, error } = await adminClient
+  const { data: providerProfile, error: providerProfileError } = await adminClient
     .from("provider_profiles")
     .select(`
       id,
@@ -191,7 +194,20 @@ async function fetchProviderSnapshot(
       bio,
       approval_status,
       is_visible,
-      provider_services (
+      average_rating,
+      total_reviews
+    `)
+    .eq("id", providerId)
+    .maybeSingle();
+
+  if (providerProfileError || !providerProfile) {
+    return null;
+  }
+
+  const [{ data: services }, { data: verifications }] = await Promise.all([
+    adminClient
+      .from("provider_services")
+      .select(`
         id,
         service_type,
         years_experience,
@@ -200,23 +216,61 @@ async function fetchProviderSnapshot(
         provider_service_specialties (
           specialty
         )
-      ),
-      provider_verifications (
+      `)
+      .eq("provider_id", providerId),
+    adminClient
+      .from("provider_verifications")
+      .select(`
         phone_verified,
         email_verified,
         identity_verified,
         kyc_verified,
         background_check_verified
-      )
-    `)
-    .eq("id", providerId)
-    .maybeSingle();
+      `)
+      .or(`provider_id.eq.${providerId},id.eq.${providerId}`)
+      .limit(1),
+  ]);
 
-  if (error || !data) {
+  return {
+    ...(providerProfile as ProviderProfileRow),
+    provider_services: (services as ProviderServiceRow[] | null) ?? [],
+    provider_verifications: Array.isArray(verifications)
+      ? verifications
+      : verifications
+        ? [verifications]
+        : [],
+  };
+}
+
+async function ensureProviderProfile(
+  adminClient: NonNullable<ReturnType<typeof getAdminSupabaseClient>>,
+  profile: ProfileRow,
+) {
+  const existing = await fetchProviderSnapshot(adminClient, profile.id);
+
+  if (existing) {
+    return existing;
+  }
+
+  const bootstrapPayload = {
+    id: profile.id,
+    marketing_name: profile.full_name ?? "",
+    service_location: "",
+    service_radius_km: 15,
+    bio: "",
+    approval_status: "pending_review",
+    is_visible: true,
+  };
+
+  const { error } = await adminClient
+    .from("provider_profiles")
+    .upsert(bootstrapPayload, { onConflict: "id" });
+
+  if (error) {
     return null;
   }
 
-  return data as ProviderProfileRow;
+  return fetchProviderSnapshot(adminClient, profile.id);
 }
 
 function buildResponse(profile: ProfileRow, providerProfile: ProviderProfileRow, authUser: { email_confirmed_at?: string | null }) {
@@ -227,11 +281,14 @@ function buildResponse(profile: ProfileRow, providerProfile: ProviderProfileRow,
     fullName: profile.full_name ?? "",
     email: profile.email ?? "",
     phone: profile.phone ?? "",
+    avatarUrl: profile.avatar_url ?? "",
     accountStatus: toTitleCase(profile.status),
     marketingName: providerProfile.marketing_name ?? "",
     serviceLocation: providerProfile.service_location ?? "",
     serviceRadiusKm: providerProfile.service_radius_km ?? 0,
     bio: providerProfile.bio ?? "",
+    averageRating: Number(providerProfile.average_rating ?? 0),
+    totalReviews: Number(providerProfile.total_reviews ?? 0),
     approvalStatus: toTitleCase(providerProfile.approval_status),
     isVisible: Boolean(providerProfile.is_visible),
     emailVerified: Boolean(authUser.email_confirmed_at) || Boolean(verification?.email_verified),
@@ -264,7 +321,7 @@ export async function GET(request: Request) {
   const emailVerified = Boolean(verified.authUser.email_confirmed_at);
   await syncEmailVerification(verified.adminClient, verified.profile.id, emailVerified);
 
-  const providerProfile = await fetchProviderSnapshot(verified.adminClient, verified.profile.id);
+  const providerProfile = await ensureProviderProfile(verified.adminClient, verified.profile);
 
   if (!providerProfile) {
     return NextResponse.json({ error: "Provider listing was not found." }, { status: 404 });
@@ -320,8 +377,15 @@ export async function PATCH(request: Request) {
   if (Object.keys(providerPayload).length > 0) {
     const { error } = await verified.adminClient
       .from("provider_profiles")
-      .update(providerPayload)
-      .eq("id", verified.profile.id);
+      .upsert(
+        {
+          id: verified.profile.id,
+          approval_status: "pending_review",
+          is_visible: true,
+          ...providerPayload,
+        },
+        { onConflict: "id" },
+      );
 
     if (error) {
       return NextResponse.json({ error: error.message || "Unable to update listing." }, { status: 500 });
@@ -374,13 +438,20 @@ export async function PATCH(request: Request) {
 
   const refreshedProfile = await verified.adminClient
     .from("profiles")
-    .select("id, full_name, email, role, status, phone")
+    .select("id, full_name, email, role, status, phone, avatar_url")
     .eq("id", verified.profile.id)
     .maybeSingle();
 
-  const providerProfile = await fetchProviderSnapshot(verified.adminClient, verified.profile.id);
+  if (refreshedProfile.error || !refreshedProfile.data) {
+    return NextResponse.json({ error: "Unable to load updated provider." }, { status: 500 });
+  }
 
-  if (refreshedProfile.error || !refreshedProfile.data || !providerProfile) {
+  const providerProfile = await ensureProviderProfile(
+    verified.adminClient,
+    refreshedProfile.data as ProfileRow,
+  );
+
+  if (!providerProfile) {
     return NextResponse.json({ error: "Unable to load updated provider." }, { status: 500 });
   }
 
