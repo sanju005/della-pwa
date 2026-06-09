@@ -107,6 +107,19 @@ function getAdminSupabaseClient() {
   });
 }
 
+function mapBookingSchemaError(message: string | null | undefined) {
+  const normalized = message?.toLowerCase() ?? "";
+
+  if (
+    normalized.includes("booking_mode") &&
+    (normalized.includes("schema cache") || normalized.includes("could not find"))
+  ) {
+    return "Booking database schema is outdated. Apply `supabase/migrations/20260607_live_booking_workflow.sql` and refresh the Supabase schema cache.";
+  }
+
+  return message || null;
+}
+
 function isValidBody(value: BookingBody): value is CompleteBookingBody {
   return (
     typeof value.providerId === "string" &&
@@ -453,7 +466,7 @@ export async function GET(request: Request) {
 
   if (error) {
     return NextResponse.json(
-      { error: error.message || "Unable to load bookings." },
+      { error: mapBookingSchemaError(error.message) || "Unable to load bookings." },
       { status: 500 }
     );
   }
@@ -550,7 +563,11 @@ export async function POST(request: Request) {
 
   if (bookingError || !insertedBooking) {
     return NextResponse.json(
-      { error: bookingError?.message || "Unable to create booking right now." },
+      {
+        error:
+          mapBookingSchemaError(bookingError?.message) ||
+          "Unable to create booking right now.",
+      },
       { status: 500 }
     );
   }
