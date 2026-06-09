@@ -1,8 +1,9 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
-import { useMemo, useRef, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 
 import {
   availabilityDays,
@@ -18,6 +19,33 @@ import type {
   ProviderService,
 } from "@/lib/provider-registration-types";
 import { providerServices } from "@/lib/provider-registration-types";
+
+type ReverseLocationResponse = {
+  label: string;
+  formattedAddress?: string;
+  road?: string;
+  suburb?: string;
+  city?: string;
+  state?: string;
+  postcode?: string;
+  country?: string;
+  houseNumber?: string;
+};
+
+const DynamicLocationPickerMap = dynamic(
+  () =>
+    import("@/app/_components/location-picker-map").then((module) => ({
+      default: module.LocationPickerMap,
+    })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex h-full items-center justify-center bg-[#eef9f0] text-[13px] font-semibold text-[#4b5563]">
+        Loading map...
+      </div>
+    ),
+  }
+);
 
 type FlowStep =
   | { type: "basic"; label: string }
@@ -254,6 +282,15 @@ export function ProviderRegistrationWizard() {
               <BasicProfileStep
                 data={data}
                 updateBasic={updateBasic}
+                updateProviderLocation={(field, value) =>
+                  setData((current) => ({
+                    ...current,
+                    providerLocation: {
+                      ...current.providerLocation,
+                      [field]: value,
+                    },
+                  }))
+                }
                 setSubmitError={setSubmitError}
               />
             ) : null}
@@ -284,6 +321,15 @@ export function ProviderRegistrationWizard() {
                 onUpdate={(field, value) =>
                   setData((current) => ({
                     ...current,
+                    basicProfile: {
+                      ...current.basicProfile,
+                      ...(field === "areaLabel"
+                        ? { serviceLocation: String(value) }
+                        : {}),
+                      ...(field === "radius"
+                        ? { serviceRadius: Number(value) }
+                        : {}),
+                    },
                     providerLocation: { ...current.providerLocation, [field]: value },
                   }))
                 }
@@ -330,6 +376,7 @@ export function ProviderRegistrationWizard() {
 function BasicProfileStep({
   data,
   updateBasic,
+  updateProviderLocation,
   setSubmitError,
 }: {
   data: ProviderRegistrationData;
@@ -337,9 +384,75 @@ function BasicProfileStep({
     field: keyof ProviderRegistrationData["basicProfile"],
     value: string | number
   ) => void;
+  updateProviderLocation: (
+    field: keyof ProviderRegistrationData["providerLocation"],
+    value: string | number
+  ) => void;
   setSubmitError: (value: string) => void;
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isLocating, setIsLocating] = useState(false);
+
+  const applyResolvedLocation = async (latitude: number, longitude: number) => {
+    const response = await fetch(
+      `/api/location/reverse?lat=${latitude}&lng=${longitude}`,
+      { cache: "no-store" }
+    );
+
+    const resolved = (await response.json()) as ReverseLocationResponse;
+    const locationLabel =
+      resolved.formattedAddress?.trim() ||
+      resolved.label?.trim() ||
+      `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
+
+    updateBasic("serviceLocation", locationLabel);
+    updateProviderLocation("areaLabel", locationLabel);
+    updateProviderLocation("latitude", latitude);
+    updateProviderLocation("longitude", longitude);
+    updateProviderLocation("formattedAddress", resolved.formattedAddress?.trim() || locationLabel);
+    updateProviderLocation("road", resolved.road?.trim() || "");
+    updateProviderLocation("suburb", resolved.suburb?.trim() || "");
+    updateProviderLocation("city", resolved.city?.trim() || "");
+    updateProviderLocation("state", resolved.state?.trim() || "");
+    updateProviderLocation("postcode", resolved.postcode?.trim() || "");
+    updateProviderLocation("country", resolved.country?.trim() || "");
+    updateProviderLocation("houseNumber", resolved.houseNumber?.trim() || "");
+  };
+
+  const requestCurrentLocation = () => {
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      setSubmitError("Location is not supported on this device.");
+      return;
+    }
+
+    setIsLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setSubmitError("");
+        void applyResolvedLocation(
+          position.coords.latitude,
+          position.coords.longitude,
+        )
+          .catch(() => {
+            setSubmitError("Unable to convert location into an address.");
+          })
+          .finally(() => {
+            setIsLocating(false);
+          });
+      },
+      () => {
+        setIsLocating(false);
+        setSubmitError("Unable to get current location. Please allow location access.");
+      },
+      { enableHighAccuracy: true, timeout: 10000 },
+    );
+  };
+
+  useEffect(() => {
+    if (!data.basicProfile.serviceLocation) {
+      requestCurrentLocation();
+    }
+  }, [data.basicProfile.serviceLocation]);
 
   const handleAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -414,16 +527,32 @@ function BasicProfileStep({
       <InputField label="Last Name" value={data.basicProfile.lastName} onChange={(value) => updateBasic("lastName", value)} />
       <SelectField label="Sex" value={data.basicProfile.sex} onChange={(value) => updateBasic("sex", value)} options={sexOptions} placeholder="Select sex" />
       <InputField label="Marketing Name" hint="e.g. Ex Chef Amina" value={data.basicProfile.marketingName} onChange={(value) => updateBasic("marketingName", value)} />
-      <InputField label="Date of Birth" value={data.basicProfile.dateOfBirth} onChange={(value) => updateBasic("dateOfBirth", value)} rightIcon={<CalendarIcon className="h-4 w-4 text-[#6b7280]" />} />
-      <InputField label="Residential Address" value={data.basicProfile.residentialAddress} onChange={(value) => updateBasic("residentialAddress", value)} />
+      <DateInputField
+        label="Date of Birth"
+        value={data.basicProfile.dateOfBirth}
+        onChange={(value) => updateBasic("dateOfBirth", value)}
+      />
+      <TextAreaField
+        label="Residential Address"
+        value={data.basicProfile.residentialAddress}
+        onChange={(value) => updateBasic("residentialAddress", value)}
+        rows={3}
+      />
 
       <div>
         <p className="mb-2 text-[13px] font-semibold text-[#111827]">Service Location</p>
         <div className="rounded-[14px] border border-[#dfe8e2] bg-[linear-gradient(180deg,#f6fbf7_0%,#eef8ef_100%)] p-3">
-          <div className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-2 text-[12px] font-bold text-[#16a34a] shadow-[0_8px_20px_rgba(15,23,42,0.03)]">
+          <button
+            type="button"
+            onClick={requestCurrentLocation}
+            className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-2 text-[12px] font-bold text-[#16a34a] shadow-[0_8px_20px_rgba(15,23,42,0.03)]"
+          >
             <PinIcon className="h-4 w-4" />
-            Select current location
-          </div>
+            {isLocating ? "Getting location..." : "Select current location"}
+          </button>
+          <p className="mt-3 text-[13px] text-[#374151]">
+            {data.basicProfile.serviceLocation || "Current location not loaded yet."}
+          </p>
         </div>
       </div>
 
@@ -433,7 +562,10 @@ function BasicProfileStep({
         min={5}
         max={30}
         suffix="KM"
-        onChange={(value) => updateBasic("serviceRadius", value)}
+        onChange={(value) => {
+          updateBasic("serviceRadius", value);
+          updateProviderLocation("radius", value);
+        }}
       />
     </div>
   );
@@ -689,14 +821,62 @@ function ProviderLocationStep({
     value: string | number
   ) => void;
 }) {
+  const [isResolvingAddress, setIsResolvingAddress] = useState(false);
+
+  const circleSize = 28 + data.providerLocation.radius * 4.5;
+
+  const updateMapLocation = async (latitude: number, longitude: number) => {
+    setIsResolvingAddress(true);
+
+    try {
+      const response = await fetch(
+        `/api/location/reverse?lat=${latitude}&lng=${longitude}`,
+        { cache: "no-store" }
+      );
+      const resolved = (await response.json()) as ReverseLocationResponse;
+      const locationLabel =
+        resolved.formattedAddress?.trim() ||
+        resolved.label?.trim() ||
+        `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
+
+      onUpdate("latitude", latitude);
+      onUpdate("longitude", longitude);
+      onUpdate("areaLabel", locationLabel);
+      onUpdate("formattedAddress", resolved.formattedAddress?.trim() || locationLabel);
+      onUpdate("road", resolved.road?.trim() || "");
+      onUpdate("suburb", resolved.suburb?.trim() || "");
+      onUpdate("city", resolved.city?.trim() || "");
+      onUpdate("state", resolved.state?.trim() || "");
+      onUpdate("postcode", resolved.postcode?.trim() || "");
+      onUpdate("country", resolved.country?.trim() || "");
+      onUpdate("houseNumber", resolved.houseNumber?.trim() || "");
+    } finally {
+      setIsResolvingAddress(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="overflow-hidden rounded-[18px] border border-[#dfe8e2] bg-[linear-gradient(180deg,#f7fbf7_0%,#eff7ef_100%)]">
-        <div className="relative h-[18rem] overflow-hidden bg-[radial-gradient(circle_at_50%_48%,rgba(22,163,74,0.12),transparent_36%),linear-gradient(90deg,rgba(17,24,39,0.03)_1px,transparent_1px),linear-gradient(rgba(17,24,39,0.03)_1px,transparent_1px)] bg-[size:auto,28px_28px,28px_28px]">
-          <div className="absolute inset-8 rounded-full border-2 border-[#49bf73] bg-[#16a34a]/8" />
-          <div className="absolute left-1/2 top-1/2 h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#16a34a] ring-8 ring-[#16a34a]/12" />
+        <div className="relative h-[18rem] overflow-hidden">
+          <DynamicLocationPickerMap
+            latitude={data.providerLocation.latitude}
+            longitude={data.providerLocation.longitude}
+            onChange={({ latitude, longitude }) => {
+              void updateMapLocation(latitude, longitude);
+            }}
+          />
+          <div
+            className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-[#49bf73] bg-[#16a34a]/8"
+            style={{ width: `${circleSize}px`, height: `${circleSize}px` }}
+          />
           <span className="absolute right-4 top-4 rounded-full bg-white px-3 py-1.5 text-[13px] font-bold text-[#16a34a] shadow-[0_8px_18px_rgba(15,23,42,0.08)]">
             {data.providerLocation.radius} KM
+          </span>
+          <span className="absolute bottom-4 left-4 right-4 rounded-[12px] bg-white/92 px-3 py-2 text-[13px] font-medium text-[#111827] shadow-[0_8px_18px_rgba(15,23,42,0.08)]">
+            {isResolvingAddress
+              ? "Updating address..."
+              : data.providerLocation.areaLabel || "Current location not loaded yet."}
           </span>
         </div>
       </div>
@@ -978,6 +1158,85 @@ function InputField({
             {rightIcon}
           </button>
         ) : null}
+      </div>
+    </label>
+  );
+}
+
+function DateInputField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const openPicker = () => {
+    const input = inputRef.current as (HTMLInputElement & {
+      showPicker?: () => void;
+    }) | null;
+
+    if (!input) {
+      return;
+    }
+
+    input.focus();
+    input.showPicker?.();
+  };
+
+  return (
+    <label className="block">
+      <span className="mb-2 block text-[13px] font-semibold text-[#111827]">
+        {label}
+      </span>
+      <div className="flex items-center rounded-[12px] border border-[#dfe8e2] px-4 shadow-[0_8px_20px_rgba(15,23,42,0.03)]">
+        <input
+          ref={inputRef}
+          type="date"
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          onClick={openPicker}
+          className="h-11 w-full border-0 bg-transparent text-[14px] text-[#111827] outline-none"
+        />
+        <button
+          type="button"
+          onClick={openPicker}
+          aria-label="Open date picker"
+          className="ml-3 text-[#6b7280]"
+        >
+          <CalendarIcon className="h-4 w-4 text-[#6b7280]" />
+        </button>
+      </div>
+    </label>
+  );
+}
+
+function TextAreaField({
+  label,
+  value,
+  onChange,
+  rows = 3,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  rows?: number;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-2 block text-[13px] font-semibold text-[#111827]">
+        {label}
+      </span>
+      <div className="rounded-[12px] border border-[#dfe8e2] px-4 py-3 shadow-[0_8px_20px_rgba(15,23,42,0.03)]">
+        <textarea
+          rows={rows}
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          className="w-full resize-none border-0 bg-transparent text-[14px] text-[#111827] outline-none"
+        />
       </div>
     </label>
   );

@@ -54,6 +54,16 @@ export type ProviderRegistrationData = {
   providerLocation: {
     radius: number;
     areaLabel: string;
+    latitude: number;
+    longitude: number;
+    formattedAddress: string;
+    road: string;
+    suburb: string;
+    city: string;
+    state: string;
+    postcode: string;
+    country: string;
+    houseNumber: string;
   };
   verification: {
     phoneOtp: string[];

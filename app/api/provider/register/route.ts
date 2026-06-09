@@ -74,6 +74,24 @@ function buildProviderBio(payload: ProviderRegistrationData) {
   return `Provider for ${services} in ${payload.basicProfile.serviceLocation}.${specialtyLabel}`;
 }
 
+function isMissingColumnError(message?: string) {
+  const normalized = message?.trim().toLowerCase() ?? "";
+
+  return (
+    normalized.includes("column") &&
+    (normalized.includes("city") ||
+      normalized.includes("state") ||
+      normalized.includes("country") ||
+      normalized.includes("postcode") ||
+      normalized.includes("road") ||
+      normalized.includes("suburb") ||
+      normalized.includes("house_number") ||
+      normalized.includes("latitude") ||
+      normalized.includes("longitude") ||
+      normalized.includes("formatted_address"))
+  );
+}
+
 function getProviderFullName(payload: ProviderRegistrationData) {
   return [payload.basicProfile.firstName, payload.basicProfile.lastName]
     .filter(Boolean)
@@ -238,25 +256,51 @@ export async function POST(request: Request) {
       );
     }
 
-    const { error: providerProfileError } = await adminClient
+    const baseProviderProfilePayload = {
+      id: providerId,
+      marketing_name: payload.basicProfile.marketingName.trim(),
+      sex: sex || null,
+      date_of_birth: payload.basicProfile.dateOfBirth.trim() || null,
+      residential_address: payload.basicProfile.residentialAddress.trim() || null,
+      service_location:
+        payload.providerLocation.areaLabel.trim() ||
+        payload.providerLocation.formattedAddress.trim() ||
+        payload.basicProfile.serviceLocation.trim(),
+      service_radius_km: payload.providerLocation.radius,
+      bio: buildProviderBio(payload),
+      approval_status: "pending",
+      is_visible: true,
+    };
+
+    let providerProfileError: { message?: string } | null = null;
+
+    const providerProfileWithAddressPayload = {
+      ...baseProviderProfilePayload,
+      formatted_address: payload.providerLocation.formattedAddress.trim() || null,
+      road: payload.providerLocation.road.trim() || null,
+      suburb: payload.providerLocation.suburb.trim() || null,
+      city: payload.providerLocation.city.trim() || null,
+      state: payload.providerLocation.state.trim() || null,
+      postcode: payload.providerLocation.postcode.trim() || null,
+      country: payload.providerLocation.country.trim() || null,
+      house_number: payload.providerLocation.houseNumber.trim() || null,
+      latitude: payload.providerLocation.latitude,
+      longitude: payload.providerLocation.longitude,
+    };
+
+    const providerProfileWrite = await adminClient
       .from("provider_profiles")
-      .upsert(
-        {
-          id: providerId,
-          marketing_name: payload.basicProfile.marketingName.trim(),
-          sex: sex || null,
-          date_of_birth: payload.basicProfile.dateOfBirth.trim() || null,
-          residential_address: payload.basicProfile.residentialAddress.trim() || null,
-          service_location:
-            payload.providerLocation.areaLabel.trim() ||
-            payload.basicProfile.serviceLocation.trim(),
-          service_radius_km: payload.providerLocation.radius,
-          bio: buildProviderBio(payload),
-          approval_status: "pending",
-          is_visible: true,
-        },
-        { onConflict: "id" },
-      );
+      .upsert(providerProfileWithAddressPayload, { onConflict: "id" });
+
+    providerProfileError = providerProfileWrite.error;
+
+    if (providerProfileError && isMissingColumnError(providerProfileError.message)) {
+      const fallbackWrite = await adminClient
+        .from("provider_profiles")
+        .upsert(baseProviderProfilePayload, { onConflict: "id" });
+
+      providerProfileError = fallbackWrite.error;
+    }
 
     if (providerProfileError) {
       return NextResponse.json(

@@ -178,6 +178,16 @@ export function createDefaultProviderRegistration(): ProviderRegistrationData {
     providerLocation: {
       radius: 15,
       areaLabel: "",
+      latitude: 3.139,
+      longitude: 101.6869,
+      formattedAddress: "",
+      road: "",
+      suburb: "",
+      city: "",
+      state: "",
+      postcode: "",
+      country: "",
+      houseNumber: "",
     },
     verification: {
       phoneOtp: ["", "", "", "", "", ""],

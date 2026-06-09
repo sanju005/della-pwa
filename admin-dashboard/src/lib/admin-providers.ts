@@ -18,6 +18,16 @@ type ProviderProfileRow = {
   sex?: string | null;
   date_of_birth?: string | null;
   service_location?: string | null;
+  formatted_address?: string | null;
+  road?: string | null;
+  suburb?: string | null;
+  city?: string | null;
+  state?: string | null;
+  postcode?: string | null;
+  country?: string | null;
+  house_number?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
   service_radius_km?: number | null;
   bio?: string | null;
   average_rating?: number | null;
@@ -105,6 +115,74 @@ type ProfileNameRow = {
   full_name: string | null;
   email: string | null;
 };
+
+const providerProfileSelectWithAddress = `
+  id,
+  marketing_name,
+  sex,
+  date_of_birth,
+  service_location,
+  formatted_address,
+  road,
+  suburb,
+  city,
+  state,
+  postcode,
+  country,
+  house_number,
+  latitude,
+  longitude,
+  service_radius_km,
+  bio,
+  average_rating,
+  total_reviews,
+  approval_status,
+  is_visible,
+  provider_services (
+    service_type,
+    years_experience,
+    hourly_rate,
+    daily_rate,
+    provider_service_specialties (
+      specialty
+    )
+  ),
+  provider_verifications (
+    phone_verified,
+    identity_verified,
+    kyc_verified,
+    background_check_verified
+  )
+`;
+
+const providerProfileSelectBase = `
+  id,
+  marketing_name,
+  sex,
+  date_of_birth,
+  service_location,
+  service_radius_km,
+  bio,
+  average_rating,
+  total_reviews,
+  approval_status,
+  is_visible,
+  provider_services (
+    service_type,
+    years_experience,
+    hourly_rate,
+    daily_rate,
+    provider_service_specialties (
+      specialty
+    )
+  ),
+  provider_verifications (
+    phone_verified,
+    identity_verified,
+    kyc_verified,
+    background_check_verified
+  )
+`;
 
 function relationItem<T>(value: T | T[] | null | undefined) {
   if (Array.isArray(value)) {
@@ -235,6 +313,27 @@ function humanizeService(value?: string | null) {
   return toTitleCase(value);
 }
 
+function buildProviderAreaLabel(profile: ProviderProfileRow) {
+  const cityStateCountry = [profile.city, profile.state, profile.country]
+    .map((value) => value?.trim() || "")
+    .filter(Boolean)
+    .join(", ");
+
+  if (cityStateCountry) {
+    return cityStateCountry;
+  }
+
+  if (profile.formatted_address?.trim()) {
+    return profile.formatted_address.trim();
+  }
+
+  if (profile.service_location?.trim()) {
+    return profile.service_location.trim();
+  }
+
+  return "Malaysia";
+}
+
 function mapTaskStatus(value?: string | null) {
   if (!value?.trim()) {
     return "Pending";
@@ -355,44 +454,27 @@ async function fetchProviderProfiles() {
     return null;
   }
 
-  const { data, error } = await supabase
+  const primary = await supabase
     .from("provider_profiles")
-    .select(`
-      id,
-      marketing_name,
-      sex,
-      date_of_birth,
-      service_location,
-      service_radius_km,
-      bio,
-      average_rating,
-      total_reviews,
-      approval_status,
-      is_visible,
-      provider_services (
-        service_type,
-        years_experience,
-        hourly_rate,
-        daily_rate,
-        provider_service_specialties (
-          specialty
-        )
-      ),
-      provider_verifications (
-        phone_verified,
-        identity_verified,
-        kyc_verified,
-        background_check_verified
-      )
-    `)
+    .select(providerProfileSelectWithAddress)
     .order("average_rating", { ascending: false })
     .limit(200);
 
-  if (error || !data?.length) {
+  if (!primary.error && primary.data?.length) {
+    return primary.data as ProviderProfileRow[];
+  }
+
+  const fallback = await supabase
+    .from("provider_profiles")
+    .select(providerProfileSelectBase)
+    .order("average_rating", { ascending: false })
+    .limit(200);
+
+  if (fallback.error || !fallback.data?.length) {
     return null;
   }
 
-  return data as ProviderProfileRow[];
+  return fallback.data as ProviderProfileRow[];
 }
 
 async function fetchProviderProfileById(providerId: string) {
@@ -400,44 +482,27 @@ async function fetchProviderProfileById(providerId: string) {
     return null;
   }
 
-  const { data, error } = await supabase
+  const primary = await supabase
     .from("provider_profiles")
-    .select(`
-      id,
-      marketing_name,
-      sex,
-      date_of_birth,
-      service_location,
-      service_radius_km,
-      bio,
-      average_rating,
-      total_reviews,
-      approval_status,
-      is_visible,
-      provider_services (
-        service_type,
-        years_experience,
-        hourly_rate,
-        daily_rate,
-        provider_service_specialties (
-          specialty
-        )
-      ),
-      provider_verifications (
-        phone_verified,
-        identity_verified,
-        kyc_verified,
-        background_check_verified
-      )
-    `)
+    .select(providerProfileSelectWithAddress)
     .eq("id", providerId)
     .maybeSingle();
 
-  if (error || !data) {
+  if (!primary.error && primary.data) {
+    return primary.data as ProviderProfileRow;
+  }
+
+  const fallback = await supabase
+    .from("provider_profiles")
+    .select(providerProfileSelectBase)
+    .eq("id", providerId)
+    .maybeSingle();
+
+  if (fallback.error || !fallback.data) {
     return null;
   }
 
-  return data as ProviderProfileRow;
+  return fallback.data as ProviderProfileRow;
 }
 
 async function fetchProviderAccountById(providerId: string) {
@@ -475,7 +540,7 @@ function mapProviderRow(liveProfile: ProviderProfileRow, liveAccount: ProviderAc
         ? Number(liveProfile.average_rating).toFixed(1)
         : mockRow?.rating || "0.0",
     status: formatStatus(liveAccount?.status ?? (liveProfile.is_visible === false ? "paused" : "active")),
-    zone: liveProfile.service_location?.trim() || mockRow?.zone || "Malaysia",
+    zone: buildProviderAreaLabel(liveProfile) || mockRow?.zone || "Malaysia",
     verification: formatStatus(liveProfile.approval_status) || mockRow?.verification || "Pending",
   };
 }
@@ -701,9 +766,9 @@ export async function getProviderProfileWithFallback(providerId: string): Promis
   const serviceAreas = fallback.serviceAreas.length
     ? fallback.serviceAreas.map((area, index) => ({
         ...area,
-        label: index === 0 ? liveProfile.service_location?.trim() || area.label : area.label,
+        label: index === 0 ? buildProviderAreaLabel(liveProfile) || area.label : area.label,
       }))
-    : [{ id: "live-sa-1", label: liveProfile.service_location?.trim() || "Malaysia", tag: "Primary" }];
+    : [{ id: "live-sa-1", label: buildProviderAreaLabel(liveProfile), tag: "Primary" }];
 
   const liveTasks = await tryFetchProviderTasks(providerId);
   const livePayments = await tryFetchProviderPayments(providerId);
@@ -739,7 +804,7 @@ export async function getProviderProfileWithFallback(providerId: string): Promis
     joinedAt: formatDateTime(liveAccount?.created_at) || fallback.joinedAt,
     lastLogin: fallback.lastLogin,
     serviceType: humanizeService(firstService?.service_type),
-    serviceArea: liveProfile.service_location?.trim() || fallback.serviceArea,
+    serviceArea: buildProviderAreaLabel(liveProfile) || fallback.serviceArea,
     rating: typeof liveProfile.average_rating === "number" ? liveProfile.average_rating.toFixed(1) : fallback.rating,
     ratingNote: `(${liveProfile.total_reviews ?? (Number(fallback.totalReviews) || 0)} reviews)`,
     phone: liveAccount?.phone?.trim() || fallback.phone,
