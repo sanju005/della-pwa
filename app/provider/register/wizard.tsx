@@ -1,7 +1,8 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useRef, useState, useTransition } from "react";
 
 import {
   availabilityDays,
@@ -250,7 +251,11 @@ export function ProviderRegistrationWizard() {
             <ProgressHeader current={stepIndex} total={steps.length} label={activeStep.label} />
 
             {activeStep.type === "basic" ? (
-              <BasicProfileStep data={data} updateBasic={updateBasic} />
+              <BasicProfileStep
+                data={data}
+                updateBasic={updateBasic}
+                setSubmitError={setSubmitError}
+              />
             ) : null}
             {activeStep.type === "account" ? (
               <AccountDetailsStep data={data} updateAccount={updateAccount} />
@@ -267,6 +272,7 @@ export function ProviderRegistrationWizard() {
                 details={data.serviceDetails[activeStep.service]}
                 onUpdate={updateServiceDetail}
                 onToggleSpecialty={toggleSpecialty}
+                setSubmitError={setSubmitError}
               />
             ) : null}
             {activeStep.type === "availability" ? (
@@ -288,7 +294,11 @@ export function ProviderRegistrationWizard() {
               <VerificationStep data={data} onUpdate={updateVerification} />
             ) : null}
             {activeStep.type === "identity" ? (
-              <IdentityStep data={data} onUpdate={updateVerification} />
+              <IdentityStep
+                data={data}
+                onUpdate={updateVerification}
+                setSubmitError={setSubmitError}
+              />
             ) : null}
             {activeStep.type === "success" ? (
               <SuccessStep data={data} registrationId={registrationId} />
@@ -320,24 +330,85 @@ export function ProviderRegistrationWizard() {
 function BasicProfileStep({
   data,
   updateBasic,
+  setSubmitError,
 }: {
   data: ProviderRegistrationData;
   updateBasic: (
     field: keyof ProviderRegistrationData["basicProfile"],
     value: string | number
   ) => void;
+  setSubmitError: (value: string) => void;
 }) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      setSubmitError("Please choose a JPG or PNG image for the profile photo.");
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      setSubmitError("Profile photo must be 2MB or smaller.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setSubmitError("");
+      updateBasic("profileImageName", file.name);
+      updateBasic(
+        "avatarDataUrl",
+        typeof reader.result === "string" ? reader.result : "",
+      );
+    };
+    reader.readAsDataURL(file);
+  };
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-4 rounded-[18px] bg-[#f8fbf8] p-4">
-        <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-[#eaf8ee] text-[#16a34a]">
-          <ProfilePhotoIcon className="h-8 w-8" />
+      <label className="block">
+        <span className="mb-2 block text-[15px] font-semibold text-[#111827]">
+          Profile Image
+        </span>
+        <div className="rounded-[18px] border border-[#d9e2dd] bg-white p-4 shadow-[0_8px_20px_rgba(15,23,42,0.03)]">
+          <div className="flex items-center gap-4">
+            <div className="relative flex h-18 w-18 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#eff9f0]">
+              {data.basicProfile.avatarDataUrl ? (
+                <Image
+                  src={data.basicProfile.avatarDataUrl}
+                  alt="Profile preview"
+                  fill
+                  unoptimized
+                  className="object-cover"
+                />
+              ) : (
+                <ProfilePhotoIcon className="h-8 w-8 text-[#16a34a]" />
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[14px] font-semibold text-[#111827]">
+                Add a profile photo
+              </p>
+              <p className="mt-1 text-[12px] text-[#6b7280]">
+                JPG or PNG, up to 2MB.
+              </p>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/jpg"
+                onChange={handleAvatarChange}
+                className="mt-3 block w-full text-[13px] text-[#4b5563] file:mr-3 file:rounded-[10px] file:border-0 file:bg-[#16a34a] file:px-3 file:py-2 file:font-bold file:text-white"
+              />
+            </div>
+          </div>
         </div>
-        <div>
-          <p className="text-[13px] font-semibold text-[#111827]">Profile Image</p>
-          <p className="mt-1 text-[12px] text-[#6b7280]">Select from phone</p>
-        </div>
-      </div>
+      </label>
 
       <InputField label="First Name" value={data.basicProfile.firstName} onChange={(value) => updateBasic("firstName", value)} />
       <InputField label="Last Name" value={data.basicProfile.lastName} onChange={(value) => updateBasic("lastName", value)} />
@@ -443,6 +514,7 @@ function ServiceDetailsStep({
   details,
   onUpdate,
   onToggleSpecialty,
+  setSubmitError,
 }: {
   service: ProviderService;
   details: ProviderRegistrationData["serviceDetails"][ProviderService];
@@ -452,6 +524,7 @@ function ServiceDetailsStep({
     value: string | string[]
   ) => void;
   onToggleSpecialty: (service: ProviderService, specialty: string) => void;
+  setSubmitError: (value: string) => void;
 }) {
   const specialties = serviceSpecialties[service];
 
@@ -482,14 +555,40 @@ function ServiceDetailsStep({
       </div>
 
       <AssetStrip
-        label="Images (3) with caption"
+        label="Service Images"
         captions={details.imageCaptions}
+        previews={details.imageDataUrls}
         tone="media"
+        onSelect={(index, fileName, dataUrl) => {
+          const nextNames = [...details.imageCaptions];
+          const nextDataUrls = [...details.imageDataUrls];
+
+          nextNames[index] = fileName;
+          nextDataUrls[index] = dataUrl;
+
+          setSubmitError("");
+          onUpdate(service, "imageCaptions", nextNames);
+          onUpdate(service, "imageDataUrls", nextDataUrls);
+        }}
+        setSubmitError={setSubmitError}
       />
       <AssetStrip
-        label="Certificates (3) with caption"
+        label="Certificates"
         captions={details.certificateCaptions}
+        previews={details.certificateDataUrls}
         tone="certificate"
+        onSelect={(index, fileName, dataUrl) => {
+          const nextNames = [...details.certificateCaptions];
+          const nextDataUrls = [...details.certificateDataUrls];
+
+          nextNames[index] = fileName;
+          nextDataUrls[index] = dataUrl;
+
+          setSubmitError("");
+          onUpdate(service, "certificateCaptions", nextNames);
+          onUpdate(service, "certificateDataUrls", nextDataUrls);
+        }}
+        setSubmitError={setSubmitError}
       />
 
       <div>
@@ -682,12 +781,14 @@ function VerificationStep({
 function IdentityStep({
   data,
   onUpdate,
+  setSubmitError,
 }: {
   data: ProviderRegistrationData;
   onUpdate: (
     field: keyof ProviderRegistrationData["verification"],
     value: string | string[]
   ) => void;
+  setSubmitError: (value: string) => void;
 }) {
   return (
     <div className="space-y-4">
@@ -700,12 +801,24 @@ function IdentityStep({
       <UploadCard
         label="Upload Document (Front)"
         fileName={data.verification.frontImageName}
-        onSelect={(value) => onUpdate("frontImageName", value)}
+        preview={data.verification.frontImageDataUrl}
+        onSelect={(fileName, dataUrl) => {
+          setSubmitError("");
+          onUpdate("frontImageName", fileName);
+          onUpdate("frontImageDataUrl", dataUrl);
+        }}
+        setSubmitError={setSubmitError}
       />
       <UploadCard
         label="Upload Document (Back)"
         fileName={data.verification.backImageName}
-        onSelect={(value) => onUpdate("backImageName", value)}
+        preview={data.verification.backImageDataUrl}
+        onSelect={(fileName, dataUrl) => {
+          setSubmitError("");
+          onUpdate("backImageName", fileName);
+          onUpdate("backImageDataUrl", dataUrl);
+        }}
+        setSubmitError={setSubmitError}
       />
     </div>
   );
@@ -949,29 +1062,114 @@ function RangeField({
 function AssetStrip({
   label,
   captions,
+  previews,
   tone,
+  onSelect,
+  setSubmitError,
 }: {
   label: string;
   captions: string[];
+  previews: string[];
   tone: "media" | "certificate";
+  onSelect: (index: number, fileName: string, dataUrl: string) => void;
+  setSubmitError: (value: string) => void;
 }) {
   return (
     <div>
       <p className="mb-2 text-[13px] font-semibold text-[#111827]">{label}</p>
-      <div className="grid grid-cols-4 gap-2">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         {captions.map((caption, index) => (
-          <div key={caption} className="text-center">
-            <div className={`h-16 rounded-[12px] border border-[#e1e9e4] ${tone === "media" ? mediaThumbClasses(index) : "bg-[linear-gradient(180deg,#fffaf4_0%,#f7efe5_100%)]"} shadow-[0_8px_18px_rgba(15,23,42,0.03)]`} />
-            <p className="mt-1 text-[11px] text-[#374151]">{caption}</p>
-          </div>
+          <AssetUploadSlot
+            key={`${label}-${index}`}
+            index={index}
+            fileName={caption}
+            preview={previews[index] ?? ""}
+            tone={tone}
+            onSelect={onSelect}
+            setSubmitError={setSubmitError}
+          />
         ))}
-        <button
-          type="button"
-          className="flex h-16 items-center justify-center rounded-[12px] border border-[#dfe8e2] bg-[#f8fbf8] text-[#16a34a]"
-        >
-          <PlusIcon className="h-5 w-5" />
-        </button>
       </div>
+    </div>
+  );
+}
+
+function AssetUploadSlot({
+  index,
+  fileName,
+  preview,
+  tone,
+  onSelect,
+  setSubmitError,
+}: {
+  index: number;
+  fileName: string;
+  preview: string;
+  tone: "media" | "certificate";
+  onSelect: (index: number, fileName: string, dataUrl: string) => void;
+  setSubmitError: (value: string) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      setSubmitError("Please choose a JPG or PNG image.");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setSubmitError("Each upload must be 5MB or smaller.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      onSelect(index, file.name, typeof reader.result === "string" ? reader.result : "");
+    };
+    reader.readAsDataURL(file);
+  };
+
+  return (
+    <div className="rounded-[14px] border border-[#dfe8e2] bg-white p-3 shadow-[0_8px_18px_rgba(15,23,42,0.03)]">
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/png,image/jpeg,image/jpg"
+        onChange={handleChange}
+        className="hidden"
+      />
+      <button
+        type="button"
+        onClick={() => inputRef.current?.click()}
+        className="w-full text-left"
+      >
+        <div
+          className={`relative flex h-24 items-center justify-center overflow-hidden rounded-[12px] border border-[#e1e9e4] ${
+            preview ? "bg-white" : "bg-[#f8fbf8]"
+          }`}
+        >
+          {preview ? (
+            <Image
+              src={preview}
+              alt={fileName || `Upload ${index + 1}`}
+              fill
+              unoptimized
+              className="object-cover"
+            />
+          ) : (
+            <PlusIcon className="h-6 w-6 text-[#16a34a]" />
+          )}
+        </div>
+        <p className="mt-2 truncate text-[12px] font-semibold text-[#111827]">
+          {fileName || `Upload ${tone === "media" ? "image" : "certificate"} ${index + 1}`}
+        </p>
+      </button>
     </div>
   );
 }
@@ -1043,24 +1241,80 @@ function OtpGroup({
 function UploadCard({
   label,
   fileName,
+  preview,
   onSelect,
+  setSubmitError,
 }: {
   label: string;
   fileName: string;
-  onSelect: (value: string) => void;
+  preview: string;
+  onSelect: (fileName: string, dataUrl: string) => void;
+  setSubmitError: (value: string) => void;
 }) {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      setSubmitError("Please choose a JPG or PNG image.");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setSubmitError("Each upload must be 5MB or smaller.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      onSelect(file.name, typeof reader.result === "string" ? reader.result : "");
+    };
+    reader.readAsDataURL(file);
+  };
+
   return (
     <div>
       <p className="mb-2 text-[13px] font-semibold text-[#111827]">{label}</p>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/png,image/jpeg,image/jpg"
+        onChange={handleChange}
+        className="hidden"
+      />
       <button
         type="button"
-        onClick={() => onSelect(fileName)}
+        onClick={() => inputRef.current?.click()}
         className="flex h-32 w-full flex-col items-center justify-center rounded-[16px] border border-[#dfe8e2] bg-[linear-gradient(180deg,#fcfffd_0%,#f3fbf4_100%)]"
       >
-        <UploadIcon className="h-8 w-8 text-[#16a34a]" />
-        <p className="mt-3 text-[14px] font-bold text-[#111827]">Upload Image</p>
-        <p className="mt-1 text-[12px] text-[#6b7280]">JPG, PNG (Max 5MB)</p>
+        {preview ? (
+          <div className="relative h-full w-full overflow-hidden rounded-[16px]">
+            <Image
+              src={preview}
+              alt={fileName || label}
+              fill
+              unoptimized
+              className="object-cover"
+            />
+          </div>
+        ) : (
+          <>
+            <UploadIcon className="h-8 w-8 text-[#16a34a]" />
+            <p className="mt-3 text-[14px] font-bold text-[#111827]">Upload Image</p>
+            <p className="mt-1 text-[12px] text-[#6b7280]">JPG, PNG (Max 5MB)</p>
+          </>
+        )}
       </button>
+      {fileName ? (
+        <p className="mt-2 truncate text-[12px] font-semibold text-[#111827]">
+          {fileName}
+        </p>
+      ) : null}
     </div>
   );
 }

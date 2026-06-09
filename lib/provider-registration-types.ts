@@ -16,7 +16,9 @@ export type ProviderServiceDetails = {
   yearsExperience: string;
   specialties: string[];
   imageCaptions: string[];
+  imageDataUrls: string[];
   certificateCaptions: string[];
+  certificateDataUrls: string[];
   hourlyRate: string;
   dailyRate: string;
 };
@@ -27,6 +29,7 @@ export type ProviderRegistrationData = {
     lastName: string;
     sex: "" | "Male" | "Female";
     profileImageName: string;
+    avatarDataUrl: string;
     marketingName: string;
     dateOfBirth: string;
     residentialAddress: string;
@@ -57,7 +60,9 @@ export type ProviderRegistrationData = {
     emailOtp: string[];
     documentType: string;
     frontImageName: string;
+    frontImageDataUrl: string;
     backImageName: string;
+    backImageDataUrl: string;
   };
 };
 

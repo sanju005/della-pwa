@@ -227,6 +227,7 @@ export async function POST(request: Request) {
         email: payload.account.email.trim().toLowerCase(),
         role: "provider",
         phone: normalizedPhone,
+        avatar_url: payload.basicProfile.avatarDataUrl?.trim() || null,
         status: "pending",
       }, { onConflict: "id" });
 
