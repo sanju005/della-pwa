@@ -109,17 +109,17 @@ export async function getDashboardSnapshot(): Promise<DashboardSnapshot> {
       case "Total Users":
         return {
           ...metric,
-          value: formatCompactNumber(totalUsers ?? Number(metric.value.replace(/[^\d]/g, "")) || 0),
+          value: formatCompactNumber(totalUsers ?? (Number(metric.value.replace(/[^\d]/g, "")) || 0)),
         };
       case "Service Providers":
         return {
           ...metric,
-          value: formatCompactNumber(providerCount ?? Number(metric.value.replace(/[^\d]/g, "")) || 0),
+          value: formatCompactNumber(providerCount ?? (Number(metric.value.replace(/[^\d]/g, "")) || 0)),
         };
       case "Active Tasks":
         return {
           ...metric,
-          value: formatCompactNumber(activeTasks ?? Number(metric.value.replace(/[^\d]/g, "")) || 0),
+          value: formatCompactNumber(activeTasks ?? (Number(metric.value.replace(/[^\d]/g, "")) || 0)),
         };
       case "Total Payments":
         return {
@@ -129,13 +129,13 @@ export async function getDashboardSnapshot(): Promise<DashboardSnapshot> {
       case "Pending Approvals":
         return {
           ...metric,
-          value: formatCompactNumber(pendingApprovals ?? Number(metric.value.replace(/[^\d]/g, "")) || 0),
+          value: formatCompactNumber(pendingApprovals ?? (Number(metric.value.replace(/[^\d]/g, "")) || 0)),
         };
       case "Open Complaints":
         return {
           ...metric,
           value: formatCompactNumber(
-            liveComplaintsOpen ?? fallbackComplaintCount() ?? Number(metric.value.replace(/[^\d]/g, "")) || 0
+            liveComplaintsOpen ?? fallbackComplaintCount() ?? (Number(metric.value.replace(/[^\d]/g, "")) || 0)
           ),
         };
       default:

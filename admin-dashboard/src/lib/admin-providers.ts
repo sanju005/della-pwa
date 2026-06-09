@@ -15,6 +15,8 @@ import type {
 type ProviderProfileRow = {
   id: string;
   marketing_name?: string | null;
+  sex?: string | null;
+  date_of_birth?: string | null;
   service_location?: string | null;
   service_radius_km?: number | null;
   bio?: string | null;
@@ -177,6 +179,35 @@ function formatDateTime(value: string | null | undefined) {
   }).format(date);
 }
 
+function formatDateOfBirth(value: string | null | undefined) {
+  if (!value) {
+    return "";
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  const now = new Date();
+  let age = now.getFullYear() - date.getFullYear();
+  const hasBirthdayPassed =
+    now.getMonth() > date.getMonth() ||
+    (now.getMonth() === date.getMonth() && now.getDate() >= date.getDate());
+
+  if (!hasBirthdayPassed) {
+    age -= 1;
+  }
+
+  const dateLabel = new Intl.DateTimeFormat("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }).format(date);
+
+  return age >= 0 ? `${dateLabel} (${age} years)` : dateLabel;
+}
+
 function formatSchedule(dateValue?: string | null, timeValue?: string | null) {
   if (!dateValue) {
     return "Upcoming task";
@@ -329,6 +360,8 @@ async function fetchProviderProfiles() {
     .select(`
       id,
       marketing_name,
+      sex,
+      date_of_birth,
       service_location,
       service_radius_km,
       bio,
@@ -372,6 +405,8 @@ async function fetchProviderProfileById(providerId: string) {
     .select(`
       id,
       marketing_name,
+      sex,
+      date_of_birth,
       service_location,
       service_radius_km,
       bio,
@@ -708,6 +743,11 @@ export async function getProviderProfileWithFallback(providerId: string): Promis
     rating: typeof liveProfile.average_rating === "number" ? liveProfile.average_rating.toFixed(1) : fallback.rating,
     ratingNote: `(${liveProfile.total_reviews ?? (Number(fallback.totalReviews) || 0)} reviews)`,
     phone: liveAccount?.phone?.trim() || fallback.phone,
+    dob: formatDateOfBirth(liveProfile.date_of_birth) || fallback.dob,
+    gender:
+      liveProfile.sex === "Male" || liveProfile.sex === "Female"
+        ? liveProfile.sex
+        : fallback.gender,
     about: liveProfile.bio?.trim() || fallback.about,
     approvalStatus: formatStatus(liveProfile.approval_status),
     backgroundCheck: verification?.background_check_verified ? "Verified" : fallback.backgroundCheck,

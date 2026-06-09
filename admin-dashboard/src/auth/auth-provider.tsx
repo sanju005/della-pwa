@@ -142,12 +142,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     let cancelled = false;
+    const activeSession = session;
+    const activeSupabase = supabase;
 
     async function loadProfile() {
-      const { data, error } = await supabase
+      const { data, error } = await activeSupabase
         .from("profiles")
         .select("id, full_name, email, role, status")
-        .eq("id", session.user.id)
+        .eq("id", activeSession.user.id)
         .maybeSingle();
 
       if (cancelled) {

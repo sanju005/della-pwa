@@ -243,6 +243,9 @@ export async function POST(request: Request) {
         {
           id: providerId,
           marketing_name: payload.basicProfile.marketingName.trim(),
+          sex: sex || null,
+          date_of_birth: payload.basicProfile.dateOfBirth.trim() || null,
+          residential_address: payload.basicProfile.residentialAddress.trim() || null,
           service_location:
             payload.providerLocation.areaLabel.trim() ||
             payload.basicProfile.serviceLocation.trim(),

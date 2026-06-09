@@ -222,11 +222,7 @@ export function ProviderRegistrationWizard() {
     <main className="min-h-[100dvh] overflow-x-hidden bg-[#f6fff8]">
       <div className="mx-auto flex min-h-[100dvh] w-full max-w-[430px] flex-col px-4 py-4 sm:justify-center">
         <div className="safe-top safe-bottom-lg overflow-hidden rounded-[34px] border border-[#dbe8df] bg-white shadow-[0_20px_60px_rgba(22,163,74,0.08)]">
-          <div className="px-5 pt-3">
-            <StatusBar />
-          </div>
-
-          <div className="px-5 pb-6 pt-3">
+          <div className="px-5 pb-6 pt-5">
             <div className="mb-5 flex items-center gap-3">
               {stepIndex > 0 ? (
                 <button
@@ -722,9 +718,6 @@ function SuccessStep({
   data: ProviderRegistrationData;
   registrationId: string;
 }) {
-  const firstService = data.selectedServices[0] ?? "Chef";
-  const firstDetails = data.serviceDetails[firstService];
-
   return (
     <div className="space-y-6">
       <div className="rounded-[20px] border border-[#e4ece7] bg-white p-5 text-center shadow-[0_10px_26px_rgba(15,23,42,0.04)]">
@@ -735,51 +728,56 @@ function SuccessStep({
           Congratulations!
         </h2>
         <p className="mt-2 text-[14px] leading-6 text-[#4b5563]">
-          Your profile has been submitted and is now live, pending admin approval.
+          Your provider registration has been submitted successfully.
         </p>
       </div>
 
       <div className="rounded-[20px] border border-[#e4ece7] bg-[linear-gradient(180deg,#fcfffd_0%,#f4fbf5_100%)] p-5 shadow-[0_10px_26px_rgba(15,23,42,0.04)]">
         <h3 className="text-[22px] font-extrabold tracking-[-0.04em] text-[#16a34a]">
-          How Your Listing Appears
+          Registration Summary
         </h3>
         <p className="mt-1 text-[13px] text-[#4b5563]">
-          Your listing will be visible even before verification is complete.
+          These are the actual details sent from this form.
         </p>
 
-        <div className="mt-4 grid gap-4">
-          <ListingCard
-            title="Unverified Listing (No Badges)"
-            service={firstService}
-            marketingName={data.basicProfile.marketingName}
-            location={data.providerLocation.areaLabel}
-            radius={data.providerLocation.radius}
-            hourlyRate={firstDetails.hourlyRate}
-            dailyRate={firstDetails.dailyRate}
-            specialties={firstDetails.specialties}
-            showBadges={false}
-          />
-          <ListingCard
-            title="Verified Listing (With Badges)"
-            service={firstService}
-            marketingName={data.basicProfile.marketingName}
-            location={data.providerLocation.areaLabel}
-            radius={data.providerLocation.radius}
-            hourlyRate={firstDetails.hourlyRate}
-            dailyRate={firstDetails.dailyRate}
-            specialties={firstDetails.specialties}
-            showBadges
-          />
+        <div className="mt-4 rounded-[16px] border border-[#bfe8c9] bg-white p-4">
+          <div className="space-y-3 text-[13px] text-[#374151]">
+            <ReviewLine
+              icon={<UserIcon className="h-4 w-4" />}
+              text={getProviderFullName(data) || "No name provided"}
+            />
+            <ReviewLine
+              icon={<PinIcon className="h-4 w-4" />}
+              text={data.providerLocation.areaLabel || data.basicProfile.serviceLocation || "No service area selected"}
+            />
+            <ReviewLine
+              icon={<RangeIcon className="h-4 w-4" />}
+              text={`${data.providerLocation.radius} KM service radius`}
+            />
+            <ReviewLine
+              icon={<PhoneIcon className="h-4 w-4" />}
+              text={`${data.account.phoneCountryCode} ${data.account.phoneNumber}`}
+            />
+            <ReviewLine
+              icon={<CheckIcon className="h-4 w-4" />}
+              text={`Registration ID: ${registrationId || "Pending"}`}
+            />
+          </div>
         </div>
 
-        <div className="mt-4 rounded-[16px] border border-[#bfe8c9] bg-white p-4">
-          <h4 className="text-[15px] font-extrabold text-[#16a34a]">Verification Badges</h4>
-          <p className="mt-1 text-[13px] text-[#4b5563]">
-            After verification, these badges will appear on your listing.
-          </p>
-          <div className="mt-4 space-y-3">
-            <BadgeLine label="Phone number verified" />
-            <BadgeLine label="IC/PP Verified" />
+        <div className="mt-4 rounded-[16px] border border-[#dfe8e2] bg-white p-4">
+          <h4 className="text-[15px] font-extrabold text-[#111827]">Selected Services</h4>
+          <div className="mt-3 space-y-2">
+            {data.selectedServices.map((service) => {
+              const details = data.serviceDetails[service];
+
+              return (
+                <p key={service} className="text-[13px] text-[#374151]">
+                  {service}: RM{details.hourlyRate || "0"}/hr, RM
+                  {details.dailyRate || "0"}/day
+                </p>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -1067,99 +1065,6 @@ function UploadCard({
   );
 }
 
-function ListingCard({
-  title,
-  marketingName,
-  service,
-  location,
-  radius,
-  hourlyRate,
-  dailyRate,
-  specialties,
-  showBadges,
-}: {
-  title: string;
-  marketingName: string;
-  service: ProviderService;
-  location: string;
-  radius: number;
-  hourlyRate: string;
-  dailyRate: string;
-  specialties: string[];
-  showBadges: boolean;
-}) {
-  return (
-    <div>
-      <p className="mb-2 text-[13px] font-semibold text-[#111827]">{title}</p>
-      <div className="rounded-[18px] border border-[#dfe8e2] bg-white p-4 shadow-[0_8px_18px_rgba(15,23,42,0.04)]">
-        <div className="flex items-start gap-3">
-          <div className="h-14 w-14 rounded-full bg-[linear-gradient(180deg,#d1d5db_0%,#6b7280_100%)]" />
-          <div className="min-w-0 flex-1">
-            <div className="flex items-start justify-between gap-2">
-              <div>
-                <h4 className="text-[16px] font-extrabold text-[#111827]">{marketingName}</h4>
-                <p className="text-[13px] text-[#4b5563]">{service}</p>
-              </div>
-              <DotsVerticalIcon className="h-4 w-4 text-[#6b7280]" />
-            </div>
-            <div className="mt-2 flex items-center gap-2 text-[12px] text-[#6b7280]">
-              <PinIcon className="h-3.5 w-3.5" />
-              {location}
-              <span>-</span>
-              {radius} KM
-            </div>
-            {showBadges ? (
-              <div className="mt-2 flex flex-wrap gap-2">
-                <VerifiedBadge label="Phone Verified" />
-                <VerifiedBadge label="IC/PP Verified" />
-              </div>
-            ) : null}
-            <div className="mt-3 flex items-center gap-1 text-[14px] font-bold text-[#111827]">
-              <StarIcon className="h-4 w-4 text-[#f59e0b]" />
-              4.8 <span className="text-[12px] font-medium text-[#6b7280]">(251)</span>
-            </div>
-            <p className="mt-2 text-[13px] text-[#111827]">
-              RM{hourlyRate}/hr - RM{dailyRate}/day
-            </p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {specialties.slice(0, 3).map((specialty) => (
-                <span key={specialty} className="rounded-full bg-[#eff9f0] px-2.5 py-1 text-[11px] font-semibold text-[#16a34a]">
-                  {specialty}
-                </span>
-              ))}
-            </div>
-            <div className="mt-3 grid grid-cols-3 gap-2">
-              <div className="h-16 rounded-[10px] bg-[linear-gradient(135deg,#d97706_0%,#78350f_100%)]" />
-              <div className="h-16 rounded-[10px] bg-[linear-gradient(135deg,#92400e_0%,#f59e0b_100%)]" />
-              <div className="h-16 rounded-[10px] bg-[linear-gradient(135deg,#f59e0b_0%,#7c2d12_100%)]" />
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function VerifiedBadge({ label }: { label: string }) {
-  return (
-    <span className="inline-flex items-center gap-1 rounded-full bg-[#e9f9ec] px-2 py-1 text-[11px] font-bold text-[#16a34a]">
-      <CheckCircleFilledIcon className="h-3.5 w-3.5" />
-      {label}
-    </span>
-  );
-}
-
-function BadgeLine({ label }: { label: string }) {
-  return (
-    <div className="flex items-center gap-2 text-[13px] font-semibold text-[#111827]">
-      <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-[#eff9f0] text-[#16a34a]">
-        <CheckCircleFilledIcon className="h-4 w-4" />
-      </span>
-      {label}
-    </div>
-  );
-}
-
 function buttonLabel(step: FlowStep) {
   switch (step.type) {
     case "service-detail":
@@ -1254,26 +1159,6 @@ function mediaThumbClasses(index: number) {
   return classes[index] ?? "bg-[linear-gradient(135deg,#d1d5db_0%,#9ca3af_100%)]";
 }
 
-function StatusBar() {
-  return (
-    <div className="flex items-center justify-between text-[15px] font-semibold text-[#111827]">
-      <span>9:41</span>
-      <div className="flex items-center gap-1.5">
-        <span className="flex gap-0.5">
-          <span className="h-2 w-1 rounded-full bg-[#111827]/65" />
-          <span className="h-2.5 w-1 rounded-full bg-[#111827]/75" />
-          <span className="h-3 w-1 rounded-full bg-[#111827]/85" />
-          <span className="h-3.5 w-1 rounded-full bg-[#111827]" />
-        </span>
-        <WifiIcon className="h-4 w-4 text-[#111827]" />
-        <span className="h-3.5 w-6 rounded-[4px] border border-[#111827] p-[1px]">
-          <span className="block h-full w-[72%] rounded-[2px] bg-[#111827]" />
-        </span>
-      </div>
-    </div>
-  );
-}
-
 function iconClass(className?: string) {
   return className ?? "h-5 w-5";
 }
@@ -1354,16 +1239,6 @@ function PhoneIcon({ className }: { className?: string }) {
   );
 }
 
-function WifiIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={iconClass(className)}>
-      <path d="M5 9a12 12 0 0 1 14 0" strokeLinecap="round" />
-      <path d="M8 12.5a7 7 0 0 1 8 0" strokeLinecap="round" />
-      <path d="M11 16a2 2 0 0 1 2 0" strokeLinecap="round" />
-    </svg>
-  );
-}
-
 function PlusIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" className={iconClass(className)}>
@@ -1381,29 +1256,11 @@ function UploadIcon({ className }: { className?: string }) {
   );
 }
 
-function StarIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" className={iconClass(className)}>
-      <path d="m12 2 2.6 5.6 6.1.7-4.5 4.2 1.2 6-5.4-3-5.4 3 1.2-6L3.3 8.3l6.1-.7L12 2Z" />
-    </svg>
-  );
-}
-
 function RangeIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={iconClass(className)}>
       <path d="M4 12h16" strokeLinecap="round" />
       <circle cx="12" cy="12" r="3" />
-    </svg>
-  );
-}
-
-function DotsVerticalIcon({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" className={iconClass(className)}>
-      <circle cx="12" cy="5" r="1.8" />
-      <circle cx="12" cy="12" r="1.8" />
-      <circle cx="12" cy="19" r="1.8" />
     </svg>
   );
 }
