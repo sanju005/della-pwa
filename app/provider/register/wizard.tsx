@@ -978,23 +978,27 @@ function ProviderLocationStep({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between rounded-[14px] border border-[#dfe8e2] bg-[#f6fbf7] p-3">
-        <div className="min-w-0">
-          <p className="text-[13px] font-semibold text-[#111827]">
-            {data.providerLocation.areaLabel || "Current location not loaded yet."}
-          </p>
-          <p className="mt-1 text-[12px] text-[#6b7280]">
-            Providers will be visible to users inside this service radius.
-          </p>
+      <div className="rounded-[14px] border border-[#dfe8e2] bg-[#f6fbf7] p-4">
+        <div className="space-y-3">
+          <div className="min-w-0">
+            <p className="text-[13px] font-semibold leading-6 text-[#111827] break-words">
+              {isResolvingAddress
+                ? "Updating address..."
+                : data.providerLocation.areaLabel || "Current location not loaded yet."}
+            </p>
+            <p className="mt-1 text-[12px] leading-5 text-[#6b7280]">
+              Providers will be visible to users inside this service radius.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={requestCurrentLocation}
+            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-[12px] bg-white px-4 text-[13px] font-bold text-[#16a34a] shadow-[0_8px_20px_rgba(15,23,42,0.03)] sm:w-auto"
+          >
+            <PinIcon className="h-4 w-4" />
+            {isLocating ? "Locating..." : "Use Current Location"}
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={requestCurrentLocation}
-          className="ml-3 inline-flex shrink-0 items-center gap-2 rounded-full bg-white px-3 py-2 text-[12px] font-bold text-[#16a34a] shadow-[0_8px_20px_rgba(15,23,42,0.03)]"
-        >
-          <PinIcon className="h-4 w-4" />
-          {isLocating ? "Locating..." : "Use Current Location"}
-        </button>
       </div>
 
       <div className="overflow-hidden rounded-[18px] border border-[#dfe8e2] bg-[linear-gradient(180deg,#f7fbf7_0%,#eff7ef_100%)]">
