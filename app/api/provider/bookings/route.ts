@@ -179,6 +179,31 @@ function providerStatusLabel(status: BookingRow["booking_status"]) {
   }
 }
 
+function customerStatusLabel(status: BookingRow["booking_status"]) {
+  switch (status) {
+    case "pending":
+      return "Request Sent";
+    case "accepted":
+      return "Confirmed";
+    case "on_the_way":
+      return "On the Way";
+    case "arrived":
+      return "Arrived";
+    case "completed":
+      return "Task Completed";
+    case "paid":
+      return "Paid";
+    case "review_requested":
+      return "Review";
+    case "reviewed":
+      return "Reviewed";
+    case "declined":
+      return "Declined";
+    case "cancelled":
+      return "Cancelled";
+  }
+}
+
 function toBucket(status: BookingRow["booking_status"]) {
   if (status === "pending") {
     return "requests";
@@ -277,6 +302,7 @@ export async function GET(request: Request) {
       bookingMode: row.booking_mode,
       bookingStatus: row.booking_status,
       statusLabel: providerStatusLabel(row.booking_status),
+      customerStatusLabel: customerStatusLabel(row.booking_status),
       bucket: toBucket(row.booking_status),
       scheduledDate: row.scheduled_date,
       scheduledStartTime: row.scheduled_start_time,

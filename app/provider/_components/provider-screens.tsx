@@ -210,6 +210,13 @@ export function DashboardScreen() {
 
   const data = state.data!;
   const pendingRequest = state.bookings.find((booking) => booking.bucket === "requests") ?? null;
+  const acceptedBookings = state.bookings.filter((booking) => booking.bookingStatus === "accepted");
+  const ongoingBookings = state.bookings.filter(
+    (booking) => booking.bookingStatus === "on_the_way" || booking.bookingStatus === "arrived",
+  );
+  const confirmedBookings = state.bookings.filter(
+    (booking) => booking.customerStatusLabel === "Confirmed",
+  );
   const todayKey = getTodayKey();
   const todayBookings = state.bookings
     .filter(
@@ -347,6 +354,42 @@ export function DashboardScreen() {
           <div className="flex items-center justify-between gap-3">
             <div>
               <h2 className="text-[17px] font-black tracking-[-0.04em] text-[#0f172a]">
+                Task Status
+              </h2>
+              <p className="mt-1 text-[13px] text-[#64748b]">
+                Synced with the same live booking flow used by customer tasks.
+              </p>
+            </div>
+            <Link href="/provider/bookings" className="text-[13px] font-bold text-[#16a34a]">
+              Open bookings
+            </Link>
+          </div>
+          <div className="mt-4 grid grid-cols-3 gap-3">
+            <MetricCard
+              label="Accepted"
+              value={String(acceptedBookings.length)}
+              meta="Ready to start"
+              accent="text-[#0f172a]"
+            />
+            <MetricCard
+              label="Ongoing Task"
+              value={String(ongoingBookings.length)}
+              meta="On the way / arrived"
+              accent="text-[#0f172a]"
+            />
+            <MetricCard
+              label="Confirmed"
+              value={String(confirmedBookings.length)}
+              meta="What users see"
+              accent="text-[#0f172a]"
+            />
+          </div>
+        </section>
+
+        <section className="rounded-[26px] bg-white p-5 shadow-[0_18px_44px_rgba(15,23,42,0.08)] ring-1 ring-[#e6eee8]">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-[17px] font-black tracking-[-0.04em] text-[#0f172a]">
                 New Booking Request
               </h2>
               <p className="mt-1 text-[13px] text-[#64748b]">
@@ -418,6 +461,138 @@ export function DashboardScreen() {
               />
             </div>
           )}
+        </section>
+
+        <section className="rounded-[26px] bg-white p-5 shadow-[0_18px_44px_rgba(15,23,42,0.08)] ring-1 ring-[#e6eee8]">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-[17px] font-black tracking-[-0.04em] text-[#0f172a]">
+                Accepted Tasks
+              </h2>
+              <p className="mt-1 text-[13px] text-[#64748b]">
+                Accepted by provider. Customers see these as confirmed tasks.
+              </p>
+            </div>
+            <span className="rounded-full bg-[#eef9f1] px-3 py-1 text-[12px] font-bold text-[#16a34a]">
+              {acceptedBookings.length}
+            </span>
+          </div>
+          <div className="mt-4 space-y-3">
+            {acceptedBookings.length === 0 ? (
+              <EmptyState
+                title="No accepted tasks"
+                description="Accepted jobs will appear here before you start the trip."
+                icon={<BriefcaseBusiness className="h-6 w-6" />}
+              />
+            ) : (
+              acceptedBookings.slice(0, 3).map((booking) => (
+                <div
+                  key={booking.id}
+                  className="rounded-[20px] border border-[#e7eee8] bg-[#fbfffc] p-4"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-[14px] font-black text-[#0f172a]">{booking.serviceLabel}</p>
+                      <p className="mt-1 text-[12px] text-[#64748b]">{booking.customerName}</p>
+                    </div>
+                    <StatusBadge label={booking.customerStatusLabel} tone="accepted" />
+                  </div>
+                  <div className="mt-3 space-y-2 text-[13px] text-[#475569]">
+                    <div className="flex items-center gap-2">
+                      <CalendarDays className="h-4 w-4 text-[#16a34a]" />
+                      <span>{booking.schedule}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <MapPin className="h-4 w-4 text-[#16a34a]" />
+                      <span>{booking.location}</span>
+                    </div>
+                  </div>
+                  <div className="mt-4">
+                    <AppButton
+                      className="w-full"
+                      disabled={state.actionBookingId === booking.id}
+                      onClick={() =>
+                        state.handleBookingAction(
+                          booking.id,
+                          "on_the_way",
+                          "Provider started travel to customer",
+                        )
+                      }
+                    >
+                      Start Task
+                    </AppButton>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </section>
+
+        <section className="rounded-[26px] bg-white p-5 shadow-[0_18px_44px_rgba(15,23,42,0.08)] ring-1 ring-[#e6eee8]">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-[17px] font-black tracking-[-0.04em] text-[#0f172a]">
+                Ongoing Tasks
+              </h2>
+              <p className="mt-1 text-[13px] text-[#64748b]">
+                Active jobs already in progress.
+              </p>
+            </div>
+            <span className="rounded-full bg-[#eef9f1] px-3 py-1 text-[12px] font-bold text-[#16a34a]">
+              {ongoingBookings.length}
+            </span>
+          </div>
+          <div className="mt-4 space-y-3">
+            {ongoingBookings.length === 0 ? (
+              <EmptyState
+                title="No ongoing tasks"
+                description="Jobs that are on the way or already arrived will show here."
+                icon={<Clock3 className="h-6 w-6" />}
+              />
+            ) : (
+              ongoingBookings.slice(0, 3).map((booking) => (
+                <div
+                  key={booking.id}
+                  className="rounded-[20px] border border-[#e7eee8] bg-[#fbfffc] p-4"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-[14px] font-black text-[#0f172a]">{booking.serviceLabel}</p>
+                      <p className="mt-1 text-[12px] text-[#64748b]">{booking.customerName}</p>
+                    </div>
+                    <StatusBadge label={booking.statusLabel} tone={providerStatusTone(booking.bookingStatus)} />
+                  </div>
+                  <div className="mt-3 space-y-2 text-[13px] text-[#475569]">
+                    <div className="flex items-center gap-2">
+                      <CalendarDays className="h-4 w-4 text-[#16a34a]" />
+                      <span>{booking.schedule}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <MapPin className="h-4 w-4 text-[#16a34a]" />
+                      <span>{booking.location}</span>
+                    </div>
+                  </div>
+                  <div className="mt-4">
+                    <AppButton
+                      className="w-full"
+                      disabled={state.actionBookingId === booking.id}
+                      onClick={() =>
+                        state.handleBookingAction(
+                          booking.id,
+                          booking.bookingStatus === "on_the_way" ? "arrived" : "completed",
+                          booking.bookingStatus === "on_the_way"
+                            ? "Provider arrived at customer location"
+                            : "Provider completed task",
+                        )
+                      }
+                    >
+                      {booking.bookingStatus === "on_the_way" ? "Mark Arrived" : "Mark Completed"}
+                    </AppButton>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
         </section>
 
         <section className="rounded-[26px] bg-white p-5 shadow-[0_18px_44px_rgba(15,23,42,0.08)] ring-1 ring-[#e6eee8]">

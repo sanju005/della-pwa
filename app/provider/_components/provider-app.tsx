@@ -73,6 +73,7 @@ export type ProviderBookingItem = {
   declineReason: string;
   quotedAmount: number;
   createdAt: string;
+  customerStatusLabel: string;
 };
 
 export type ProviderNotificationItem = {
