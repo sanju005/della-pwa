@@ -87,6 +87,7 @@ function isMissingColumnError(message?: string) {
       normalized.includes("postcode") ||
       normalized.includes("road") ||
       normalized.includes("suburb") ||
+      normalized.includes("verification_status") ||
       normalized.includes("house_number") ||
       normalized.includes("latitude") ||
       normalized.includes("longitude") ||
@@ -270,7 +271,8 @@ export async function POST(request: Request) {
         payload.basicProfile.serviceLocation.trim(),
       service_radius_km: payload.providerLocation.radius,
       bio: buildProviderBio(payload),
-      approval_status: "pending",
+      approval_status: "pending_review",
+      verification_status: "partially_verified",
       is_visible: true,
     };
 
