@@ -17,6 +17,7 @@ function normalizeStoredCustomerProfile(value: unknown): CustomerProfile | null 
     lastName: raw.lastName ?? "",
     sex: raw.sex === "Male" || raw.sex === "Female" ? raw.sex : "",
     dateOfBirth: raw.dateOfBirth ?? "",
+    avatarUrl: raw.avatarUrl ?? "",
     email: raw.email ?? "",
     phoneNumber: raw.phoneNumber ?? "",
     countryCode: raw.countryCode ?? "+60",

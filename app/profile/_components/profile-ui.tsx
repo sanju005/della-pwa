@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
   AppButton,
@@ -483,6 +483,23 @@ export function EditProfileScreen({ initialProfile }: EditProps) {
       setForm((current) => ({ ...current, [field]: event.target.value }));
     };
 
+  const handleAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setForm((current) => ({
+        ...current,
+        avatarUrl: typeof reader.result === "string" ? reader.result : current.avatarUrl,
+      }));
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleSave = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
@@ -503,16 +520,34 @@ export function EditProfileScreen({ initialProfile }: EditProps) {
     <ProfileShell title="Edit Personal Information" showBack backHref="/profile">
       <form onSubmit={handleSave}>
         <div className="mb-5 flex flex-col items-center">
-          <div className="relative">
-            <AvatarCircle
-              initials={customerInitials(form)}
-              size="xl"
-              accent="from-emerald-500 to-green-700"
-            />
+          <label className="relative cursor-pointer">
+            {form.avatarUrl ? (
+              <div className="relative h-24 w-24 overflow-hidden rounded-full shadow-[0_12px_24px_rgba(15,23,42,0.18)]">
+                <Image
+                  src={form.avatarUrl}
+                  alt="Profile photo"
+                  fill
+                  unoptimized
+                  className="object-cover"
+                />
+              </div>
+            ) : (
+              <AvatarCircle
+                initials={customerInitials(form)}
+                size="xl"
+                accent="from-emerald-500 to-green-700"
+              />
+            )}
             <span className="absolute bottom-1 right-1 inline-flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-[#16a34a] text-white shadow-[0_8px_18px_rgba(22,163,74,0.22)]">
               <CameraIcon className="h-4 w-4" />
             </span>
-          </div>
+            <input
+              type="file"
+              accept="image/png,image/jpeg,image/jpg"
+              onChange={handleAvatarChange}
+              className="sr-only"
+            />
+          </label>
           <p className="mt-3 text-[13px] text-[#4b5563]">Change Profile Photo</p>
         </div>
 
@@ -531,7 +566,7 @@ export function EditProfileScreen({ initialProfile }: EditProps) {
             icon={<UserIcon className="h-5 w-5" />}
             options={["Male", "Female"]}
           />
-          <LabeledInput label="Date of Birth" value={form.dateOfBirth} onChange={updateField("dateOfBirth")} icon={<CalendarIcon className="h-5 w-5" />} rightIcon={<CalendarIcon className="h-5 w-5" />} />
+          <LabeledDateInput label="Date of Birth" value={form.dateOfBirth} onChange={(value) => setForm((current) => ({ ...current, dateOfBirth: value }))} icon={<CalendarIcon className="h-5 w-5" />} />
           <LabeledInput label="Email" value={form.email} onChange={updateField("email")} icon={<MailIcon className="h-5 w-5" />} />
           <div>
             <p className="mb-2 text-[14px] font-semibold text-[#111827]">Phone Number</p>
@@ -1918,6 +1953,58 @@ function LabeledInput({
           className="h-11 flex-1 border-0 bg-transparent text-[14px] text-[#111827] outline-none"
         />
         {rightIcon ? <span className="ml-3 text-[#6b7280]">{rightIcon}</span> : null}
+      </div>
+    </label>
+  );
+}
+
+function LabeledDateInput({
+  label,
+  value,
+  onChange,
+  icon,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  icon: React.ReactNode;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const openPicker = () => {
+    const input = inputRef.current;
+    if (!input) {
+      return;
+    }
+
+    input.focus();
+    const pickerInput = input as HTMLInputElement & { showPicker?: () => void };
+    pickerInput.showPicker?.();
+  };
+
+  return (
+    <label className="block">
+      <span className="mb-2 block text-[14px] font-semibold text-[#111827]">
+        {label}
+      </span>
+      <div className="flex items-center rounded-[12px] border border-[#d9e2dd] px-4 shadow-[0_8px_20px_rgba(15,23,42,0.03)]">
+        <span className="mr-3 text-[#16a34a]">{icon}</span>
+        <input
+          ref={inputRef}
+          type="date"
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          onClick={openPicker}
+          className="h-11 flex-1 border-0 bg-transparent text-[14px] text-[#111827] outline-none"
+        />
+        <button
+          type="button"
+          onClick={openPicker}
+          aria-label="Open date picker"
+          className="ml-3 text-[#6b7280]"
+        >
+          <CalendarIcon className="h-5 w-5" />
+        </button>
       </div>
     </label>
   );

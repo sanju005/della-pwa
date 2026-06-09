@@ -326,6 +326,7 @@ type UpdatePayload = {
   lastName?: string;
   sex?: "" | "Male" | "Female";
   dateOfBirth?: string;
+  avatarUrl?: string;
   email?: string;
   phoneNumber?: string;
   countryCode?: string;
@@ -359,6 +360,7 @@ export async function PATCH(request: Request) {
       full_name: fullName || undefined,
       email: email || undefined,
       phone: normalizedPhone || undefined,
+      avatar_url: payload.avatarUrl?.trim() || undefined,
     }).filter(([, value]) => value !== undefined),
   );
 
