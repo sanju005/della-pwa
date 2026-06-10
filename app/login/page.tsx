@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
@@ -154,9 +155,14 @@ export default function LoginPage() {
               </Link>
 
               <div className="mt-5">
-                <h1 className="text-[3.1rem] font-extrabold leading-none tracking-[-0.08em] text-[#16A34A]">
-                  DELLA
-                </h1>
+                <Image
+                  src="/brand/main-logo.png"
+                  alt="DELLA"
+                  width={270}
+                  height={86}
+                  priority
+                  className="h-auto w-[170px] sm:w-[190px]"
+                />
                 <p className="mt-2 text-[16px] font-medium text-[#64748B]">
                   Home &amp; Lifestyle Marketplace
                 </p>

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useState, type ReactNode } from "react";
 
@@ -64,9 +65,14 @@ export function RegisterHeader({
             </Link>
           ) : null}
           <div className={showBack ? "pt-0.5" : ""}>
-            <div className="text-[28px] font-extrabold leading-none tracking-[-0.06em] text-[#16a34a]">
-              DELLA
-            </div>
+            <Image
+              src="/brand/main-logo.png"
+              alt="DELLA"
+              width={160}
+              height={52}
+              priority
+              className="h-auto w-[128px] sm:w-[148px]"
+            />
             <p className="mt-1 text-[13px] leading-5 text-[#6b7280]">
               Trusted Services, Anytime, Anywhere
             </p>

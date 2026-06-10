@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 
 import { RegisterHeader, RegisterShell, RegisterTitle } from "../register/_components/register-ui";
@@ -29,9 +30,14 @@ export default function SignupPage() {
       </div>
 
       <div className="mt-8 rounded-[28px] bg-[radial-gradient(circle_at_top,_rgba(190,242,198,0.55),_transparent_48%),linear-gradient(180deg,#fbfffc_0%,#f2fbf4_100%)] px-6 py-8 text-center">
-        <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-[28px] bg-[linear-gradient(180deg,#16a34a_0%,#0f8b3d_100%)] text-[40px] font-extrabold text-white shadow-[0_18px_30px_rgba(22,163,74,0.18)]">
-          D
-        </div>
+        <Image
+          src="/brand/main-logo.png"
+          alt="DELLA"
+          width={300}
+          height={96}
+          priority
+          className="mx-auto h-auto w-[180px]"
+        />
         <p className="mt-4 text-[14px] leading-7 text-[#4b5563]">
           DELLA connects people with trusted home and lifestyle services across one simple app.
         </p>

@@ -26,9 +26,14 @@ export default function ReadyPage() {
         <p className="text-[15px] text-[#16a34a]">
           Welcome to
         </p>
-        <h1 className="mt-1 text-[2rem] font-extrabold leading-[1.05] tracking-[-0.07em] text-[#16a34a]">
-          DELLA
-        </h1>
+        <Image
+          src="/brand/main-logo.png"
+          alt="DELLA"
+          width={270}
+          height={86}
+          priority
+          className="mt-1 h-auto w-[170px]"
+        />
         <p className="mt-3 max-w-[18rem] text-[15px] leading-7 text-[#4b5563]">
           Log in to continue, or sign up to create a new DELLA account.
         </p>

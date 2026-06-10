@@ -10,6 +10,11 @@ export const metadata: Metadata = {
   title: "DELLA",
   description: "Book trusted home and lifestyle services in one DELLA app.",
   applicationName: "DELLA",
+  icons: {
+    icon: "/brand/main-logo.png",
+    apple: "/brand/main-logo.png",
+    shortcut: "/brand/main-logo.png",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
