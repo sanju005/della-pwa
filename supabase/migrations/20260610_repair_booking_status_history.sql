@@ -19,4 +19,7 @@ end $$;
 alter table if exists public.booking_status_history
   add column if not exists changed_by_role public.booking_actor_role not null default 'system';
 
+alter table if exists public.booking_status_history
+  add column if not exists note text not null default '';
+
 commit;
