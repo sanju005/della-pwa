@@ -1,6 +1,6 @@
 import { cache } from "react";
 import { createClient } from "@supabase/supabase-js";
-import { getSupabasePublishableKey, getSupabaseUrl } from "./supabase-env";
+import { getSupabaseServiceKey, getSupabaseUrl } from "./supabase-env";
 
 type ProviderServiceRow = {
   id: string;
@@ -75,15 +75,15 @@ function humanizeService(type: string) {
   return serviceLabels[type] ?? type.charAt(0).toUpperCase() + type.slice(1);
 }
 
-function buildSupabasePublicClient() {
+function buildSupabaseAdminClient() {
   const url = getSupabaseUrl();
-  const anonKey = getSupabasePublishableKey();
+  const serviceKey = getSupabaseServiceKey();
 
-  if (!url || !anonKey) {
+  if (!url || !serviceKey) {
     return null;
   }
 
-  return createClient(url, anonKey, {
+  return createClient(url, serviceKey, {
     auth: {
       autoRefreshToken: false,
       persistSession: false,
@@ -92,7 +92,7 @@ function buildSupabasePublicClient() {
 }
 
 export const getMarketplaceData = cache(async (): Promise<MarketplaceData> => {
-  const supabase = buildSupabasePublicClient();
+  const supabase = buildSupabaseAdminClient();
 
   if (!supabase) {
     return {
@@ -100,7 +100,7 @@ export const getMarketplaceData = cache(async (): Promise<MarketplaceData> => {
       totalProviders: 0,
       services: [],
       errorMessage:
-        "Supabase public keys are not configured in this app yet, so provider listings cannot be loaded here.",
+        "Supabase service keys are not configured in this app yet, so provider listings cannot be loaded here.",
     };
   }
 

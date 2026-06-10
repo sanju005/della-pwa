@@ -3,7 +3,6 @@ import "server-only";
 import { cache } from "react";
 import { createClient } from "@supabase/supabase-js";
 import {
-  getSupabasePublishableKey,
   getSupabaseServiceKey,
   getSupabaseUrl,
 } from "./supabase-env";
@@ -148,22 +147,6 @@ function buildAdminSupabaseClient() {
   });
 }
 
-function buildPublicSupabaseClient() {
-  const url = getSupabaseUrl();
-  const publishableKey = getSupabasePublishableKey();
-
-  if (!url || !publishableKey) {
-    return null;
-  }
-
-  return createClient(url, publishableKey, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
-  });
-}
-
 function formatSchedule(dateValue: string | null, timeValue: string | null) {
   if (!dateValue) {
     return "Upcoming booking";
@@ -188,9 +171,8 @@ function getProviderNode<T>(value: T | T[] | null | undefined) {
 
 export const getHomeFeedData = cache(async (): Promise<HomeFeedData> => {
   const adminSupabase = buildAdminSupabaseClient();
-  const publicSupabase = buildPublicSupabaseClient();
 
-  if (!adminSupabase || !publicSupabase) {
+  if (!adminSupabase) {
     return {
       greetingName: "Guest",
       locationLabel: "Kuala Lumpur",
@@ -233,7 +215,7 @@ export const getHomeFeedData = cache(async (): Promise<HomeFeedData> => {
       .order("created_at", { ascending: true })
       .limit(1)
       .maybeSingle(),
-    publicSupabase
+    adminSupabase
       .from("provider_profiles")
       .select(
         `

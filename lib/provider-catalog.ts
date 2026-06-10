@@ -2,7 +2,7 @@ import "server-only";
 
 import { cache } from "react";
 import { createClient } from "@supabase/supabase-js";
-import { getSupabasePublishableKey, getSupabaseUrl } from "./supabase-env";
+import { getSupabaseServiceKey, getSupabaseUrl } from "./supabase-env";
 import { serviceOrder, type ProviderCategoryKey } from "./provider-catalog-shared";
 export {
   buildCategoryBannerSrc,
@@ -88,15 +88,15 @@ const imageTones = [
   "bg-[linear-gradient(135deg,#20352b_0%,#2f7d4e_45%,#a7d7a9_100%)]",
 ];
 
-function buildSupabasePublicClient() {
+function buildSupabaseAdminClient() {
   const url = getSupabaseUrl();
-  const publishableKey = getSupabasePublishableKey();
+  const serviceKey = getSupabaseServiceKey();
 
-  if (!url || !publishableKey) {
+  if (!url || !serviceKey) {
     return null;
   }
 
-  return createClient(url, publishableKey, {
+  return createClient(url, serviceKey, {
     auth: {
       autoRefreshToken: false,
       persistSession: false,
@@ -115,7 +115,7 @@ function humanizeService(serviceKey: ProviderCategoryKey) {
 export const getProviderCatalog = cache(
   async (service: string | null): Promise<ProviderCatalogData> => {
     const serviceKey = service && isProviderCategoryKey(service) ? service : null;
-    const supabase = buildSupabasePublicClient();
+    const supabase = buildSupabaseAdminClient();
 
     if (!supabase) {
       return {
