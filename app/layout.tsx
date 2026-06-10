@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { PwaInstallPrompt } from "@/app/_components/pwa-install";
 import {
   getAppBaseUrl,
   getSupabasePublishableKey,
@@ -51,6 +52,7 @@ export default function RootLayout({
             __html: `window.__DELLA_PUBLIC_CONFIG = ${JSON.stringify(publicRuntimeConfig)};`,
           }}
         />
+        <PwaInstallPrompt />
         {children}
       </body>
     </html>
