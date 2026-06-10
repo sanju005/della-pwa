@@ -318,7 +318,7 @@ function ProviderSliderSection({
                   serviceKey: provider.serviceKey,
                 })}
                 name={provider.name}
-                fullName={provider.name === "Chef Amina" ? "Amina Isha" : provider.name}
+                fullName={provider.name}
                 priceLabel={provider.priceLabel}
                 rating={provider.rating.toFixed(1)}
                 reviews={`${provider.reviews} reviews`}

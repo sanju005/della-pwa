@@ -16,6 +16,8 @@ const supabase = createClient(supabaseUrl, serviceRoleKey, {
 });
 
 const demoPassword = "DellaDemo123!";
+const providerBaseCity = "Kuala Lumpur";
+const providerServiceRadiusKm = 25;
 
 const demoUsers = [
   {
@@ -96,9 +98,9 @@ const demoUsers = [
     providerProfile: {
       marketing_name: "Chef Amina",
       date_of_birth: "1990-05-10",
-      residential_address: "Kajang, Selangor",
-      service_location: "Kajang, Selangor",
-      service_radius_km: 15,
+      residential_address: providerBaseCity,
+      service_location: providerBaseCity,
+      service_radius_km: providerServiceRadiusKm,
       approval_status: "approved",
       verification_status: "verified",
       bio: "Experienced home chef specializing in family meals and event catering.",
@@ -123,9 +125,9 @@ const demoUsers = [
     providerProfile: {
       marketing_name: "Maid Siti",
       date_of_birth: "1988-02-11",
-      residential_address: "Shah Alam, Selangor",
-      service_location: "Shah Alam, Selangor",
-      service_radius_km: 15,
+      residential_address: providerBaseCity,
+      service_location: providerBaseCity,
+      service_radius_km: providerServiceRadiusKm,
       approval_status: "approved",
       verification_status: "verified",
       bio: "Trusted maid for daily cleaning, ironing, and home care.",
@@ -150,9 +152,9 @@ const demoUsers = [
     providerProfile: {
       marketing_name: "Driver Kumar",
       date_of_birth: "1987-07-19",
-      residential_address: "Kuala Lumpur",
-      service_location: "Kuala Lumpur",
-      service_radius_km: 30,
+      residential_address: providerBaseCity,
+      service_location: providerBaseCity,
+      service_radius_km: providerServiceRadiusKm,
       approval_status: "approved",
       verification_status: "verified",
       bio: "Professional driver for city trips, airport pickup, and outstation rides.",
@@ -177,9 +179,9 @@ const demoUsers = [
     providerProfile: {
       marketing_name: "Tutor Farah",
       date_of_birth: "1993-09-02",
-      residential_address: "Subang Jaya, Selangor",
-      service_location: "Subang Jaya, Selangor",
-      service_radius_km: 15,
+      residential_address: providerBaseCity,
+      service_location: providerBaseCity,
+      service_radius_km: providerServiceRadiusKm,
       approval_status: "approved",
       verification_status: "verified",
       bio: "Friendly tutor for school subjects and exam preparation.",
@@ -204,9 +206,9 @@ const demoUsers = [
     providerProfile: {
       marketing_name: "Cleaner Nora",
       date_of_birth: "1991-06-16",
-      residential_address: "Petaling Jaya, Selangor",
-      service_location: "Petaling Jaya, Selangor",
-      service_radius_km: 15,
+      residential_address: providerBaseCity,
+      service_location: providerBaseCity,
+      service_radius_km: providerServiceRadiusKm,
       approval_status: "approved",
       verification_status: "verified",
       bio: "Detailed cleaner for home and office deep cleaning.",
@@ -231,9 +233,9 @@ const demoUsers = [
     providerProfile: {
       marketing_name: "Babysitter Lina",
       date_of_birth: "1994-12-01",
-      residential_address: "Puchong, Selangor",
-      service_location: "Puchong, Selangor",
-      service_radius_km: 15,
+      residential_address: providerBaseCity,
+      service_location: providerBaseCity,
+      service_radius_km: providerServiceRadiusKm,
       approval_status: "approved",
       verification_status: "verified",
       bio: "Caring babysitter with experience in toddler and newborn care.",
@@ -258,9 +260,9 @@ const demoUsers = [
     providerProfile: {
       marketing_name: "Plumber Hafiz",
       date_of_birth: "1986-03-25",
-      residential_address: "Cheras, Kuala Lumpur",
-      service_location: "Cheras, Kuala Lumpur",
-      service_radius_km: 20,
+      residential_address: providerBaseCity,
+      service_location: providerBaseCity,
+      service_radius_km: providerServiceRadiusKm,
       approval_status: "approved",
       verification_status: "verified",
       bio: "Fast-response plumber for repairs and installations.",
@@ -285,9 +287,9 @@ const demoUsers = [
     providerProfile: {
       marketing_name: "Electrician Azmi",
       date_of_birth: "1985-10-08",
-      residential_address: "Ampang, Selangor",
-      service_location: "Ampang, Selangor",
-      service_radius_km: 20,
+      residential_address: providerBaseCity,
+      service_location: providerBaseCity,
+      service_radius_km: providerServiceRadiusKm,
       approval_status: "approved",
       verification_status: "verified",
       bio: "Certified electrician for residential electrical work.",
@@ -312,9 +314,9 @@ const demoUsers = [
     providerProfile: {
       marketing_name: "Chef Raj",
       date_of_birth: "1989-04-13",
-      residential_address: "Mont Kiara, Kuala Lumpur",
-      service_location: "Mont Kiara, Kuala Lumpur",
-      service_radius_km: 15,
+      residential_address: providerBaseCity,
+      service_location: providerBaseCity,
+      service_radius_km: providerServiceRadiusKm,
       approval_status: "approved",
       verification_status: "verified",
       bio: "Private chef for Indian, Malay, and event dining.",
@@ -339,9 +341,9 @@ const demoUsers = [
     providerProfile: {
       marketing_name: "Maid Devi",
       date_of_birth: "1992-01-30",
-      residential_address: "Klang, Selangor",
-      service_location: "Klang, Selangor",
-      service_radius_km: 15,
+      residential_address: providerBaseCity,
+      service_location: providerBaseCity,
+      service_radius_km: providerServiceRadiusKm,
       approval_status: "pending_review",
       verification_status: "partially_verified",
       bio: "Reliable maid available for household support.",

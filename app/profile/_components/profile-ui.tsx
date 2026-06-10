@@ -250,21 +250,27 @@ export function ProfileOverviewScreen({ initialData }: OverviewProps) {
         actionHref="/profile/favourites"
         actionLabel="View All"
       >
-        <div className="flex items-start justify-between gap-3">
-          {initialData.favoriteProviders.map((provider) => (
-            <div key={provider.id} className="flex flex-1 flex-col items-center text-center">
-              <AvatarCircle
-                initials={provider.initials}
-                size="md"
-                accent={provider.accent}
-              />
-              <p className="mt-2 text-[13px] font-bold text-[#111827]">
-                {provider.name}
-              </p>
-              <p className="text-[12px] text-[#6b7280]">{provider.role}</p>
-            </div>
-          ))}
-        </div>
+        {initialData.favoriteProviders.length > 0 ? (
+          <div className="flex items-start justify-between gap-3">
+            {initialData.favoriteProviders.map((provider) => (
+              <div key={provider.id} className="flex flex-1 flex-col items-center text-center">
+                <AvatarCircle
+                  initials={provider.initials}
+                  size="md"
+                  accent={provider.accent}
+                />
+                <p className="mt-2 text-[13px] font-bold text-[#111827]">
+                  {provider.name}
+                </p>
+                <p className="text-[12px] text-[#6b7280]">{provider.role}</p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-[16px] border border-dashed border-[#d9e2dd] bg-[#fbfefc] px-4 py-5 text-center text-[13px] text-[#6b7280]">
+            No real providers available yet.
+          </div>
+        )}
       </SectionCard>
 
       <SectionCard title="Payment Methods" actionLabel="Manage">

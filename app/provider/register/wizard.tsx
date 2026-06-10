@@ -621,7 +621,7 @@ function BasicProfileStep({
         options={sexOptions}
         placeholder="Select sex"
       />
-      <InputField label="Marketing Name" hint="e.g. Ex Chef Amina" value={data.basicProfile.marketingName} onChange={(value) => updateBasic("marketingName", value)} />
+      <InputField label="Marketing Name" hint="e.g. Della Home Chef" value={data.basicProfile.marketingName} onChange={(value) => updateBasic("marketingName", value)} />
       <DateInputField
         label="Date of Birth"
         value={data.basicProfile.dateOfBirth}

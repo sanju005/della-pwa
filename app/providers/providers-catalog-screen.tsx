@@ -607,10 +607,6 @@ function StatPill({
 }
 
 function buildProviderFullName(listing: CatalogScreenListing) {
-  if (listing.name === "Chef Amina") {
-    return "Amina Isha";
-  }
-
   if (listing.providerName && listing.providerName !== listing.name) {
     return listing.providerName;
   }

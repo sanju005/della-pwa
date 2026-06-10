@@ -124,6 +124,10 @@ function mapBookingSchemaError(message: string | null | undefined) {
   return message || null;
 }
 
+function isUuid(value: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+}
+
 function isValidBody(value: BookingBody): value is CompleteBookingBody {
   return (
     typeof value.providerId === "string" &&
@@ -245,6 +249,10 @@ function parseTimeLabel(value: string) {
   }
 
   return `${String(hour24).padStart(2, "0")}:${String(minute).padStart(2, "0")}:00`;
+}
+
+function startOfDay(value: Date) {
+  return new Date(value.getFullYear(), value.getMonth(), value.getDate());
 }
 
 function formatDateTimeLabel(date: string, startTime: string, endTime: string) {
@@ -507,6 +515,13 @@ export async function POST(request: Request) {
     );
   }
 
+  if (!isUuid(payload.providerId)) {
+    return NextResponse.json(
+      { error: "This provider listing is no longer available. Please refresh and choose a live provider." },
+      { status: 400 }
+    );
+  }
+
   const scheduledDate = parseDateLabel(payload.dateLabel);
   const scheduledStartTime = parseTimeLabel(payload.startTimeLabel);
   const scheduledEndTime = parseTimeLabel(payload.endTimeLabel);
@@ -514,6 +529,25 @@ export async function POST(request: Request) {
   if (!scheduledDate || !scheduledStartTime || !scheduledEndTime) {
     return NextResponse.json(
       { error: "Booking date or time format is invalid." },
+      { status: 400 }
+    );
+  }
+
+  const scheduledDay = startOfDay(new Date(`${scheduledDate}T00:00:00`));
+  const today = startOfDay(new Date());
+  const maxAdvanceDay = startOfDay(new Date());
+  maxAdvanceDay.setDate(maxAdvanceDay.getDate() + 30);
+
+  if (scheduledDay.getTime() < today.getTime()) {
+    return NextResponse.json(
+      { error: "Bookings must be scheduled for today or a future date." },
+      { status: 400 }
+    );
+  }
+
+  if (scheduledDay.getTime() > maxAdvanceDay.getTime()) {
+    return NextResponse.json(
+      { error: "Bookings can only be made up to 30 days in advance." },
       { status: 400 }
     );
   }

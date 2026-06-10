@@ -10,7 +10,9 @@ import type {
 } from "./profile-types";
 import { listCustomerBookings } from "./customer-booking-storage";
 import {
+  buildProviderDetailHref,
   buildProviderPortraitSrc,
+  getProviderCatalog,
   type ProviderCategoryKey,
 } from "./provider-catalog";
 
@@ -29,141 +31,12 @@ const mockProfile: CustomerProfile = {
   completion: 80,
 };
 
-const favoriteProviders = [
-  {
-    id: "mock-chef-chef-amina",
-    name: "Chef Amina",
-    role: "Chef",
-    initials: "CA",
-    accent: "from-emerald-500 to-green-700",
-    serviceKey: "chef",
-    location: "Kajang, Selangor",
-    rating: 4.9,
-    priceLabel: "RM260",
-    portraitSrc: buildProviderPortraitSrc({ name: "Chef Amina", serviceKey: "chef" }),
-    bookHref: "/providers/mock-chef-chef-amina/book?service=chef",
-  },
-  {
-    id: "mock-maid-siti-maid-service",
-    name: "Maid Siti",
-    role: "Cleaning",
-    initials: "MS",
-    accent: "from-teal-500 to-emerald-700",
-    serviceKey: "maid",
-    location: "Setapak, Kuala Lumpur",
-    rating: 4.8,
-    priceLabel: "RM180",
-    portraitSrc: buildProviderPortraitSrc({ name: "Siti Maid Service", serviceKey: "maid" }),
-    bookHref: "/providers/mock-maid-siti-maid-service/book?service=maid",
-  },
-  {
-    id: "mock-driver-driver-kumar",
-    name: "Driver Kumar",
-    role: "Driver",
-    initials: "DK",
-    accent: "from-sky-500 to-slate-700",
-    serviceKey: "driver",
-    location: "Ampang, Selangor",
-    rating: 4.7,
-    priceLabel: "RM205",
-    portraitSrc: buildProviderPortraitSrc({ name: "Driver Kumar", serviceKey: "driver" }),
-    bookHref: "/providers/mock-driver-driver-kumar/book?service=driver",
-  },
-  {
-    id: "mock-plumber-home-pipe-expert",
-    name: "Murugan",
-    role: "Plumber",
-    initials: "MU",
-    accent: "from-orange-500 to-amber-700",
-    serviceKey: "plumber",
-    location: "Shah Alam, Selangor",
-    rating: 4.8,
-    priceLabel: "RM360",
-    portraitSrc: buildProviderPortraitSrc({ name: "Home Pipe Expert", serviceKey: "plumber" }),
-    bookHref: "/providers/mock-plumber-home-pipe-expert/book?service=plumber",
-  },
-  {
-    id: "mock-tutor-tutor-farah",
-    name: "Tutor Farah",
-    role: "Tutor",
-    initials: "TF",
-    accent: "from-violet-500 to-fuchsia-700",
-    serviceKey: "tutor",
-    location: "Subang Jaya, Selangor",
-    rating: 4.8,
-    priceLabel: "RM260",
-    portraitSrc: buildProviderPortraitSrc({ name: "Tutor Farah", serviceKey: "tutor" }),
-    bookHref: "/providers/mock-tutor-tutor-farah/book?service=tutor",
-  },
-];
-
 const paymentMethods = [
   { id: "cash", label: "Cash", type: "Cash", isDefault: true },
   { id: "fpx", label: "Online Payment", type: "Card / FPX" },
 ];
 
-const paymentHistory: PaymentHistoryItem[] = [
-  {
-    id: "payment-1",
-    serviceCategory: "Cleaning",
-    serviceTitle: "Deep Cleaning",
-    provider: "Maid Siti",
-    amount: 180,
-    paidAt: "2026-06-01T10:30:00+08:00",
-    paymentMethod: "Card / FPX",
-    status: "paid",
-  },
-  {
-    id: "payment-2",
-    serviceCategory: "Chef",
-    serviceTitle: "Dinner Chef Service",
-    provider: "Chef Amina",
-    amount: 260,
-    paidAt: "2026-05-28T19:15:00+08:00",
-    paymentMethod: "Card / FPX",
-    status: "paid",
-  },
-  {
-    id: "payment-3",
-    serviceCategory: "Driver",
-    serviceTitle: "Airport Transfer",
-    provider: "Driver Kumar",
-    amount: 95,
-    paidAt: "2026-05-18T06:45:00+08:00",
-    paymentMethod: "Cash",
-    status: "paid",
-  },
-  {
-    id: "payment-4",
-    serviceCategory: "Plumber",
-    serviceTitle: "Leak Repair",
-    provider: "Murugan",
-    amount: 320,
-    paidAt: "2026-04-30T14:05:00+08:00",
-    paymentMethod: "Card / FPX",
-    status: "paid",
-  },
-  {
-    id: "payment-5",
-    serviceCategory: "Babysitter",
-    serviceTitle: "Evening Childcare",
-    provider: "Sara",
-    amount: 210,
-    paidAt: "2026-04-15T18:20:00+08:00",
-    paymentMethod: "Cash",
-    status: "paid",
-  },
-  {
-    id: "payment-6",
-    serviceCategory: "Tutor",
-    serviceTitle: "Mathematics Home Tuition",
-    provider: "Tutor Farah",
-    amount: 245,
-    paidAt: "2026-03-12T16:00:00+08:00",
-    paymentMethod: "Card / FPX",
-    status: "paid",
-  },
-];
+const paymentHistory: PaymentHistoryItem[] = [];
 
 const addresses: Address[] = [
   {
@@ -196,125 +69,7 @@ const addresses: Address[] = [
   },
 ];
 
-const bookings: Booking[] = [
-  {
-    id: "booking-1",
-    service: "Chef Service",
-    provider: "Ex Chef Amina",
-    schedule: "20 May 2024, 10:00 AM",
-    location: "Kajang, Selangor",
-    status: "upcoming",
-    statusLabel: "Confirmed",
-    badgeTone: "green",
-    thumbnail: "food",
-    imageSrc: buildProviderPortraitSrc({ name: "Chef Amina", serviceKey: "chef" }),
-    paymentAmount: 260,
-    paymentMethod: "Card / FPX",
-    notes: "Dinner setup for 4 people",
-    activitySteps: [
-      { label: "Accepted", status: "done" },
-      { label: "Confirmed", status: "current" },
-      { label: "On the way", status: "pending" },
-      { label: "Arrived", status: "pending" },
-      { label: "Task Completed", status: "pending" },
-      { label: "Payment Done", status: "pending" },
-    ],
-  },
-  {
-    id: "booking-2",
-    service: "Maid Service",
-    provider: "Maid Siti",
-    schedule: "22 May 2024, 02:00 PM",
-    location: "Kuala Lumpur",
-    status: "upcoming",
-    statusLabel: "Pending",
-    badgeTone: "amber",
-    thumbnail: "cleaning",
-    imageSrc: buildProviderPortraitSrc({ name: "Siti Maid Service", serviceKey: "maid" }),
-    paymentAmount: 180,
-    paymentMethod: "Cash",
-    notes: "Please bring vacuum and cleaning supplies",
-    activitySteps: [
-      { label: "Accepted", status: "current" },
-      { label: "Confirmed", status: "pending" },
-      { label: "On the way", status: "pending" },
-      { label: "Arrived", status: "pending" },
-      { label: "Task Completed", status: "pending" },
-      { label: "Payment Done", status: "pending" },
-    ],
-  },
-  {
-    id: "booking-3",
-    service: "Driver Service",
-    provider: "Driver Kumar",
-    schedule: "25 May 2024, 09:00 AM",
-    location: "Kuala Lumpur",
-    status: "completed",
-    statusLabel: "Confirmed",
-    badgeTone: "green",
-    thumbnail: "car",
-    imageSrc: buildProviderPortraitSrc({ name: "Driver Kumar", serviceKey: "driver" }),
-    paymentAmount: 205,
-    paymentMethod: "Card / FPX",
-    notes: "Airport drop-off completed successfully",
-    activitySteps: [
-      { label: "Accepted", status: "done" },
-      { label: "Confirmed", status: "done" },
-      { label: "On the way", status: "done" },
-      { label: "Arrived", status: "done" },
-      { label: "Task Completed", status: "done" },
-      { label: "Payment Done", status: "done" },
-    ],
-  },
-  {
-    id: "booking-4",
-    service: "Tutor Service",
-    provider: "Tutor Farah",
-    schedule: "27 May 2024, 04:30 PM",
-    location: "Subang Jaya, Selangor",
-    status: "completed",
-    statusLabel: "Completed",
-    badgeTone: "green",
-    thumbnail: "cleaning",
-    imageSrc: buildProviderPortraitSrc({ name: "Tutor Farah", serviceKey: "tutor" }),
-    paymentAmount: 260,
-    paymentMethod: "Online Transfer",
-    notes: "Weekly math lesson package",
-    activitySteps: [
-      { label: "Accepted", status: "done" },
-      { label: "Confirmed", status: "done" },
-      { label: "On the way", status: "done" },
-      { label: "Arrived", status: "done" },
-      { label: "Task Completed", status: "done" },
-      { label: "Payment Done", status: "done" },
-    ],
-  },
-  {
-    id: "booking-5",
-    service: "Plumber Service",
-    provider: "Murugan",
-    schedule: "18 May 2024, 11:15 AM",
-    location: "Shah Alam, Selangor",
-    status: "cancelled",
-    statusLabel: "Cancelled",
-    badgeTone: "slate",
-    thumbnail: "car",
-    imageSrc: buildProviderPortraitSrc({ name: "Home Pipe Expert", serviceKey: "plumber" }),
-    paymentAmount: 0,
-    paymentMethod: "Not charged",
-    notes: "Booking was cancelled before the scheduled visit.",
-    cancelledBy: "Service provider",
-    cancellationReason: "Not available that day due to urgent work.",
-    activitySteps: [
-      { label: "Accepted", status: "done" },
-      { label: "Confirmed", status: "pending" },
-      { label: "On the way", status: "pending" },
-      { label: "Arrived", status: "pending" },
-      { label: "Task Completed", status: "pending" },
-      { label: "Payment Done", status: "pending" },
-    ],
-  },
-];
+const bookings: Booking[] = [];
 
 const settings: SettingGroup[] = [
   {
@@ -345,12 +100,13 @@ const settings: SettingGroup[] = [
 
 export async function getProfileOverviewData(): Promise<ProfileOverviewData> {
   const storedBookings = await listCustomerBookings();
+  const favoriteProviders = await getFavoriteProviders();
   const totalPaid = paymentHistory.reduce((sum, item) => sum + item.amount, 0);
   const latestPayment = paymentHistory[0];
 
   return {
     profile: structuredClone(mockProfile),
-    favoriteProviders: structuredClone(favoriteProviders),
+    favoriteProviders,
     paymentMethods: structuredClone(paymentMethods),
     paymentSummary: {
       totalPaid,
@@ -363,9 +119,9 @@ export async function getProfileOverviewData(): Promise<ProfileOverviewData> {
         : "No payment yet",
     },
     bookingSummary: {
-      upcoming: storedBookings.length || 3,
-      completed: 12,
-      cancelled: 2,
+      upcoming: storedBookings.filter((booking) => booking.status === "pending").length,
+      completed: storedBookings.filter((booking) => booking.status !== "pending").length,
+      cancelled: 0,
     },
   };
 }
@@ -447,5 +203,37 @@ export async function getPaymentHistory(): Promise<PaymentHistoryItem[]> {
 }
 
 export async function getFavoriteProviders() {
-  return structuredClone(favoriteProviders);
+  const catalog = await getProviderCatalog(null);
+
+  return catalog.listings.slice(0, 5).map((provider, index) => ({
+    id: provider.id,
+    name: provider.name,
+    role: provider.serviceLabel,
+    initials: provider.name
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase() ?? "")
+      .join(""),
+    accent:
+      [
+        "from-emerald-500 to-green-700",
+        "from-teal-500 to-emerald-700",
+        "from-sky-500 to-slate-700",
+        "from-orange-500 to-amber-700",
+        "from-violet-500 to-fuchsia-700",
+      ][index % 5] ?? "from-emerald-500 to-green-700",
+    serviceKey: provider.serviceKey,
+    location: provider.location,
+    rating: provider.rating,
+    priceLabel: `RM${provider.hourlyRate}`,
+    portraitSrc: buildProviderPortraitSrc({
+      name: provider.name,
+      serviceKey: provider.serviceKey,
+    }),
+    bookHref: `${buildProviderDetailHref({
+      id: provider.id,
+      serviceKey: provider.serviceKey,
+    })}/book?service=${provider.serviceKey}`,
+  }));
 }

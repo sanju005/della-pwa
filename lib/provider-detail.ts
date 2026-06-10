@@ -154,6 +154,20 @@ function providerMediaUrl(serviceKey: ProviderCategoryKey, kind: string) {
   return `/api/provider-media/${serviceKey}/${kind}`;
 }
 
+function addDays(date: Date, days: number) {
+  const next = new Date(date);
+  next.setDate(next.getDate() + days);
+  return next;
+}
+
+function formatAvailabilityDate(date: Date) {
+  return date.toLocaleDateString("en-MY", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
 function buildAvailability(serviceKey: ProviderCategoryKey): ProviderAvailabilitySlot[] {
   const defaults: Record<ProviderCategoryKey, string[]> = {
     chef: ["2:00 PM", "10:00 AM", "10:00 AM", "10:00 AM", "10:00 AM", "Booked", "1:00 PM"],
@@ -166,21 +180,15 @@ function buildAvailability(serviceKey: ProviderCategoryKey): ProviderAvailabilit
     electrician: ["9:00 AM", "9:00 AM", "9:00 AM", "10:00 AM", "9:00 AM", "Booked", "11:00 AM"],
   };
 
-  const days = [
-    ["Mon", "Jun 2"],
-    ["Tue", "Jun 3"],
-    ["Wed", "Jun 4"],
-    ["Thu", "Jun 5"],
-    ["Fri", "Jun 6"],
-    ["Sat", "Jun 7"],
-    ["Sun", "Jun 8"],
-  ] as const;
+  const startDate = new Date();
 
-  return days.map(([dayLabel, dateLabel], index) => {
+  return Array.from({ length: 7 }, (_, index) => {
+    const date = addDays(startDate, index);
     const timeLabel = defaults[serviceKey][index] ?? "10:00 AM";
+
     return {
-      dayLabel,
-      dateLabel,
+      dayLabel: date.toLocaleDateString("en-MY", { weekday: "short" }),
+      dateLabel: formatAvailabilityDate(date),
       timeLabel,
       state: timeLabel.toLowerCase().includes("booked") ? "booked" : "available",
     };
@@ -191,37 +199,46 @@ function buildCalendarDates(serviceKey: ProviderCategoryKey): {
   monthLabel: string;
   dates: ProviderCalendarDate[];
 } {
-  const monthBase = new Date();
-  const year = monthBase.getFullYear();
-  const month = monthBase.getMonth();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const bookedByService: Record<ProviderCategoryKey, number[]> = {
-    chef: [4, 10, 16, 22, 29],
-    maid: [6, 12, 18, 24, 28],
-    babysitter: [5, 11, 17, 23, 30],
-    driver: [3, 8, 15, 21, 27],
-    cleaner: [2, 9, 14, 20, 26],
-    tutor: [7, 13, 19, 25],
-    plumber: [1, 6, 12, 18, 24],
-    electrician: [5, 10, 16, 22, 28],
+  const startDate = new Date();
+  const bookedOffsetsByService: Record<ProviderCategoryKey, number[]> = {
+    chef: [5, 12, 19, 26],
+    maid: [4, 10, 17, 24],
+    babysitter: [6, 13, 20, 27],
+    driver: [3, 9, 16, 23],
+    cleaner: [2, 8, 15, 22, 29],
+    tutor: [7, 14, 21, 28],
+    plumber: [5, 11, 18, 25],
+    electrician: [6, 12, 19, 26],
   };
 
-  const dates: ProviderCalendarDate[] = Array.from({ length: daysInMonth }, (_, index) => {
-    const dayNumber = index + 1;
-    const date = new Date(year, month, dayNumber);
+  const dates: ProviderCalendarDate[] = Array.from({ length: 30 }, (_, index) => {
+    const date = addDays(startDate, index);
+    const dayNumber = date.getDate();
+
     return {
-      isoDate: `${year}-${String(month + 1).padStart(2, "0")}-${String(dayNumber).padStart(2, "0")}`,
+      isoDate: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(dayNumber).padStart(2, "0")}`,
       dayNumber,
       weekdayShort: date.toLocaleDateString("en-MY", { weekday: "short" }),
-      state: bookedByService[serviceKey].includes(dayNumber) ? "booked" : "available",
+      state: bookedOffsetsByService[serviceKey].includes(index + 1) ? "booked" : "available",
     };
   });
 
+  const endDate = dates[dates.length - 1];
+
   return {
-    monthLabel: new Date(year, month, 1).toLocaleDateString("en-MY", {
-      month: "long",
-      year: "numeric",
-    }),
+    monthLabel:
+      endDate && endDate.isoDate.slice(0, 7) !== dates[0]?.isoDate.slice(0, 7)
+        ? `${startDate.toLocaleDateString("en-MY", {
+            month: "short",
+            year: "numeric",
+          })} - ${new Date(`${endDate.isoDate}T00:00:00`).toLocaleDateString("en-MY", {
+            month: "short",
+            year: "numeric",
+          })}`
+        : startDate.toLocaleDateString("en-MY", {
+            month: "long",
+            year: "numeric",
+          }),
     dates,
   };
 }

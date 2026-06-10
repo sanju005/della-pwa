@@ -26,9 +26,19 @@ export function buildProviderPortraitSrc(listing: {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");
+  const generatedPortrait = `/api/provider-media/${listing.serviceKey}/portrait`;
 
   if (listing.serviceKey === "chef") {
-    return `/Images/Providers/Chef/${slug}.jpg`;
+    const chefMap: Record<string, string> = {
+      "chef-amina": "chef-amina.jpg",
+      "chef-daniel": "chef-daniel.jpg",
+      "chef-mei-ling": "chef-mei-ling.jpg",
+      "chef-hikaru": "chef-hikaru.jpg",
+      "chef-sofia": "chef-sofia.jpg",
+    };
+
+    const chefFile = chefMap[slug];
+    return chefFile ? `/Images/Providers/Chef/${chefFile}` : generatedPortrait;
   }
 
   if (listing.serviceKey === "maid") {
@@ -40,7 +50,8 @@ export function buildProviderPortraitSrc(listing: {
       "maya-home-service": "maya-maid.jpg",
     };
 
-    return `/Images/Providers/maid/${maidMap[slug] ?? "siti-maid.jpg"}`;
+    const maidFile = maidMap[slug];
+    return maidFile ? `/Images/Providers/maid/${maidFile}` : generatedPortrait;
   }
 
   if (listing.serviceKey === "babysitter") {
@@ -52,9 +63,10 @@ export function buildProviderPortraitSrc(listing: {
       "mina-kids-support": "mina-babysitter.jpg",
     };
 
-    return `/Images/Providers/Babysitter/${
-      babysitterMap[slug] ?? "aisha-babysitter.jpg"
-    }`;
+    const babysitterFile = babysitterMap[slug];
+    return babysitterFile
+      ? `/Images/Providers/Babysitter/${babysitterFile}`
+      : generatedPortrait;
   }
 
   if (listing.serviceKey === "driver") {
@@ -66,7 +78,8 @@ export function buildProviderPortraitSrc(listing: {
       "muthu-driver-link": "muthu-driver.jpg",
     };
 
-    return `/Images/Providers/Driver/${driverMap[slug] ?? "driver-kumar.jpg"}`;
+    const driverFile = driverMap[slug];
+    return driverFile ? `/Images/Providers/Driver/${driverFile}` : generatedPortrait;
   }
 
   if (listing.serviceKey === "cleaner") {
@@ -78,7 +91,10 @@ export function buildProviderPortraitSrc(listing: {
       "daily-shine-cleaner": "rani-cleaner.jpg",
     };
 
-    return `/Images/Providers/Cleaner/${cleanerMap[slug] ?? "nora-cleaner.jpg"}`;
+    const cleanerFile = cleanerMap[slug];
+    return cleanerFile
+      ? `/Images/Providers/Cleaner/${cleanerFile}`
+      : generatedPortrait;
   }
 
   if (listing.serviceKey === "tutor") {
@@ -90,7 +106,8 @@ export function buildProviderPortraitSrc(listing: {
       "math-mentor-lee": "nadiya-tutor.jpg",
     };
 
-    return `/Images/Providers/Tutor/${tutorMap[slug] ?? "Farah-Tutor.jpg"}`;
+    const tutorFile = tutorMap[slug];
+    return tutorFile ? `/Images/Providers/Tutor/${tutorFile}` : generatedPortrait;
   }
 
   if (listing.serviceKey === "plumber") {
@@ -102,7 +119,10 @@ export function buildProviderPortraitSrc(listing: {
       "home-pipe-expert": "murugan-plumber.jpg",
     };
 
-    return `/Images/Providers/Plumber/${plumberMap[slug] ?? "hafiz-plumber.jpg"}`;
+    const plumberFile = plumberMap[slug];
+    return plumberFile
+      ? `/Images/Providers/Plumber/${plumberFile}`
+      : generatedPortrait;
   }
 
   if (listing.serviceKey === "electrician") {
@@ -114,12 +134,13 @@ export function buildProviderPortraitSrc(listing: {
       "home-current-pro": "asai-electrcian.jpg",
     };
 
-    return `/Images/Providers/Electrician/${
-      electricianMap[slug] ?? "azmin-electrician.jpg"
-    }`;
+    const electricianFile = electricianMap[slug];
+    return electricianFile
+      ? `/Images/Providers/Electrician/${electricianFile}`
+      : generatedPortrait;
   }
 
-  return `/api/provider-media/${listing.serviceKey}/portrait`;
+  return generatedPortrait;
 }
 
 export function buildCategoryBannerSrc(serviceKey: ProviderCategoryKey | null) {
