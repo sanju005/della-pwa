@@ -117,30 +117,26 @@ export function BookingFormScreen({
   const computedEndTime = bookingMode === "daily" ? addHours(startTime, 9) : endTime;
   const durationHours =
     bookingFlow === "instant"
-      ? bookingMode === "daily"
-        ? 1
-        : instantHours
+      ? instantHours
       : bookingMode === "daily"
         ? 9
         : hoursBetween(startTime, computedEndTime);
   const totalAmount =
-    bookingMode === "daily"
-      ? detail.dailyRate * durationHours
-      : detail.hourlyRate * durationHours;
+    bookingFlow === "instant"
+      ? detail.hourlyRate * durationHours
+      : bookingMode === "daily"
+        ? detail.dailyRate
+        : detail.hourlyRate * durationHours;
   const bookingDateLabel = bookingFlow === "scheduled" ? selectedDate : "Today";
   const bookingStartLabel = bookingFlow === "scheduled" ? startTime : "ASAP";
   const bookingEndLabel =
     bookingFlow === "scheduled"
       ? computedEndTime
-      : bookingMode === "daily"
-        ? `${durationHours} day booking`
-        : `${durationHours} hour service`;
+      : `${durationHours} hour service`;
   const bookingTimeLabel =
     bookingFlow === "scheduled"
       ? `${startTime} - ${computedEndTime}`
-      : bookingMode === "daily"
-        ? `ASAP start • ${durationHours} day${durationHours === 1 ? "" : "s"}`
-        : `ASAP • ${durationHours} hour${durationHours === 1 ? "" : "s"}`;
+      : `ASAP • ${durationHours} hour${durationHours === 1 ? "" : "s"}`;
 
   async function handleBooking() {
     try {
@@ -448,71 +444,35 @@ export function BookingFormScreen({
                 3. Duration
               </h2>
 
-              {bookingMode === "hourly" ? (
-                <>
-                  <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
-                    {instantHourOptions.map((hours) => {
-                      const active = instantHours === hours;
-                      return (
-                        <button
-                          key={hours}
-                          type="button"
-                          onClick={() => setInstantHours(hours)}
-                          className={`min-w-[4.8rem] rounded-[16px] border px-3 py-3 text-center ${
-                            active
-                              ? "border-[#8E5EB5] bg-[#F5F1FA] text-[#8E5EB5]"
-                              : "border-[#E5ECE7] bg-white text-[#0F172A]"
-                          }`}
-                        >
-                          <p className="text-[16px] font-extrabold">{hours}</p>
-                          <p className="mt-1 text-[12px] font-semibold">
-                            {hours === 1 ? "Hour" : "Hours"}
-                          </p>
-                        </button>
-                      );
-                    })}
-                  </div>
+              <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
+                {instantHourOptions.map((hours) => {
+                  const active = instantHours === hours;
+                  return (
+                    <button
+                      key={hours}
+                      type="button"
+                      onClick={() => setInstantHours(hours)}
+                      className={`min-w-[4.8rem] rounded-[16px] border px-3 py-3 text-center ${
+                        active
+                          ? "border-[#8E5EB5] bg-[#F5F1FA] text-[#8E5EB5]"
+                          : "border-[#E5ECE7] bg-white text-[#0F172A]"
+                      }`}
+                    >
+                      <p className="text-[16px] font-extrabold">{hours}</p>
+                      <p className="mt-1 text-[12px] font-semibold">
+                        {hours === 1 ? "Hour" : "Hours"}
+                      </p>
+                    </button>
+                  );
+                })}
+              </div>
 
-                  <div className="mt-4 rounded-[16px] bg-[#F8F4FC] px-4 py-3.5">
-                    <p className="text-[13px] text-[#667085]">Instant Service</p>
-                    <p className="mt-1 text-[18px] font-extrabold text-[#8E5EB5]">
-                      {instantHours} {instantHours === 1 ? "Hour" : "Hours"}
-                    </p>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
-                    {[1, 2, 3].map((days) => {
-                      const active = instantHours === days;
-                      return (
-                        <button
-                          key={days}
-                          type="button"
-                          onClick={() => setInstantHours(days)}
-                          className={`min-w-[5.4rem] rounded-[16px] border px-3 py-3 text-center ${
-                            active
-                              ? "border-[#8E5EB5] bg-[#F5F1FA] text-[#8E5EB5]"
-                              : "border-[#E5ECE7] bg-white text-[#0F172A]"
-                          }`}
-                        >
-                          <p className="text-[16px] font-extrabold">{days}</p>
-                          <p className="mt-1 text-[12px] font-semibold">
-                            {days === 1 ? "Day" : "Days"}
-                          </p>
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  <div className="mt-4 rounded-[16px] bg-[#F8F4FC] px-4 py-3.5">
-                    <p className="text-[13px] text-[#667085]">Instant Service</p>
-                    <p className="mt-1 text-[18px] font-extrabold text-[#8E5EB5]">
-                      {durationHours} {durationHours === 1 ? "Day" : "Days"}
-                    </p>
-                  </div>
-                </>
-              )}
+              <div className="mt-4 rounded-[16px] bg-[#F8F4FC] px-4 py-3.5">
+                <p className="text-[13px] text-[#667085]">Instant Service</p>
+                <p className="mt-1 text-[18px] font-extrabold text-[#8E5EB5]">
+                  {instantHours} {instantHours === 1 ? "Hour" : "Hours"}
+                </p>
+              </div>
             </section>
           ) : null}
 
@@ -652,9 +612,7 @@ export function BookingFormScreen({
               <div>
                 <p className="text-[13px] text-[#667085]">Duration</p>
                 <p className="mt-2 font-semibold text-[#0F172A]">
-                  {bookingMode === "daily"
-                    ? `${durationHours} ${durationHours === 1 ? "Day" : "Days"}`
-                    : `${durationHours} ${durationHours === 1 ? "Hour" : "Hours"}`}
+                  {durationHours} {durationHours === 1 ? "Hour" : "Hours"}
                 </p>
               </div>
             </div>
