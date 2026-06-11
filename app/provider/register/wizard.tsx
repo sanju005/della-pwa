@@ -41,7 +41,7 @@ const DynamicLocationPickerMap = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="flex h-full items-center justify-center bg-[#eef9f0] text-[13px] font-semibold text-[#4b5563]">
+      <div className="flex h-full items-center justify-center bg-[#f5f1fa] text-[13px] font-semibold text-[#4b5563]">
         Loading map...
       </div>
     ),
@@ -370,9 +370,9 @@ export function ProviderRegistrationWizard() {
   };
 
   return (
-    <main className="min-h-[100dvh] overflow-x-hidden bg-[#f6fff8]">
+    <main className="min-h-[100dvh] overflow-x-hidden bg-[#faf7fd]">
       <div className="mx-auto flex min-h-[100dvh] w-full max-w-[430px] flex-col px-4 py-4 sm:justify-center">
-        <div className="safe-top safe-bottom-lg overflow-hidden rounded-[34px] border border-[#dbe8df] bg-white shadow-[0_20px_60px_rgba(22,163,74,0.08)]">
+        <div className="safe-top safe-bottom-lg overflow-hidden rounded-[34px] border border-[#e6daf1] bg-white shadow-[0_20px_60px_rgba(142,94,181,0.08)]">
           <div className="px-5 pb-6 pt-5">
             <div className="mb-5 flex items-center gap-3">
               {stepIndex > 0 ? (
@@ -487,7 +487,7 @@ export function ProviderRegistrationWizard() {
                 type="button"
                 onClick={goNext}
                 disabled={isSubmitting}
-                className="mt-6 inline-flex h-12 w-full items-center justify-center rounded-[12px] bg-[#16a34a] text-[15px] font-extrabold text-white shadow-[0_16px_30px_rgba(22,163,74,0.2)]"
+                className="mt-6 inline-flex h-12 w-full items-center justify-center rounded-[12px] bg-[#8E5EB5] text-[15px] font-extrabold text-white shadow-[0_16px_30px_rgba(142,94,181,0.2)]"
               >
                 {isSubmitting ? "Submitting..." : buttonLabel(activeStep)}
               </button>
@@ -560,7 +560,7 @@ function BasicProfileStep({
         </span>
         <div className="rounded-[18px] border border-[#d9e2dd] bg-white p-4 shadow-[0_8px_20px_rgba(15,23,42,0.03)]">
           <div className="flex items-center gap-4">
-            <div className="relative flex h-18 w-18 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#eff9f0]">
+            <div className="relative flex h-18 w-18 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#f5f1fa]">
               {data.basicProfile.avatarDataUrl ? (
                 <Image
                   src={data.basicProfile.avatarDataUrl}
@@ -570,7 +570,7 @@ function BasicProfileStep({
                   className="object-cover"
                 />
               ) : (
-                <ProfilePhotoIcon className="h-8 w-8 text-[#16a34a]" />
+                <ProfilePhotoIcon className="h-8 w-8 text-[#8E5EB5]" />
               )}
             </div>
             <div className="min-w-0 flex-1">
@@ -585,7 +585,7 @@ function BasicProfileStep({
                 type="file"
                 accept="image/png,image/jpeg,image/jpg"
                 onChange={handleAvatarChange}
-                className="mt-3 block w-full text-[13px] text-[#4b5563] file:mr-3 file:rounded-[10px] file:border-0 file:bg-[#16a34a] file:px-3 file:py-2 file:font-bold file:text-white"
+                className="mt-3 block w-full text-[13px] text-[#4b5563] file:mr-3 file:rounded-[10px] file:border-0 file:bg-[#8E5EB5] file:px-3 file:py-2 file:font-bold file:text-white"
               />
             </div>
           </div>
@@ -721,7 +721,7 @@ function SelectServicesStep({
               </span>
               <span className="text-[15px] font-semibold text-[#111827]">{service}</span>
             </div>
-            <span className={`inline-flex h-5 w-5 items-center justify-center rounded-[6px] border ${active ? "border-[#16a34a] bg-[#16a34a] text-white" : "border-[#cfd8d2] bg-white text-transparent"}`}>
+            <span className={`inline-flex h-5 w-5 items-center justify-center rounded-[6px] border ${active ? "border-[#8E5EB5] bg-[#8E5EB5] text-white" : "border-[#cfd8d2] bg-white text-transparent"}`}>
               <CheckIcon className="h-3.5 w-3.5" />
             </span>
           </button>
@@ -764,9 +764,9 @@ function ServiceDetailsStep({
                 key={specialty}
                 type="button"
                 onClick={() => onToggleSpecialty(service, specialty)}
-                className={`inline-flex items-center gap-2 rounded-[10px] border px-3 py-2 text-[12px] font-semibold ${active ? "border-[#16a34a] bg-[#eff9f0] text-[#16a34a]" : "border-[#d8e4dc] bg-white text-[#6b7280]"}`}
+                className={`inline-flex items-center gap-2 rounded-[10px] border px-3 py-2 text-[12px] font-semibold ${active ? "border-[#8E5EB5] bg-[#f5f1fa] text-[#8E5EB5]" : "border-[#d8e4dc] bg-white text-[#6b7280]"}`}
               >
-                <span className={`inline-flex h-3.5 w-3.5 items-center justify-center rounded-[4px] ${active ? "bg-[#16a34a] text-white" : "border border-[#d8e4dc] bg-white text-transparent"}`}>
+                <span className={`inline-flex h-3.5 w-3.5 items-center justify-center rounded-[4px] ${active ? "bg-[#8E5EB5] text-white" : "border border-[#d8e4dc] bg-white text-transparent"}`}>
                   <CheckIcon className="h-3 w-3" />
                 </span>
                 {specialty}
@@ -844,7 +844,7 @@ function AvailabilityStep({
           <button
             type="button"
             onClick={() => onUpdate("days", [...availabilityDays])}
-            className="text-[12px] font-bold text-[#16a34a]"
+            className="text-[12px] font-bold text-[#8E5EB5]"
           >
             Select All
           </button>
@@ -860,7 +860,7 @@ function AvailabilityStep({
                 className="flex w-full items-center justify-between rounded-[12px] px-1 py-1 text-left"
               >
                 <span className="flex items-center gap-3">
-                  <span className={`inline-flex h-5 w-5 items-center justify-center rounded-[6px] border ${active ? "border-[#16a34a] bg-[#16a34a] text-white" : "border-[#cfd8d2] bg-white text-transparent"}`}>
+                  <span className={`inline-flex h-5 w-5 items-center justify-center rounded-[6px] border ${active ? "border-[#8E5EB5] bg-[#8E5EB5] text-white" : "border-[#cfd8d2] bg-white text-transparent"}`}>
                     <CheckIcon className="h-3.5 w-3.5" />
                   </span>
                   <span className="text-[14px] text-[#111827]">{day}</span>
@@ -883,8 +883,8 @@ function AvailabilityStep({
                 onClick={() => onUpdate("timePreset", preset)}
                 className="flex w-full items-center gap-3 rounded-[12px] px-1 py-1 text-left"
               >
-                <span className={`inline-flex h-5 w-5 items-center justify-center rounded-full border ${active ? "border-[#16a34a]" : "border-[#cfd8d2]"}`}>
-                  <span className={`h-2.5 w-2.5 rounded-full ${active ? "bg-[#16a34a]" : "bg-transparent"}`} />
+                <span className={`inline-flex h-5 w-5 items-center justify-center rounded-full border ${active ? "border-[#8E5EB5]" : "border-[#cfd8d2]"}`}>
+                  <span className={`h-2.5 w-2.5 rounded-full ${active ? "bg-[#8E5EB5]" : "bg-transparent"}`} />
                 </span>
                 <span className="text-[14px] text-[#111827]">{preset}</span>
               </button>
@@ -994,7 +994,7 @@ function ProviderLocationStep({
           <button
             type="button"
             onClick={requestCurrentLocation}
-            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-[12px] bg-white px-4 text-[13px] font-bold text-[#16a34a] shadow-[0_8px_20px_rgba(15,23,42,0.03)] sm:w-auto"
+            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-[12px] bg-white px-4 text-[13px] font-bold text-[#8E5EB5] shadow-[0_8px_20px_rgba(15,23,42,0.03)] sm:w-auto"
           >
             <PinIcon className="h-4 w-4" />
             {isLocating ? "Locating..." : "Use Current Location"}
@@ -1012,7 +1012,7 @@ function ProviderLocationStep({
               void updateMapLocation(latitude, longitude);
             }}
           />
-          <span className="absolute right-4 top-4 rounded-full bg-white px-3 py-1.5 text-[13px] font-bold text-[#16a34a] shadow-[0_8px_18px_rgba(15,23,42,0.08)]">
+          <span className="absolute right-4 top-4 rounded-full bg-white px-3 py-1.5 text-[13px] font-bold text-[#8E5EB5] shadow-[0_8px_18px_rgba(15,23,42,0.08)]">
             {data.providerLocation.radius} KM
           </span>
           <span className="absolute bottom-4 left-4 right-4 rounded-[12px] bg-white/92 px-3 py-2 text-[13px] font-medium text-[#111827] shadow-[0_8px_18px_rgba(15,23,42,0.08)]">
@@ -1156,7 +1156,7 @@ function SuccessStep({
   return (
     <div className="space-y-6">
       <div className="rounded-[20px] border border-[#e4ece7] bg-white p-5 text-center shadow-[0_10px_26px_rgba(15,23,42,0.04)]">
-        <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-[#16a34a] text-white shadow-[0_18px_30px_rgba(22,163,74,0.22)]">
+        <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-[#8E5EB5] text-white shadow-[0_18px_30px_rgba(142,94,181,0.22)]">
           <CheckIcon className="h-10 w-10" />
         </div>
         <h2 className="mt-5 text-[24px] font-extrabold tracking-[-0.04em] text-[#111827]">
@@ -1168,7 +1168,7 @@ function SuccessStep({
       </div>
 
       <div className="rounded-[20px] border border-[#e4ece7] bg-[linear-gradient(180deg,#fcfffd_0%,#f4fbf5_100%)] p-5 shadow-[0_10px_26px_rgba(15,23,42,0.04)]">
-        <h3 className="text-[22px] font-extrabold tracking-[-0.04em] text-[#16a34a]">
+        <h3 className="text-[22px] font-extrabold tracking-[-0.04em] text-[#8E5EB5]">
           Registration Summary
         </h3>
         <p className="mt-1 text-[13px] text-[#4b5563]">
@@ -1219,7 +1219,7 @@ function SuccessStep({
 
       <Link
         href="/provider/dashboard"
-        className="inline-flex h-12 w-full items-center justify-center rounded-[12px] bg-[#16a34a] text-[15px] font-extrabold text-white shadow-[0_16px_30px_rgba(22,163,74,0.2)]"
+        className="inline-flex h-12 w-full items-center justify-center rounded-[12px] bg-[#8E5EB5] text-[15px] font-extrabold text-white shadow-[0_16px_30px_rgba(142,94,181,0.2)]"
       >
         View My Profile
       </Link>
@@ -1238,9 +1238,9 @@ function SubmissionChoiceStep({
     <div className="space-y-6">
       <div className="rounded-[22px] border border-[#d7efdd] bg-[linear-gradient(180deg,#fbfffc_0%,#f2fbf4_100%)] p-6 text-center shadow-[0_16px_36px_rgba(22,163,74,0.08)]">
         <div className="relative mx-auto flex h-24 w-24 items-center justify-center">
-          <span className="absolute inset-0 animate-ping rounded-full bg-[#16a34a]/15" />
-          <span className="absolute inset-2 rounded-full bg-[#16a34a]/10" />
-          <div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-[#16a34a] text-white shadow-[0_18px_30px_rgba(22,163,74,0.24)]">
+          <span className="absolute inset-0 animate-ping rounded-full bg-[#8E5EB5]/15" />
+          <span className="absolute inset-2 rounded-full bg-[#8E5EB5]/10" />
+          <div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-[#8E5EB5] text-white shadow-[0_18px_30px_rgba(142,94,181,0.24)]">
             <CheckIcon className="h-8 w-8" />
           </div>
         </div>
@@ -1256,7 +1256,7 @@ function SubmissionChoiceStep({
       <button
         type="button"
         onClick={onStartVerification}
-        className="inline-flex h-12 w-full items-center justify-center rounded-[12px] bg-[#16a34a] text-[15px] font-extrabold text-white shadow-[0_16px_30px_rgba(22,163,74,0.2)]"
+        className="inline-flex h-12 w-full items-center justify-center rounded-[12px] bg-[#8E5EB5] text-[15px] font-extrabold text-white shadow-[0_16px_30px_rgba(142,94,181,0.2)]"
       >
         Verify Account
       </button>
@@ -1283,12 +1283,12 @@ function ProgressHeader({
   return (
     <div className="mb-5">
       <div className="mb-2 flex items-center justify-between text-[12px]">
-        <span className="font-bold text-[#16a34a]">Step {current + 1}</span>
+        <span className="font-bold text-[#8E5EB5]">Step {current + 1}</span>
         <span className="text-[#6b7280]">{current + 1}/{total}</span>
       </div>
       <div className="h-2 rounded-full bg-[#e6ece8]">
         <div
-          className="h-2 rounded-full bg-[#16a34a]"
+          className="h-2 rounded-full bg-[#8E5EB5]"
           style={{ width: `${((current + 1) / total) * 100}%` }}
         />
       </div>
@@ -1502,7 +1502,7 @@ function RangeField({
         max={max}
         value={value}
         onChange={(event) => onChange(Number(event.target.value))}
-        className="h-2 w-full accent-[#16a34a]"
+        className="h-2 w-full accent-[#8E5EB5]"
       />
       <div className="mt-1 flex justify-between text-[11px] text-[#6b7280]">
         <span>{min} {suffix}</span>
@@ -1616,7 +1616,7 @@ function AssetUploadSlot({
               className="object-cover"
             />
           ) : (
-            <PlusIcon className="h-6 w-6 text-[#16a34a]" />
+            <PlusIcon className="h-6 w-6 text-[#8E5EB5]" />
           )}
         </div>
         <p className="mt-2 truncate text-[12px] font-semibold text-[#111827]">
@@ -1686,7 +1686,7 @@ function OtpGroup({
           />
         ))}
       </div>
-      <p className="mt-3 text-[12px] font-semibold text-[#16a34a]">Resend OTP (0:30)</p>
+      <p className="mt-3 text-[12px] font-semibold text-[#8E5EB5]">Resend OTP (0:30)</p>
     </div>
   );
 }
@@ -1757,7 +1757,7 @@ function UploadCard({
           </div>
         ) : (
           <>
-            <UploadIcon className="h-8 w-8 text-[#16a34a]" />
+            <UploadIcon className="h-8 w-8 text-[#8E5EB5]" />
             <p className="mt-3 text-[14px] font-bold text-[#111827]">Upload Image</p>
             <p className="mt-1 text-[12px] text-[#6b7280]">JPG, PNG (Max 5MB)</p>
           </>

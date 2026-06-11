@@ -36,7 +36,7 @@ type OtpBoxProps = {
 
 export function RegisterShell({ children }: ShellProps) {
   return (
-    <main className="min-h-[100dvh] overflow-x-hidden bg-[#f6fff8]">
+    <main className="min-h-[100dvh] overflow-x-hidden bg-[#faf7fd]">
       <div className="mx-auto flex min-h-[100dvh] w-full max-w-[430px] flex-col bg-white px-5 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
         <div className="min-h-[100dvh] bg-white py-5">
           {children}
@@ -86,7 +86,7 @@ export function RegisterTitle({ title, subtitle }: TitleProps) {
 
 export function CircleHero({ children }: ShellProps) {
   return (
-    <div className="mx-auto mb-4 mt-2 flex h-16 w-16 items-center justify-center rounded-full bg-[linear-gradient(180deg,#eefbef_0%,#dff6e2_100%)]">
+    <div className="mx-auto mb-4 mt-2 flex h-16 w-16 items-center justify-center rounded-full bg-[linear-gradient(180deg,#f5f1fa_0%,#eadcf6_100%)]">
       {children}
     </div>
   );
@@ -108,7 +108,7 @@ export function Field({
         {label}
       </span>
       <div className="flex h-13 items-center rounded-[14px] border border-[#d9e2dd] bg-white px-4 shadow-[0_8px_20px_rgba(15,23,42,0.03)]">
-        <span className="mr-3 text-[#16a34a]">{icon}</span>
+        <span className="mr-3 text-[#8E5EB5]">{icon}</span>
         <input
           type={isPasswordField && showPassword ? "text" : type}
           placeholder={placeholder}
@@ -140,7 +140,7 @@ export function DateField() {
         Date of Birth
       </span>
       <div className="flex h-13 items-center rounded-[14px] border border-[#d9e2dd] bg-white px-4 shadow-[0_8px_20px_rgba(15,23,42,0.03)]">
-        <span className="mr-3 text-[#16a34a]">
+        <span className="mr-3 text-[#8E5EB5]">
           <CalendarIcon className="h-5 w-5" />
         </span>
         <input
@@ -148,7 +148,7 @@ export function DateField() {
           placeholder="Select date of birth"
           className="h-full flex-1 border-0 bg-transparent text-[15px] text-[#111827] outline-none placeholder:text-[#9ca3af]"
         />
-        <span className="ml-3 text-[#16a34a]">
+        <span className="ml-3 text-[#8E5EB5]">
           <CalendarIcon className="h-5 w-5" />
         </span>
       </div>
@@ -171,7 +171,7 @@ export function PhoneField() {
           <ChevronDownIcon className="ml-auto h-4 w-4 text-[#6b7280]" />
         </div>
         <div className="flex h-13 flex-1 items-center rounded-[14px] border border-[#d9e2dd] bg-white px-4 shadow-[0_8px_20px_rgba(15,23,42,0.03)]">
-          <PhoneIcon className="mr-3 h-5 w-5 text-[#16a34a]" />
+          <PhoneIcon className="mr-3 h-5 w-5 text-[#8E5EB5]" />
           <input
             type="tel"
             placeholder="Enter phone number"
@@ -187,7 +187,7 @@ export function PrimaryLinkButton({ href, children }: ButtonLinkProps) {
   return (
     <Link
       href={href}
-      className="inline-flex h-13 w-full items-center justify-center rounded-[14px] bg-[#16a34a] px-5 text-[15px] font-extrabold text-white shadow-[0_16px_30px_rgba(22,163,74,0.22)] transition hover:bg-[#14863f]"
+      className="inline-flex h-13 w-full items-center justify-center rounded-[14px] bg-[#8E5EB5] px-5 text-[15px] font-extrabold text-white shadow-[0_16px_30px_rgba(142,94,181,0.22)] transition hover:bg-[#7B4EA1]"
     >
       {children}
     </Link>
@@ -198,7 +198,7 @@ export function BottomAuthText() {
   return (
     <p className="mt-4 text-center text-[15px] text-[#4b5563]">
       Already have an account?{" "}
-      <Link href="/login" className="font-extrabold text-[#16a34a]">
+      <Link href="/login" className="font-extrabold text-[#8E5EB5]">
         Log in
       </Link>
     </p>
@@ -208,7 +208,7 @@ export function BottomAuthText() {
 export function VerifyPhoneCard() {
   return (
     <div className="flex h-13 items-center rounded-[14px] border border-[#d9e2dd] bg-white px-4 shadow-[0_8px_20px_rgba(15,23,42,0.03)]">
-      <PhoneIcon className="mr-3 h-5 w-5 text-[#16a34a]" />
+      <PhoneIcon className="mr-3 h-5 w-5 text-[#8E5EB5]" />
       <span className="text-[15px] font-medium text-[#111827]">
         +60 12-345 6789
       </span>
@@ -240,7 +240,7 @@ export function OtpBox({ value = "" }: OtpBoxProps) {
 
 export function ResendRow() {
   return (
-    <p className="mt-9 flex items-center gap-2 text-[14px] font-semibold text-[#16a34a]">
+    <p className="mt-9 flex items-center gap-2 text-[14px] font-semibold text-[#8E5EB5]">
       <RefreshIcon className="h-4 w-4" />
       Resend OTP (00:30)
     </p>
@@ -250,39 +250,39 @@ export function ResendRow() {
 export function SuccessCard() {
   const items = [
     {
-      icon: <SearchIcon className="h-6 w-6 text-[#16a34a]" />,
+      icon: <SearchIcon className="h-6 w-6 text-[#8E5EB5]" />,
       title: "Find nearby service providers",
       text: "Browse and discover trusted professionals near you.",
     },
     {
-      icon: <ChatIcon className="h-6 w-6 text-[#16a34a]" />,
+      icon: <ChatIcon className="h-6 w-6 text-[#8E5EB5]" />,
       title: "Chat directly with providers",
       text: "Ask questions and confirm details before booking.",
     },
     {
-      icon: <BoltIcon className="h-6 w-6 text-[#16a34a]" />,
+      icon: <BoltIcon className="h-6 w-6 text-[#8E5EB5]" />,
       title: "Book instantly",
       text: "Reserve services quickly with fewer steps.",
     },
     {
-      icon: <CalendarIcon className="h-6 w-6 text-[#16a34a]" />,
+      icon: <CalendarIcon className="h-6 w-6 text-[#8E5EB5]" />,
       title: "Track your bookings",
       text: "Stay updated on schedules and upcoming jobs.",
     },
   ];
 
   return (
-    <div className="rounded-[22px] border border-[#cfe8d4] bg-[linear-gradient(180deg,#fcfffc_0%,#f6fff8_100%)] p-5 shadow-[0_16px_36px_rgba(22,163,74,0.08)]">
+    <div className="rounded-[22px] border border-[#e6daf1] bg-[linear-gradient(180deg,#ffffff_0%,#faf7fd_100%)] p-5 shadow-[0_16px_36px_rgba(142,94,181,0.08)]">
       {items.map((item, index) => (
         <div
           key={item.title}
           className={
             index === 0
               ? "flex gap-4"
-              : "mt-4 flex gap-4 border-t border-[#e2f0e5] pt-4"
+              : "mt-4 flex gap-4 border-t border-[#eee5f6] pt-4"
           }
         >
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-[#bde8c7] bg-[#effbf1]">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-[#dac7ec] bg-[#f5f1fa]">
             {item.icon}
           </div>
           <div>
@@ -302,14 +302,14 @@ export function SuccessCard() {
 export function SuccessHero() {
   return (
     <div className="relative mx-auto mb-6 mt-3 flex h-36 w-36 items-center justify-center">
-      <span className="absolute left-1 top-11 h-2.5 w-2.5 rounded-full bg-[#16a34a]" />
+      <span className="absolute left-1 top-11 h-2.5 w-2.5 rounded-full bg-[#8E5EB5]" />
       <span className="absolute right-2 top-12 h-2 w-2 rounded-full bg-[#facc15]" />
-      <span className="absolute left-7 top-3 h-1.5 w-1.5 rounded-full bg-[#22c55e]" />
-      <span className="absolute right-11 top-2 h-1.5 w-1.5 rounded-full bg-[#22c55e]" />
+      <span className="absolute left-7 top-3 h-1.5 w-1.5 rounded-full bg-[#A679CF]" />
+      <span className="absolute right-11 top-2 h-1.5 w-1.5 rounded-full bg-[#A679CF]" />
       <span className="absolute right-4 top-8 h-2 w-2 rounded-full bg-[#fb7185]" />
       <SparkleIcon className="absolute left-4 top-7 h-4 w-4 text-[#facc15]" />
-      <SparkleIcon className="absolute right-9 bottom-8 h-3.5 w-3.5 rotate-45 text-[#22c55e]" />
-      <div className="flex h-24 w-24 items-center justify-center rounded-full bg-[#16a34a] shadow-[0_18px_30px_rgba(22,163,74,0.22)]">
+      <SparkleIcon className="absolute right-9 bottom-8 h-3.5 w-3.5 rotate-45 text-[#A679CF]" />
+      <div className="flex h-24 w-24 items-center justify-center rounded-full bg-[#8E5EB5] shadow-[0_18px_30px_rgba(142,94,181,0.22)]">
         <CheckIcon className="h-12 w-12 text-white" />
       </div>
     </div>
@@ -318,11 +318,11 @@ export function SuccessHero() {
 
 export function VerifyHero() {
   return (
-    <div className="relative mx-auto mb-5 mt-3 flex h-32 w-32 items-center justify-center rounded-full bg-[radial-gradient(circle,#eefbef_0%,#dff5e3_100%)]">
-      <span className="absolute left-1 top-12 h-2.5 w-2.5 rounded-full bg-[#b7e8c0]" />
-      <span className="absolute right-0 top-10 h-2.5 w-2.5 rounded-full bg-[#16a34a]" />
-      <span className="absolute left-10 top-1 h-2.5 w-2.5 rounded-full bg-[#16a34a]" />
-      <PhoneShieldIcon className="h-20 w-20 text-[#16a34a]" />
+    <div className="relative mx-auto mb-5 mt-3 flex h-32 w-32 items-center justify-center rounded-full bg-[radial-gradient(circle,#f5f1fa_0%,#eadcf6_100%)]">
+      <span className="absolute left-1 top-12 h-2.5 w-2.5 rounded-full bg-[#d7c1eb]" />
+      <span className="absolute right-0 top-10 h-2.5 w-2.5 rounded-full bg-[#8E5EB5]" />
+      <span className="absolute left-10 top-1 h-2.5 w-2.5 rounded-full bg-[#8E5EB5]" />
+      <PhoneShieldIcon className="h-20 w-20 text-[#8E5EB5]" />
     </div>
   );
 }
@@ -330,7 +330,7 @@ export function VerifyHero() {
 export function SignupHero() {
   return (
     <CircleHero>
-      <UserPlusIcon className="h-9 w-9 text-[#16a34a]" />
+      <UserPlusIcon className="h-9 w-9 text-[#8E5EB5]" />
     </CircleHero>
   );
 }

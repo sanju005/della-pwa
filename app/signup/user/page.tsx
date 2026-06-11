@@ -112,7 +112,7 @@ export default function SignupUserPage() {
       <RegisterHeader showBack backHref="/signup" />
       <RegisterTitle
         title="Create account as User"
-        subtitle="Fill in the details below to create your DELLA account."
+        subtitle="Fill in the details below to create your Swiper account."
       />
 
       <div className="mt-8 space-y-4">
@@ -162,7 +162,7 @@ export default function SignupUserPage() {
           rightIcon={<Icons.EyeOff className="h-5 w-5" />}
           type="password"
         />
-        <div className="rounded-[18px] bg-[#f7fbf7] px-4 py-3 text-[13px] leading-6 text-[#4b5563]">
+        <div className="rounded-[18px] bg-[#f5f1fa] px-4 py-3 text-[13px] leading-6 text-[#4b5563]">
           <p>At least 8 characters</p>
           <p>One uppercase letter</p>
           <p>One number</p>
@@ -188,11 +188,11 @@ export default function SignupUserPage() {
         />
         <span>
           I agree to the{" "}
-          <Link href="/signup/user" className="font-bold text-[#16a34a]">
+          <Link href="/signup/user" className="font-bold text-[#8E5EB5]">
             Terms of Service
           </Link>{" "}
           and{" "}
-          <Link href="/signup/user" className="font-bold text-[#16a34a]">
+          <Link href="/signup/user" className="font-bold text-[#8E5EB5]">
             Privacy Policy
           </Link>
         </span>
@@ -209,7 +209,7 @@ export default function SignupUserPage() {
           type="button"
           onClick={handleSubmit}
           disabled={isSubmitting}
-          className="inline-flex h-13 w-full items-center justify-center rounded-[14px] bg-[#16a34a] px-5 text-[15px] font-extrabold text-white shadow-[0_16px_30px_rgba(22,163,74,0.22)] transition hover:bg-[#14863f] disabled:cursor-not-allowed disabled:opacity-70"
+          className="inline-flex h-13 w-full items-center justify-center rounded-[14px] bg-[#8E5EB5] px-5 text-[15px] font-extrabold text-white shadow-[0_16px_30px_rgba(142,94,181,0.22)] transition hover:bg-[#7B4EA1] disabled:cursor-not-allowed disabled:opacity-70"
         >
           {isSubmitting ? "Creating account..." : "Create account"}
         </button>
@@ -217,7 +217,7 @@ export default function SignupUserPage() {
 
       <p className="mt-7 text-center text-[15px] text-[#4b5563]">
         Already have an account?{" "}
-        <Link href="/login" className="font-extrabold text-[#16a34a]">
+        <Link href="/login" className="font-extrabold text-[#8E5EB5]">
           Log in
         </Link>
       </p>
@@ -239,11 +239,11 @@ function ProfileImageField({
       </span>
       <div className="rounded-[18px] border border-[#d9e2dd] bg-white p-4 shadow-[0_8px_20px_rgba(15,23,42,0.03)]">
         <div className="flex items-center gap-4">
-          <div className="relative flex h-18 w-18 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#eff9f0]">
+          <div className="relative flex h-18 w-18 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#f5f1fa]">
             {value ? (
               <Image src={value} alt="Profile preview" fill unoptimized className="object-cover" />
             ) : (
-              <Icons.User className="h-8 w-8 text-[#16a34a]" />
+              <Icons.User className="h-8 w-8 text-[#8E5EB5]" />
             )}
           </div>
           <div className="min-w-0 flex-1">
@@ -255,7 +255,7 @@ function ProfileImageField({
               type="file"
               accept="image/png,image/jpeg,image/jpg"
               onChange={onChange}
-              className="mt-3 block w-full text-[13px] text-[#4b5563] file:mr-3 file:rounded-[10px] file:border-0 file:bg-[#16a34a] file:px-3 file:py-2 file:font-bold file:text-white"
+              className="mt-3 block w-full text-[13px] text-[#4b5563] file:mr-3 file:rounded-[10px] file:border-0 file:bg-[#8E5EB5] file:px-3 file:py-2 file:font-bold file:text-white"
             />
           </div>
         </div>
@@ -294,7 +294,7 @@ function ControlledDateField({
         {label}
       </span>
       <div className="flex h-13 items-center rounded-[14px] border border-[#d9e2dd] bg-white px-4 shadow-[0_8px_20px_rgba(15,23,42,0.03)]">
-        <span className="mr-3 text-[#16a34a]">{icon}</span>
+        <span className="mr-3 text-[#8E5EB5]">{icon}</span>
         <input
           ref={inputRef}
           type="date"
@@ -335,7 +335,7 @@ function ControlledSelectField({
         {label}
       </span>
       <div className="flex h-13 items-center rounded-[14px] border border-[#d9e2dd] bg-white px-4 shadow-[0_8px_20px_rgba(15,23,42,0.03)]">
-        <span className="mr-3 text-[#16a34a]">{icon}</span>
+        <span className="mr-3 text-[#8E5EB5]">{icon}</span>
         <select
           value={value}
           onChange={(event) => onChange(event.target.value)}
@@ -382,7 +382,7 @@ function ControlledField({
         {label}
       </span>
       <div className="flex h-13 items-center rounded-[14px] border border-[#d9e2dd] bg-white px-4 shadow-[0_8px_20px_rgba(15,23,42,0.03)]">
-        <span className="mr-3 text-[#16a34a]">{icon}</span>
+        <span className="mr-3 text-[#8E5EB5]">{icon}</span>
         <input
           type={isPasswordField && showPassword ? "text" : type}
           value={value}
@@ -429,7 +429,7 @@ function ControlledPhoneField({
           <span className="text-[15px] font-medium text-[#111827]">+60</span>
         </div>
         <div className="flex h-13 flex-1 items-center rounded-[14px] border border-[#d9e2dd] bg-white px-4 shadow-[0_8px_20px_rgba(15,23,42,0.03)]">
-          <PhoneIcon className="mr-3 h-5 w-5 text-[#16a34a]" />
+          <PhoneIcon className="mr-3 h-5 w-5 text-[#8E5EB5]" />
           <input
             type="tel"
             value={value}
