@@ -97,10 +97,10 @@ export function ProfileShell({
   showBottomNav = true,
 }: ShellProps) {
   return (
-    <main className="min-h-[100dvh] overflow-x-hidden bg-[#f6fff8]">
+    <main className="min-h-[100dvh] overflow-x-hidden bg-[#faf7fd]">
       <div className="mx-auto flex min-h-[100dvh] w-full max-w-[430px] flex-col bg-white px-5 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
         <div className="relative min-h-[100dvh] overflow-hidden bg-white">
-          <div className="bg-[#16a34a] px-5 pb-4 pt-5 text-white">
+          <div className="bg-[#8E5EB5] px-5 pb-4 pt-5 text-white">
             <div className="mt-4 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 {showBack ? (
@@ -729,7 +729,7 @@ export function BookingsScreen({ bookings, initialTab = "upcoming" }: BookingsPr
             onClick={() => setActiveTab(tab)}
             className={`border-b-2 px-2 pb-3 pt-1 capitalize ${
               activeTab === tab
-                ? "border-[#16a34a] text-[#16a34a]"
+                ? "border-[#8E5EB5] text-[#8E5EB5]"
                 : "border-transparent"
             }`}
           >
@@ -2112,7 +2112,7 @@ function NavItem({
     <Link
       href={href}
       className={`flex min-w-[3.1rem] flex-col items-center gap-1 ${
-        active ? "text-[#16A34A]" : "text-[#8A94A6]"
+        active ? "text-[#8E5EB5]" : "text-[#8A94A6]"
       }`}
     >
       {icon}
@@ -2120,7 +2120,7 @@ function NavItem({
       <span className="flex h-3 items-end">
         <span
           className={`rounded-full transition-all ${
-            active ? "h-[3px] w-10 bg-[#16A34A]" : "h-[3px] w-6 bg-transparent"
+            active ? "h-[3px] w-10 bg-[#8E5EB5]" : "h-[3px] w-6 bg-transparent"
           }`}
         />
       </span>
@@ -2171,7 +2171,7 @@ function BookingThumb({
 
 function badgeToneClass(tone: Booking["badgeTone"]) {
   if (tone === "green") {
-    return "bg-[#e9f9ec] text-[#16a34a]";
+    return "bg-[#f5f1fa] text-[#8E5EB5]";
   }
 
   if (tone === "amber") {

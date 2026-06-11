@@ -32,7 +32,7 @@ export function MobilePage({
   className?: string;
 }) {
   return (
-    <main className="min-h-[100dvh] overflow-x-hidden bg-[radial-gradient(circle_at_top,rgba(187,247,208,0.36),transparent_32%),linear-gradient(180deg,#f7fff8_0%,#eef9f1_100%)]">
+    <main className="min-h-[100dvh] overflow-x-hidden bg-[radial-gradient(circle_at_top,rgba(166,121,207,0.28),transparent_32%),linear-gradient(180deg,#fcfaff_0%,#f5f1fa_100%)]">
       <div className="mx-auto min-h-[100dvh] w-full max-w-[430px] bg-white px-4 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] sm:px-5">
         <div className={cx("min-h-[100dvh] py-4", className)}>{children}</div>
       </div>
@@ -77,7 +77,7 @@ export function PageHeader({
           <Link
             href={backHref}
             aria-label="Back"
-            className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#f4faf5] text-[#16a34a]"
+            className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#f5f1fa] text-[#8E5EB5]"
           >
             <ChevronRight className="h-5 w-5 rotate-180" />
           </Link>
@@ -144,10 +144,10 @@ export function AppButton({
   const classes = cx(
     "inline-flex h-11 items-center justify-center gap-2 rounded-[14px] px-4 text-[14px] font-extrabold transition disabled:cursor-not-allowed disabled:opacity-60 sm:h-12 sm:px-5 sm:text-[15px]",
     tone === "primary" &&
-      "bg-[#16a34a] text-white shadow-[0_16px_30px_rgba(22,163,74,0.22)] hover:bg-[#14863f]",
+      "bg-[#8E5EB5] text-white shadow-[0_16px_30px_rgba(142,94,181,0.22)] hover:bg-[#7B4EA1]",
     tone === "secondary" &&
       "border border-[#dce7df] bg-white text-[#0f172a] shadow-[0_10px_22px_rgba(15,23,42,0.04)] hover:bg-[#f8fbf9]",
-    tone === "ghost" && "bg-[#eef9f1] text-[#16a34a] hover:bg-[#e3f5e7]",
+    tone === "ghost" && "bg-[#f5f1fa] text-[#8E5EB5] hover:bg-[#ede4f6]",
     tone === "danger" && "bg-[#fff1f1] text-[#dc2626] hover:bg-[#ffe4e6]",
     className
   );
@@ -181,7 +181,7 @@ export function StatusBadge({
       className={cx(
         "inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold ring-1 ring-inset",
         tone === "pending" && "bg-[#fff7e8] text-[#b45309] ring-[#fcd34d]",
-        tone === "accepted" && "bg-[#e9f9ec] text-[#15803d] ring-[#86efac]",
+        tone === "accepted" && "bg-[#f5f1fa] text-[#8E5EB5] ring-[#d7c1eb]",
         tone === "declined" && "bg-[#fff1f2] text-[#dc2626] ring-[#fecdd3]",
         tone === "completed" && "bg-[#ecfeff] text-[#0f766e] ring-[#99f6e4]",
         tone === "cancelled" && "bg-[#eef2f7] text-[#475569] ring-[#d6dde6]",
@@ -206,7 +206,7 @@ export function EmptyState({
 }) {
   return (
     <div className="rounded-[20px] border border-dashed border-[#d8e3dc] bg-[#fbfefc] px-4 py-8 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.5)]">
-      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#eef9f1] text-[#16a34a]">
+      <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#f5f1fa] text-[#8E5EB5]">
         {icon ?? <Bell className="h-6 w-6" />}
       </div>
       <h3 className="mt-4 text-[16px] font-extrabold text-[#0f172a]">{title}</h3>
@@ -227,7 +227,7 @@ export function LoadingState({
 }) {
   return (
     <div className="rounded-[20px] border border-[#e4ece7] bg-white px-4 py-8 text-center shadow-[0_12px_28px_rgba(15,23,42,0.04)]">
-      <LoaderCircle className="mx-auto h-8 w-8 animate-spin text-[#16a34a]" />
+      <LoaderCircle className="mx-auto h-8 w-8 animate-spin text-[#8E5EB5]" />
       <h3 className="mt-4 text-[16px] font-extrabold text-[#0f172a]">{title}</h3>
       <p className="mt-2 text-[14px] leading-6 text-[#64748b]">{description}</p>
     </div>
@@ -277,12 +277,12 @@ export function ProviderCard({
             <h3 className="truncate text-[16px] font-extrabold text-[#0f172a]">{name}</h3>
             <p className="mt-1 text-[14px] font-medium text-[#334155]">{service}</p>
             {subtitle ? (
-              <p className="mt-1 text-[12px] font-semibold text-[#16a34a]">{subtitle}</p>
+              <p className="mt-1 text-[12px] font-semibold text-[#8E5EB5]">{subtitle}</p>
             ) : null}
           </div>
           <Link
             href={href}
-            className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#16a34a] text-white shadow-[0_12px_24px_rgba(22,163,74,0.2)]"
+            className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#8E5EB5] text-white shadow-[0_12px_24px_rgba(142,94,181,0.2)]"
           >
             <ChevronRight className="h-5 w-5" />
           </Link>
@@ -295,7 +295,7 @@ export function ProviderCard({
         <div className="mt-4 flex items-center justify-between border-t border-[#e8eeea] pt-4">
           <div>
             <p className="text-[12px] text-[#64748b]">From</p>
-            <p className="text-[18px] font-extrabold text-[#16a34a]">{priceLabel}</p>
+            <p className="text-[18px] font-extrabold text-[#8E5EB5]">{priceLabel}</p>
           </div>
           <AppButton href={href}>View Profile</AppButton>
         </div>
@@ -330,8 +330,8 @@ export function BookingCard({
   return (
     <AppCard>
       <div className="flex gap-3">
-        <div className="flex h-[4.8rem] w-[4.8rem] shrink-0 items-center justify-center overflow-hidden rounded-[18px] bg-[#eef9f1]">
-          {image ?? <CalendarDays className="h-8 w-8 text-[#16a34a]" />}
+        <div className="flex h-[4.8rem] w-[4.8rem] shrink-0 items-center justify-center overflow-hidden rounded-[18px] bg-[#f5f1fa]">
+          {image ?? <CalendarDays className="h-8 w-8 text-[#8E5EB5]" />}
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-3">
@@ -343,11 +343,11 @@ export function BookingCard({
           </div>
           <div className="mt-3 space-y-2 text-[13px] text-[#475569]">
             <div className="flex items-center gap-2">
-              <CalendarDays className="h-4 w-4 text-[#16a34a]" />
+              <CalendarDays className="h-4 w-4 text-[#8E5EB5]" />
               <span>{schedule}</span>
             </div>
             <div className="flex items-center gap-2">
-              <MapPin className="h-4 w-4 text-[#16a34a]" />
+              <MapPin className="h-4 w-4 text-[#8E5EB5]" />
               <span>{location}</span>
             </div>
           </div>
