@@ -5,6 +5,8 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import horizontalLogo from "../../Logo/Horozondal Logo.png";
+import verticalLogo from "../../Logo/Verticle Logo.png";
 import {
   ArrowLeft,
   ArrowRight,
@@ -147,6 +149,24 @@ export default function LoginPage() {
             sizes="(max-width: 430px) 100vw, 430px"
             className="object-cover object-top"
           />
+          <div className="absolute left-6 top-7 z-10 flex items-start gap-3">
+            <div className="rounded-[24px] bg-white/12 p-2.5 shadow-[0_10px_30px_rgba(35,16,59,0.18)] ring-1 ring-white/18 backdrop-blur-sm">
+              <Image
+                src={verticalLogo}
+                alt="SWIPER"
+                priority
+                className="h-auto w-[52px]"
+              />
+            </div>
+            <div className="pt-1 text-white">
+              <p className="text-[13px] font-semibold tracking-[0.18em] text-white/72">
+                SWIPER
+              </p>
+              <p className="mt-1 text-[14px] font-medium text-white/88">
+                Home and lifestyle marketplace
+              </p>
+            </div>
+          </div>
           <div className="pointer-events-none absolute left-1/2 top-[54%] h-[53%] w-[55%] -translate-x-1/2 -translate-y-1/2 rounded-[46%] bg-[radial-gradient(circle_at_50%_45%,rgba(195,163,230,0.95)_0%,rgba(142,94,181,0.92)_46%,rgba(110,72,160,0.86)_100%)]" />
           <div className="pointer-events-none absolute left-1/2 top-[54%] h-[67%] w-[67%] -translate-x-1/2 -translate-y-1/2 rounded-[48%] border border-white/10 bg-[radial-gradient(circle_at_50%_40%,rgba(178,145,219,0.16)_0%,rgba(178,145,219,0.04)_58%,rgba(178,145,219,0)_100%)]" />
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_52%_52%,rgba(178,145,219,0.55)_0%,rgba(142,94,181,0.2)_32%,rgba(94,60,132,0)_62%)]" />
@@ -158,12 +178,10 @@ export default function LoginPage() {
             <div>
               <p className="text-[16px] font-medium text-[#8e5eb5]">Welcome to</p>
               <Image
-                src="/swiper/logo-purple.png"
+                src={horizontalLogo}
                 alt="SWIPER"
-                width={210}
-                height={68}
                 priority
-                className="mt-2 h-auto w-[170px]"
+                className="mt-2 h-auto w-[200px]"
               />
             </div>
             <div className="mt-2 flex items-center gap-2">
