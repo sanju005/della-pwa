@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import swiperLogo from "../../../Logo/Swiper.png";
 import {
   Bell,
   BookOpen,
@@ -117,17 +118,20 @@ export function MarketplaceScreen({
   }, []);
 
   return (
-    <main className="min-h-[100dvh] overflow-x-hidden bg-[#f6fff8]">
-      <div className="mx-auto min-h-[100dvh] w-full max-w-[430px] bg-white px-5 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
-        <div className="relative min-h-[100dvh] bg-white py-5 pb-28">
-          <div className="pointer-events-none absolute right-[-12%] top-[-2%] h-40 w-40 rounded-full bg-[radial-gradient(circle,_rgba(187,247,208,0.7),_transparent_68%)]" />
+    <main className="min-h-[100dvh] overflow-x-hidden bg-[#fbf8ff]">
+      <div className="mx-auto min-h-[100dvh] w-full max-w-[430px] bg-[linear-gradient(180deg,#ffffff_0%,#fbf8fe_100%)] px-5 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
+        <div className="relative min-h-[100dvh] bg-transparent py-5 pb-28">
+          <div className="pointer-events-none absolute right-[-12%] top-[-2%] h-40 w-40 rounded-full bg-[radial-gradient(circle,_rgba(142,94,181,0.22),_transparent_68%)]" />
 
           <header className="relative z-10">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-[28px] font-extrabold leading-none tracking-[-0.06em] text-[#16A34A]">
-                  DELLA
-                </p>
+                <Image
+                  src={swiperLogo}
+                  alt="Swiper"
+                  priority
+                  className="h-auto w-[148px]"
+                />
                 <h1 className="mt-7 text-[28px] font-extrabold leading-[1.12] tracking-[-0.05em] text-[#0F172A]">
                   {timePrefix()}{" "}
                   <span className="inline-flex items-center gap-1">
@@ -145,7 +149,7 @@ export function MarketplaceScreen({
                 className="relative mt-1 inline-flex h-11 w-11 items-center justify-center rounded-full bg-white text-[#0F172A]"
               >
                 <Bell className="h-7 w-7 stroke-[2.2]" />
-                <span className="absolute right-1 top-1 h-2.5 w-2.5 rounded-full bg-[#16A34A]" />
+                <span className="absolute right-1 top-1 h-2.5 w-2.5 rounded-full bg-[#8E5EB5]" />
               </button>
             </div>
 
@@ -197,7 +201,7 @@ export function MarketplaceScreen({
               action={
                 <Link
                   href="/profile/bookings"
-                  className="text-[14px] font-extrabold text-[#16A34A]"
+                  className="text-[14px] font-extrabold text-[#8E5EB5]"
                 >
                   See all bookings
                 </Link>
@@ -220,7 +224,7 @@ export function MarketplaceScreen({
                     </p>
 
                     <div className="mt-3 flex items-center gap-2 text-[14px] text-[#475467]">
-                      <CalendarDays className="h-4 w-4 text-[#16A34A]" />
+                      <CalendarDays className="h-4 w-4 text-[#8E5EB5]" />
                       <span className="truncate">{upcomingBooking.scheduleLabel}</span>
                     </div>
                     <div className="mt-3">
@@ -230,7 +234,7 @@ export function MarketplaceScreen({
 
                   <Link
                     href="/profile/bookings"
-                    className="inline-flex h-12 shrink-0 items-center gap-2 rounded-[16px] border border-[#16A34A] px-5 text-[15px] font-extrabold text-[#16A34A]"
+                    className="inline-flex h-12 shrink-0 items-center gap-2 rounded-[16px] border border-[#8E5EB5] px-5 text-[15px] font-extrabold text-[#8E5EB5]"
                   >
                     View Details
                     <ChevronRight className="h-4.5 w-4.5" />
@@ -300,7 +304,7 @@ function ProviderSliderSection({
         <h2 className="text-[18px] font-extrabold tracking-[-0.04em] text-[#0F172A]">
           {title}
         </h2>
-        <Link href={href} className="text-[14px] font-extrabold text-[#16A34A]">
+        <Link href={href} className="text-[14px] font-extrabold text-[#8E5EB5]">
           See all
         </Link>
       </div>
@@ -406,16 +410,16 @@ function PopularProviderCard({
         <div className="mt-3.5 flex items-end justify-between gap-2 border-t border-[#e8eeea] pt-3">
           <div className="min-w-0 flex-1">
             <p className="text-[10px] font-medium text-[#667085]">From</p>
-            <p className="mt-1 text-[1.08rem] font-medium leading-none tracking-[-0.01em] text-[#16a34a]">
+            <p className="mt-1 text-[1.08rem] font-medium leading-none tracking-[-0.01em] text-[#8E5EB5]">
               {priceLabel}
             </p>
           </div>
 
           <Link
             href={href}
-            className="inline-flex h-[2.7rem] min-w-[7.1rem] shrink-0 items-center justify-center gap-1.5 rounded-[12px] bg-[linear-gradient(180deg,#edf8f0_0%,#e8f6ed_100%)] px-3 text-[0.68rem] font-semibold text-[#169647]"
+            className="inline-flex h-[2.7rem] min-w-[7.1rem] shrink-0 items-center justify-center gap-1.5 rounded-[12px] bg-[linear-gradient(180deg,#f3ebfc_0%,#ebdef9_100%)] px-3 text-[0.68rem] font-semibold text-[#8E5EB5]"
           >
-            <span className="inline-flex h-5.5 w-5.5 items-center justify-center rounded-full border border-[#cfe9d7] bg-white/85 text-[#169647]">
+            <span className="inline-flex h-5.5 w-5.5 items-center justify-center rounded-full border border-[#dbc8ed] bg-white/85 text-[#8E5EB5]">
               <User className="h-3 w-3" />
             </span>
             <span>View Profile</span>
@@ -456,7 +460,7 @@ function CategoryItem({ category }: { category: HomeServiceCategory }) {
       href={`/providers?service=${category.key}`}
       className="flex flex-col items-center text-center"
     >
-      <div className="flex h-[3.7rem] w-[3.7rem] items-center justify-center rounded-[18px] bg-[#EEF9F1] text-[#0F172A]">
+      <div className="flex h-[3.7rem] w-[3.7rem] items-center justify-center rounded-[18px] bg-[#f3ebfc] text-[#8E5EB5]">
         <CategoryIcon kind={category.key} />
       </div>
       <p className="mt-3 text-[13px] font-semibold tracking-[-0.02em] text-[#0F172A]">
