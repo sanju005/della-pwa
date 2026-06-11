@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
-import horizontalLogo from "../../../Logo/Horozondal Logo.png";
-import verticalLogo from "../../../Logo/Verticle Logo.png";
+import heroLogo from "../../../Logo/Verticle Logo.png";
+import panelLogo from "../../../Logo/Horozondal Logo.png";
 import { PwaInstallPrompt } from "@/app/_components/pwa-install";
 import {
   BackIcon,
@@ -23,7 +23,7 @@ export default function ReadyPage() {
             <div className="relative z-10 flex items-start justify-between">
               <div className="flex items-start gap-3">
                 <div className="rounded-[22px] bg-white/12 p-2.5 ring-1 ring-white/18 backdrop-blur-sm">
-                  <Image src={verticalLogo} alt="SWIPER" priority className="h-auto w-[50px]" />
+                  <Image src={heroLogo} alt="SWIPER" priority className="h-auto w-[50px]" />
                 </div>
                 <div className="pt-1">
                   <p className="text-[13px] font-semibold tracking-[0.18em] text-white/72">
@@ -73,7 +73,7 @@ export default function ReadyPage() {
               <div>
                 <p className="text-[16px] font-medium text-[#8e5eb5]">Welcome to</p>
                 <Image
-                  src={horizontalLogo}
+                  src={panelLogo}
                   alt="SWIPER"
                   priority
                   className="mt-2 h-auto w-[208px]"
