@@ -2,18 +2,16 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import type { ReactNode } from "react";
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import horizontalLogo from "../../Logo/Horozondal Logo.png";
-import verticalLogo from "../../Logo/Verticle Logo.png";
+import swiperLogo from "../../Logo/Swiper.png";
 import {
-  ArrowLeft,
-  ArrowRight,
+  Check,
   Eye,
   EyeOff,
   Lock,
   Mail,
+  MoveRight,
   UserPlus,
 } from "lucide-react";
 import { getSupabaseClient } from "@/lib/supabase";
@@ -28,6 +26,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState("");
   const [isSubmitting, startTransition] = useTransition();
 
@@ -138,101 +137,87 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="min-h-[100dvh] overflow-x-hidden bg-[linear-gradient(180deg,#5e3c84_0%,#8e5eb5_60%,#a679cf_100%)]">
-      <div className="mx-auto flex min-h-[100dvh] w-full max-w-[430px] flex-col">
-        <section className="relative h-[65dvh] min-h-[560px] overflow-hidden">
-          <Image
-            src="/swiper/hero-collage.png"
-            alt="SWIPER premium service collage"
-            fill
-            priority
-            sizes="(max-width: 430px) 100vw, 430px"
-            className="object-cover object-top"
-          />
-          <div className="absolute left-6 top-7 z-10 flex items-start gap-3">
-            <div className="rounded-[24px] bg-white/12 p-2.5 shadow-[0_10px_30px_rgba(35,16,59,0.18)] ring-1 ring-white/18 backdrop-blur-sm">
-              <Image
-                src={verticalLogo}
-                alt="SWIPER"
-                priority
-                className="h-auto w-[52px]"
-              />
-            </div>
-            <div className="pt-1 text-white">
-              <p className="text-[13px] font-semibold tracking-[0.18em] text-white/72">
-                SWIPER
-              </p>
-              <p className="mt-1 text-[14px] font-medium text-white/88">
-                Home and lifestyle marketplace
-              </p>
-            </div>
-          </div>
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-[linear-gradient(180deg,rgba(166,121,207,0)_0%,rgba(166,121,207,0.78)_100%)]" />
-        </section>
+    <main className="min-h-[100dvh] overflow-x-hidden bg-[#fbf8ff]">
+      <div className="relative mx-auto flex min-h-[100dvh] w-full max-w-[430px] items-center justify-center overflow-hidden px-5 py-6">
+        <div className="pointer-events-none absolute left-[-20%] top-[-5%] h-52 w-52 rounded-full bg-[radial-gradient(circle,rgba(142,94,181,0.12)_0%,rgba(142,94,181,0)_72%)]" />
+        <div className="pointer-events-none absolute right-[-15%] top-[16%] h-48 w-48 rounded-full bg-[radial-gradient(circle,rgba(166,121,207,0.18)_0%,rgba(166,121,207,0)_70%)]" />
+        <div className="pointer-events-none absolute bottom-[-12%] right-[-8%] h-56 w-56 rounded-full bg-[radial-gradient(circle,rgba(142,94,181,0.18)_0%,rgba(142,94,181,0)_72%)]" />
+        <div className="pointer-events-none absolute bottom-[-10%] left-[-12%] h-40 w-40 rounded-full bg-[radial-gradient(circle,rgba(166,121,207,0.16)_0%,rgba(166,121,207,0)_72%)]" />
 
-        <section className="relative -mt-10 flex flex-1 flex-col rounded-t-[40px] bg-white px-6 pb-6 pt-6 shadow-[0_-14px_40px_rgba(44,20,77,0.16)]">
-          <div className="flex items-start justify-between gap-4">
+        <section className="relative z-10 w-full rounded-[32px] bg-white/94 px-5 py-7 shadow-[0_24px_60px_rgba(67,35,104,0.12)] ring-1 ring-[#f0e8fa] backdrop-blur">
+          <div className="flex flex-col items-center text-center">
+            <Image
+              src={swiperLogo}
+              alt="Swiper"
+              priority
+              className="h-auto w-[210px]"
+            />
+            <h1 className="mt-2 text-[2rem] font-extrabold tracking-[-0.05em] text-[#1f1830]">
+              Welcome back!
+            </h1>
+            <p className="mt-2 text-[15px] leading-6 text-[#625877]">
+              Log in to continue to your account
+            </p>
+          </div>
+
+          <div className="mt-8 space-y-5">
+            <Field label="Email">
+              <InputShell icon={<Mail className="h-4.5 w-4.5" />}>
+                <input
+                  type="email"
+                  placeholder="Enter your email"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  className="h-full flex-1 border-0 bg-transparent text-[14px] text-[#1f1830] outline-none placeholder:text-[#b3a6c6]"
+                />
+              </InputShell>
+            </Field>
+
             <div>
-              <p className="text-[16px] font-medium text-[#8e5eb5]">Welcome to</p>
-              <Image
-                src={horizontalLogo}
-                alt="SWIPER"
-                priority
-                className="mt-2 h-auto w-[200px]"
-              />
+              <div className="mb-2 flex items-center justify-between gap-3">
+                <label className="text-[13px] font-bold text-[#2b1f40]">Password</label>
+                <Link href="/forgot-password" className="text-[12px] font-semibold text-[#8E5EB5]">
+                  Forgot password?
+                </Link>
+              </div>
+              <InputShell icon={<Lock className="h-4.5 w-4.5" />}>
+                <input
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  className="h-full flex-1 border-0 bg-transparent text-[14px] text-[#1f1830] outline-none placeholder:text-[#b3a6c6]"
+                />
+                <button
+                  type="button"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  onClick={() => setShowPassword((current) => !current)}
+                  className="ml-3 text-[#a08db7]"
+                >
+                  {showPassword ? <EyeOff className="h-4.5 w-4.5" /> : <Eye className="h-4.5 w-4.5" />}
+                </button>
+              </InputShell>
             </div>
-            <div className="mt-2 flex items-center gap-2">
-              <span className="h-2.5 w-2.5 rounded-full bg-[#dbc8ed]" />
-              <span className="h-2.5 w-8 rounded-full bg-[#8e5eb5]" />
-              <span className="h-2.5 w-2.5 rounded-full bg-[#dbc8ed]" />
-              <span className="h-2.5 w-2.5 rounded-full bg-[#dbc8ed]" />
-            </div>
-          </div>
 
-          <p className="mt-4 max-w-[19rem] text-[16px] leading-7 text-[#45556f]">
-            Log in to continue, or sign up to create a new SWIPER account.
-          </p>
-
-          <div className="mt-6 space-y-4">
-            <FieldLabel label="Email" />
-            <InputShell icon={<Mail className="h-5 w-5" />}>
-              <input
-                type="email"
-                placeholder="Enter your email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                className="h-full flex-1 border-0 bg-transparent text-[16px] text-[#111827] outline-none placeholder:text-[#93a1b5]"
-              />
-            </InputShell>
-
-            <FieldLabel label="Password" />
-            <InputShell icon={<Lock className="h-5 w-5" />}>
-              <input
-                type={showPassword ? "text" : "password"}
-                placeholder="Enter your password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                className="h-full flex-1 border-0 bg-transparent text-[16px] text-[#111827] outline-none placeholder:text-[#93a1b5]"
-              />
+            <label className="inline-flex items-center gap-2.5 text-[13px] font-medium text-[#55486b]">
               <button
                 type="button"
-                aria-label={showPassword ? "Hide password" : "Show password"}
-                onClick={() => setShowPassword((current) => !current)}
-                className="ml-3 text-[#8e5eb5]"
+                aria-pressed={rememberMe}
+                onClick={() => setRememberMe((current) => !current)}
+                className={`inline-flex h-4.5 w-4.5 items-center justify-center rounded-[5px] border transition ${
+                  rememberMe
+                    ? "border-[#8E5EB5] bg-[#8E5EB5] text-white"
+                    : "border-[#d8caea] bg-white text-transparent"
+                }`}
               >
-                {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                <Check className="h-3.5 w-3.5 stroke-[3]" />
               </button>
-            </InputShell>
-          </div>
-
-          <div className="mt-3 flex justify-end">
-            <Link href="/forgot-password" className="text-[14px] font-bold text-[#8e5eb5]">
-              Forgot Password
-            </Link>
+              Remember me
+            </label>
           </div>
 
           {error ? (
-            <p className="mt-4 rounded-[18px] border border-[#f1d1d7] bg-[#fff5f7] px-4 py-3 text-[13px] font-semibold text-[#c2415b]">
+            <p className="mt-5 rounded-[16px] border border-[#f4d8de] bg-[#fff6f7] px-4 py-3 text-[12px] font-semibold text-[#c2415b]">
               {error}
             </p>
           ) : null}
@@ -241,37 +226,31 @@ export default function LoginPage() {
             type="button"
             onClick={handleSubmit}
             disabled={isSubmitting}
-            className="mt-5 inline-flex h-14 w-full items-center justify-center rounded-full bg-[#8e5eb5] px-6 text-[18px] font-extrabold text-white shadow-[0_16px_30px_rgba(142,94,181,0.32)] transition hover:bg-[#7b4ea1] disabled:opacity-60"
+            className="mt-6 inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-[linear-gradient(180deg,#9b69c3_0%,#8E5EB5_100%)] px-5 text-[18px] font-extrabold text-white shadow-[0_16px_30px_rgba(142,94,181,0.28)] transition hover:brightness-105 disabled:opacity-60"
           >
-            {isSubmitting ? "Logging in..." : "Log in"}
+            <span>{isSubmitting ? "Logging in..." : "Log in"}</span>
+            <MoveRight className="h-4.5 w-4.5" />
           </button>
+
+          <div className="mt-6 flex items-center gap-3">
+            <div className="h-px flex-1 bg-[#eadff6]" />
+            <span className="text-[12px] font-medium text-[#9d8fb2]">or</span>
+            <div className="h-px flex-1 bg-[#eadff6]" />
+          </div>
 
           <Link
             href="/signup"
-            className="mt-3 inline-flex h-14 w-full items-center justify-center gap-3 rounded-full border border-[#b993da] bg-white px-6 text-[18px] font-extrabold text-[#8e5eb5] shadow-[0_10px_24px_rgba(90,57,128,0.06)]"
+            className="mt-5 inline-flex h-12 w-full items-center justify-center gap-2 rounded-full border border-[#cfaeea] bg-white px-5 text-[17px] font-bold text-[#8E5EB5] shadow-[0_8px_18px_rgba(142,94,181,0.06)]"
           >
-            <UserPlus className="h-5 w-5" />
-            Sign up
+            <span>Create account</span>
+            <UserPlus className="h-4.5 w-4.5" />
           </Link>
 
-          <div className="mt-auto flex items-center justify-between pt-5">
-            <Link
-              href="/"
-              className="inline-flex h-14 w-14 items-center justify-center rounded-[18px] border border-[#b993da] bg-white text-[#8e5eb5] shadow-[0_10px_24px_rgba(90,57,128,0.06)]"
-              aria-label="Back"
-            >
-              <ArrowLeft className="h-7 w-7" />
+          <div className="mt-9 text-center">
+            <p className="text-[12px] font-semibold text-[#4c415f]">Need help?</p>
+            <Link href="/support" className="mt-1 inline-block text-[13px] font-bold text-[#8E5EB5]">
+              Contact support
             </Link>
-            <span className="ml-4 mr-auto text-[15px] font-semibold text-[#1f2a44]">Back</span>
-            <button
-              type="button"
-              onClick={handleSubmit}
-              disabled={isSubmitting}
-              className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-[#8e5eb5] text-white shadow-[0_16px_30px_rgba(142,94,181,0.28)] transition hover:bg-[#7b4ea1] disabled:opacity-60"
-              aria-label="Continue"
-            >
-              <ArrowRight className="h-7 w-7" />
-            </button>
           </div>
         </section>
       </div>
@@ -279,20 +258,31 @@ export default function LoginPage() {
   );
 }
 
-function FieldLabel({ label }: { label: string }) {
-  return <p className="text-[14px] font-bold text-[#1f2a44]">{label}</p>;
+function Field({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <label className="mb-2 block text-[13px] font-bold text-[#2b1f40]">{label}</label>
+      {children}
+    </div>
+  );
 }
 
 function InputShell({
   children,
   icon,
 }: {
-  children: ReactNode;
-  icon: ReactNode;
+  children: React.ReactNode;
+  icon: React.ReactNode;
 }) {
   return (
-    <div className="flex h-14 items-center rounded-[20px] border border-[#eadff4] bg-[#fbf8fe] px-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
-      <span className="mr-3 text-[#8e5eb5]">{icon}</span>
+    <div className="flex h-12 items-center rounded-[14px] border border-[#eadff6] bg-white px-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.75)]">
+      <span className="mr-2.5 text-[#b08ad3]">{icon}</span>
       {children}
     </div>
   );
