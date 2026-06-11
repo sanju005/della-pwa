@@ -706,39 +706,58 @@ export function DashboardScreen() {
 
 export function BookingsScreen() {
   const state = useProviderAppData();
-  const [tab, setTab] = useState<"pending" | "accepted" | "upcoming" | "completed">("pending");
+  const [tab, setTab] = useState<"ongoing" | "upcoming" | "pending" | "canceled" | "completes">("pending");
   const fallback = LoadingOrError(state);
 
   if (fallback) {
     return fallback;
   }
 
+  const todayKey = getTodayKey();
   const items = state.bookings.filter((booking) => {
-    if (tab === "pending") return booking.bucket === "requests";
-    if (tab === "accepted") return booking.bookingStatus === "accepted";
-    if (tab === "upcoming") return booking.bucket === "active";
-    return booking.bucket === "completed" || booking.bucket === "closed";
+    if (tab === "pending") {
+      return booking.bucket === "requests" || booking.bookingStatus === "pending";
+    }
+
+    if (tab === "ongoing") {
+      return (
+        booking.bookingStatus === "on_the_way" ||
+        booking.bookingStatus === "arrived" ||
+        (booking.bookingStatus === "accepted" && booking.scheduledDate <= todayKey)
+      );
+    }
+
+    if (tab === "upcoming") {
+      return booking.bookingStatus === "accepted" && booking.scheduledDate > todayKey;
+    }
+
+    if (tab === "canceled") {
+      return booking.bookingStatus === "declined" || booking.bookingStatus === "cancelled";
+    }
+
+    return ["completed", "paid", "review_requested", "reviewed"].includes(booking.bookingStatus);
   });
 
   return (
     <PageShell
       title="Bookings"
-      subtitle="Manage booking requests, accepted jobs, and completed work."
+      subtitle="Manage pending requests, active jobs, and completed provider work."
     >
       <section className="rounded-[26px] bg-white p-5 shadow-[0_18px_44px_rgba(15,23,42,0.08)] ring-1 ring-[#e6eee8]">
         <div className="flex flex-wrap gap-2">
           {[
-            ["pending", "Pending"],
-            ["accepted", "Accepted"],
+            ["ongoing", "Ongoing"],
             ["upcoming", "Upcoming"],
-            ["completed", "Completed"],
+            ["pending", "Pending"],
+            ["canceled", "Canceled"],
+            ["completes", "Completes"],
           ].map(([value, label]) => (
             <button
               key={value}
               type="button"
               onClick={() => setTab(value as typeof tab)}
               className={`rounded-full px-4 py-2 text-[12px] font-bold ${
-                tab === value ? "bg-[#16a34a] text-white" : "bg-[#f3f6f4] text-[#64748b]"
+                tab === value ? "bg-[#8E5EB5] text-white" : "bg-[#f3f6f4] text-[#64748b]"
               }`}
             >
               {label}
@@ -768,18 +787,69 @@ export function BookingsScreen() {
                 </div>
                 <div className="mt-3 space-y-2 text-[13px] text-[#475569]">
                   <div className="flex items-center gap-2">
-                    <CalendarDays className="h-4 w-4 text-[#16a34a]" />
+                    <CalendarDays className="h-4 w-4 text-[#8E5EB5]" />
                     <span>{booking.schedule}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4 text-[#16a34a]" />
+                    <MapPin className="h-4 w-4 text-[#8E5EB5]" />
                     <span>{booking.location}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Wallet className="h-4 w-4 text-[#16a34a]" />
+                    <Wallet className="h-4 w-4 text-[#8E5EB5]" />
                     <span>{formatCurrency(booking.quotedAmount)}</span>
                   </div>
                 </div>
+                {tab === "ongoing" ? (
+                  <div className="mt-4 rounded-[18px] border border-[#ebe3f5] bg-white px-4 py-4">
+                    <p className="text-[14px] font-extrabold text-[#0f172a]">Task Path</p>
+                    <div className="mt-4 space-y-4">
+                      {getProviderTaskSteps(booking.bookingStatus).map((step, index, steps) => (
+                        <div key={step.label} className="flex gap-3">
+                          <div className="flex flex-col items-center">
+                            <span
+                              className={`inline-flex h-6 w-6 items-center justify-center rounded-full border-2 ${
+                                step.status === "done"
+                                  ? "border-[#8E5EB5] bg-[#8E5EB5] text-white"
+                                  : step.status === "current"
+                                    ? "border-[#8E5EB5] bg-white text-[#8E5EB5]"
+                                    : "border-[#d9e2dd] bg-white text-[#98a2b3]"
+                              }`}
+                            >
+                              {step.status === "done" ? (
+                                <span className="text-[11px] font-bold">✓</span>
+                              ) : (
+                                <span className="h-2 w-2 rounded-full bg-current" />
+                              )}
+                            </span>
+                            {index < steps.length - 1 ? (
+                              <span
+                                className={`mt-1 h-8 w-[2px] ${
+                                  step.status === "done" ? "bg-[#8E5EB5]" : "bg-[#e5e7eb]"
+                                }`}
+                              />
+                            ) : null}
+                          </div>
+                          <div className="pt-0.5">
+                            <p
+                              className={`text-[14px] font-semibold ${
+                                step.status === "pending" ? "text-[#98a2b3]" : "text-[#111827]"
+                              }`}
+                            >
+                              {step.label}
+                            </p>
+                            <p className="mt-1 text-[12px] text-[#6b7280]">
+                              {step.status === "done"
+                                ? "Finished"
+                                : step.status === "current"
+                                  ? "Current step"
+                                  : "Waiting"}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
                 {booking.bucket === "requests" ? (
                   <div className="mt-4 flex gap-3">
                     <AppButton
@@ -803,6 +873,58 @@ export function BookingsScreen() {
                     </AppButton>
                   </div>
                 ) : null}
+                {tab === "ongoing" ? (
+                  <div className="mt-4 flex gap-3">
+                    {booking.bookingStatus === "accepted" ? (
+                      <AppButton
+                        className="flex-1"
+                        disabled={state.actionBookingId === booking.id}
+                        onClick={() =>
+                          state.handleBookingAction(
+                            booking.id,
+                            "on_the_way",
+                            "Provider started travel to customer",
+                          )
+                        }
+                      >
+                        Start Task
+                      </AppButton>
+                    ) : null}
+                    {booking.bookingStatus === "on_the_way" ? (
+                      <AppButton
+                        className="flex-1"
+                        disabled={state.actionBookingId === booking.id}
+                        onClick={() =>
+                          state.handleBookingAction(
+                            booking.id,
+                            "arrived",
+                            "Provider arrived at customer location",
+                          )
+                        }
+                      >
+                        Mark Arrived
+                      </AppButton>
+                    ) : null}
+                    {booking.bookingStatus === "arrived" ? (
+                      <AppButton
+                        className="flex-1"
+                        disabled={state.actionBookingId === booking.id}
+                        onClick={() =>
+                          state.handleBookingAction(
+                            booking.id,
+                            "completed",
+                            "Provider completed the full task path",
+                          )
+                        }
+                      >
+                        Task Finished
+                      </AppButton>
+                    ) : null}
+                    <AppButton href={`/provider/bookings?booking=${booking.id}`} tone="secondary" className="flex-1">
+                      Open Booking
+                    </AppButton>
+                  </div>
+                ) : null}
               </div>
             ))
           )}
@@ -810,6 +932,43 @@ export function BookingsScreen() {
       </section>
     </PageShell>
   );
+}
+
+function getProviderTaskSteps(status: "accepted" | "on_the_way" | "arrived" | "completed" | "paid" | "review_requested" | "reviewed" | "pending" | "declined" | "cancelled") {
+  const order = ["accepted", "on_the_way", "arrived", "completed"] as const;
+  const currentIndex =
+    status === "accepted"
+      ? 0
+      : status === "on_the_way"
+        ? 1
+        : status === "arrived"
+          ? 2
+          : ["completed", "paid", "review_requested", "reviewed"].includes(status)
+            ? 3
+            : -1;
+
+  const labels = [
+    "Booking accepted",
+    "Travel to customer",
+    "Arrived at location",
+    "Task completed",
+  ];
+
+  return labels.map((label, index) => {
+    if (currentIndex === -1) {
+      return { label, status: "pending" as const };
+    }
+
+    if (index < currentIndex || (index === currentIndex && currentIndex === 3)) {
+      return { label, status: "done" as const };
+    }
+
+    if (index === currentIndex) {
+      return { label, status: "current" as const };
+    }
+
+    return { label, status: "pending" as const };
+  });
 }
 
 export function CalendarScreen() {
