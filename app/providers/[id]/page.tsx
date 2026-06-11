@@ -38,13 +38,13 @@ export default async function ProviderDetailPage(props: {
   }
 
   return (
-    <main className="min-h-[100dvh] bg-[#f6fff8]">
-      <div className="mx-auto min-h-[100dvh] w-full max-w-[430px] bg-white px-4 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
+    <main className="min-h-[100dvh] bg-[#fbf8ff]">
+      <div className="mx-auto min-h-[100dvh] w-full max-w-[430px] bg-[linear-gradient(180deg,#ffffff_0%,#fbf8fe_100%)] px-4 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
         <div className="py-4">
           <header className="flex items-center justify-between">
             <Link
               href={searchParams.service ? `/providers?service=${searchParams.service}` : "/providers"}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#f4faf5] text-[#0F172A]"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#f3ebfc] text-[#0F172A]"
             >
               <ArrowLeft className="h-6 w-6" />
             </Link>
@@ -78,7 +78,7 @@ export default async function ProviderDetailPage(props: {
               />
               <div className="absolute bottom-3 left-3 rounded-full bg-white/94 px-2.5 py-1 shadow-[0_8px_18px_rgba(15,23,42,0.08)]">
                 <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-[#0F172A]">
-                  <span className="h-2 w-2 rounded-full bg-[#16A34A]" />
+                  <span className="h-2 w-2 rounded-full bg-[#8E5EB5]" />
                   Online
                 </span>
               </div>
@@ -90,7 +90,7 @@ export default async function ProviderDetailPage(props: {
                   {detail.name}
                 </h1>
                 {detail.verified ? (
-                  <BadgeCheck className="mt-0.5 h-4.5 w-4.5 shrink-0 fill-[#16A34A] text-[#16A34A]" />
+                  <BadgeCheck className="mt-0.5 h-4.5 w-4.5 shrink-0 fill-[#8E5EB5] text-[#8E5EB5]" />
                 ) : null}
               </div>
               <p className="mt-1 text-[13px] text-[#475467]">{detail.title}</p>
@@ -109,35 +109,35 @@ export default async function ProviderDetailPage(props: {
                 <span>{detail.locationFull}</span>
               </div>
 
-              <div className="mt-2 flex items-start gap-1.5 text-[12px] font-semibold text-[#16A34A]">
+              <div className="mt-2 flex items-start gap-1.5 text-[12px] font-semibold text-[#8E5EB5]">
                 <ChevronRight className="mt-0.5 h-4 w-4 shrink-0 rotate-[-45deg]" />
                 <span>{detail.distanceKm} km away from you</span>
               </div>
 
               <div className="mt-3 grid grid-cols-3 gap-2 text-left text-[11px] text-[#344054]">
                 {detail.verified ? (
-                  <InfoPill icon={<ShieldCheck className="h-4.5 w-4.5 text-[#16A34A]" />} label="Verified" />
+                  <InfoPill icon={<ShieldCheck className="h-4.5 w-4.5 text-[#8E5EB5]" />} label="Verified" />
                 ) : (
                   <InfoPill icon={<ShieldCheck className="h-4.5 w-4.5 text-[#98A2B3]" />} label="Pending Review" />
                 )}
                 {detail.backgroundChecked ? (
-                  <InfoPill icon={<CheckCheck className="h-4.5 w-4.5 text-[#16A34A]" />} label="Background Checked" />
+                  <InfoPill icon={<CheckCheck className="h-4.5 w-4.5 text-[#8E5EB5]" />} label="Background Checked" />
                 ) : (
                   <InfoPill icon={<CheckCheck className="h-4.5 w-4.5 text-[#98A2B3]" />} label="Review in Progress" />
                 )}
-                <InfoPill icon={<BadgeCheck className="h-4.5 w-4.5 text-[#16A34A]" />} label={detail.yearsExperience} />
+                <InfoPill icon={<BadgeCheck className="h-4.5 w-4.5 text-[#8E5EB5]" />} label={detail.yearsExperience} />
               </div>
             </div>
           </section>
 
           <section className="mt-4 grid grid-cols-2 gap-3">
             <ProfileStatCard
-              icon={<BadgeCheck className="h-5 w-5 fill-[#16A34A] text-[#16A34A]" />}
+              icon={<BadgeCheck className="h-5 w-5 fill-[#8E5EB5] text-[#8E5EB5]" />}
               value={String(detail.jobsCompleted)}
               label="Completed Jobs"
             />
             <ProfileStatCard
-              icon={<ThumbsUp className="h-5 w-5 text-[#16A34A]" />}
+              icon={<ThumbsUp className="h-5 w-5 text-[#8E5EB5]" />}
               value="98%"
               label="Recommended"
             />
@@ -175,7 +175,7 @@ export default async function ProviderDetailPage(props: {
                 <span
                   key={dot}
                   className={`h-2 w-2 rounded-full ${
-                    dot === 0 ? "bg-[#16A34A]" : "bg-[#D9DDE3]"
+                    dot === 0 ? "bg-[#8E5EB5]" : "bg-[#D9DDE3]"
                   }`}
                 />
               ))}
@@ -213,7 +213,7 @@ export default async function ProviderDetailPage(props: {
                 {detail.specialties.map((specialty) => (
                   <span
                     key={`${detail.id}-${specialty}`}
-                    className="rounded-full bg-[#EEF9F1] px-3 py-1.5 text-[12px] font-medium text-[#16A34A]"
+                    className="rounded-full bg-[#f3ebfc] px-3 py-1.5 text-[12px] font-medium text-[#8E5EB5]"
                   >
                     {specialty}
                   </span>
@@ -227,7 +227,7 @@ export default async function ProviderDetailPage(props: {
             <p className="mt-3 text-[13px] leading-6 text-[#344054]">{detail.about}</p>
             <button
               type="button"
-              className="mt-3 inline-flex items-center gap-2 text-[13px] font-bold text-[#16A34A]"
+              className="mt-3 inline-flex items-center gap-2 text-[13px] font-bold text-[#8E5EB5]"
             >
               Read more
               <ChevronDown className="h-4 w-4" />
@@ -341,7 +341,7 @@ function PriceMetric({
     <div>
       <p className="text-[12px] text-[#475467]">{label}</p>
       <div className="mt-2.5 flex items-end gap-1.5">
-        <p className="text-[16px] font-extrabold text-[#16A34A]">{value}</p>
+        <p className="text-[16px] font-extrabold text-[#8E5EB5]">{value}</p>
         <p className="pb-0.5 text-[12px] text-[#344054]">{suffix}</p>
         <span className="ml-auto">{icon}</span>
       </div>
@@ -360,7 +360,7 @@ function ProfileStatCard({
 }) {
   return (
     <div className="rounded-[18px] border border-[#E6ECE7] bg-white px-4 py-4 text-center shadow-[0_10px_24px_rgba(15,23,42,0.04)]">
-      <div className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#EEF9F1] text-[#16A34A]">
+      <div className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#f3ebfc] text-[#8E5EB5]">
         {icon}
       </div>
       <p className="mt-3 text-[18px] font-extrabold text-[#0F172A]">{value}</p>

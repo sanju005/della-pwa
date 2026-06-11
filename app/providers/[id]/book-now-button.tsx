@@ -21,13 +21,13 @@ export function BookNowButton({ providerId }: BookNowButtonProps) {
         <button
           type="button"
           aria-label="Message provider"
-          className="inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-[16px] border border-[#DCE5DE] bg-white text-[#16A34A]"
+          className="inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-[16px] border border-[#dbc8ed] bg-white text-[#8E5EB5]"
         >
           <MessageCircleMore className="h-6 w-6" />
         </button>
         <Link
           href={href}
-          className="inline-flex h-14 flex-1 items-center justify-center rounded-[16px] bg-[#16A34A] text-[18px] font-extrabold text-white"
+          className="inline-flex h-14 flex-1 items-center justify-center rounded-[16px] bg-[#8E5EB5] text-[18px] font-extrabold text-white"
         >
           Book Now
         </Link>
