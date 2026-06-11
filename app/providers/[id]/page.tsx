@@ -19,7 +19,6 @@ import {
 import { EmptyState as SharedEmptyState, SectionTitle, StatusBadge } from "@/app/_components/della-ui";
 import { notFound } from "next/navigation";
 
-import { AvailabilityCalendar } from "./availability-calendar";
 import { BookNowButton } from "./book-now-button";
 import { getProviderDetail } from "@/lib/provider-detail";
 
@@ -233,12 +232,6 @@ export default async function ProviderDetailPage(props: {
               <ChevronDown className="h-4 w-4" />
             </button>
           </section>
-
-          <AvailabilityCalendar
-            providerId={detail.id}
-            serviceQuery={searchParams.service ?? null}
-            slots={detail.availability}
-          />
 
           <section className="mt-5 rounded-[20px] border border-[#E6ECE7] bg-white p-4 shadow-[0_10px_24px_rgba(15,23,42,0.04)]">
             <SectionTitle
