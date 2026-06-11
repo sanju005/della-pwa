@@ -1,8 +1,12 @@
 import Image from "next/image";
+import Link from "next/link";
+import horizontalLogo from "../../../Logo/Horozondal Logo.png";
+import verticalLogo from "../../../Logo/Verticle Logo.png";
 import { PwaInstallPrompt } from "@/app/_components/pwa-install";
 import {
-  OnboardingShell,
+  BackIcon,
   PrimaryButton,
+  RoundArrowButton,
   SecondaryButton,
   UserIcon,
   UserPlusIcon,
@@ -11,47 +15,107 @@ import {
 export default function ReadyPage() {
   return (
     <>
-      <OnboardingShell step={3} accentBlob={false}>
-        <div className="overflow-hidden rounded-[32px] bg-[linear-gradient(180deg,#7560ab_0%,#4f4275_100%)] shadow-[0_20px_36px_rgba(79,66,117,0.22)]">
-          <Image
-            src="/onboarding/intro-3.png"
-            alt="Premium DELLA living room hero"
-            width={1024}
-            height={1536}
-            unoptimized
-            priority
-            className="h-[296px] w-full object-cover object-top"
-          />
-        </div>
+      <main className="min-h-[100dvh] overflow-x-hidden bg-[linear-gradient(180deg,#5e3c84_0%,#8e5eb5_60%,#a679cf_100%)]">
+        <div className="mx-auto flex min-h-[100dvh] w-full max-w-[430px] flex-col px-0 pt-[env(safe-area-inset-top)]">
+          <section className="relative h-[65dvh] min-h-[620px] overflow-hidden px-5 pt-5">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_24%_12%,rgba(255,255,255,0.16),transparent_24%),radial-gradient(circle_at_82%_18%,rgba(255,255,255,0.12),transparent_18%),radial-gradient(circle_at_52%_54%,rgba(195,163,230,0.28),transparent_26%)]" />
 
-        <div className="-mt-11 rounded-[32px] border border-[#e0ebe2] bg-white p-5 shadow-[0_18px_36px_rgba(15,23,42,0.08)]">
-          <p className="text-[15px] text-[#645394]">
-            Welcome to
-          </p>
-          <Image
-            src="/brand/main-logo.png"
-            alt="DELLA"
-            width={270}
-            height={86}
-            priority
-            className="mt-1 h-auto w-[170px]"
-          />
-          <p className="mt-3 max-w-[18rem] text-[15px] leading-7 text-[#4b5563]">
-            Log in to continue, or sign up to create a new DELLA account.
-          </p>
+            <div className="relative z-10 flex items-start justify-between">
+              <div className="flex items-start gap-3">
+                <div className="rounded-[22px] bg-white/12 p-2.5 ring-1 ring-white/18 backdrop-blur-sm">
+                  <Image src={verticalLogo} alt="SWIPER" priority className="h-auto w-[50px]" />
+                </div>
+                <div className="pt-1">
+                  <p className="text-[13px] font-semibold tracking-[0.18em] text-white/72">
+                    SWIPER
+                  </p>
+                  <p className="mt-1 text-[14px] font-medium text-white/88">
+                    Home and lifestyle marketplace
+                  </p>
+                </div>
+              </div>
+              <div className="mt-1 flex items-center gap-2.5">
+                <span className="h-2.5 w-2.5 rounded-full bg-white/36" />
+                <span className="h-2.5 w-2.5 rounded-full bg-white/36" />
+                <span className="h-2.5 w-2.5 rounded-full bg-white/92" />
+              </div>
+            </div>
 
-          <div className="mt-6 space-y-3">
-            <PrimaryButton href="/login" className="w-full">
-              <UserIcon className="h-5 w-5" />
-              Log in
-            </PrimaryButton>
-            <SecondaryButton href="/signup" className="w-full">
-              <UserPlusIcon className="h-5 w-5 text-[#645394]" />
-              Sign up
-            </SecondaryButton>
-          </div>
+            <div className="relative z-10 mt-6 max-w-[15.5rem]">
+              <h1 className="text-[2.8rem] font-extrabold leading-[0.96] tracking-[-0.06em] text-white">
+                Everything you need,
+              </h1>
+              <h2 className="mt-1 text-[2.8rem] font-extrabold leading-[0.96] tracking-[-0.06em] text-[#d8b7ff]">
+                just a tap away
+              </h2>
+              <p className="mt-5 text-[15px] leading-8 text-white/88">
+                Book trusted services for your home and lifestyle. Anytime, anywhere.
+              </p>
+            </div>
+
+            <div className="relative z-10 mt-5 overflow-hidden rounded-[34px]">
+              <Image
+                src="/swiper/hero-collage.png"
+                alt="SWIPER premium service collage"
+                width={941}
+                height={1135}
+                priority
+                className="h-[430px] w-full object-cover object-top"
+              />
+              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_52%_54%,rgba(178,145,219,0.55)_0%,rgba(142,94,181,0.18)_30%,rgba(94,60,132,0)_58%)]" />
+              <div className="pointer-events-none absolute left-1/2 top-[53%] h-[52%] w-[54%] -translate-x-1/2 -translate-y-1/2 rounded-[46%] bg-[radial-gradient(circle_at_50%_45%,rgba(195,163,230,0.96)_0%,rgba(142,94,181,0.94)_48%,rgba(110,72,160,0.88)_100%)]" />
+              <div className="pointer-events-none absolute left-1/2 top-[53%] h-[68%] w-[66%] -translate-x-1/2 -translate-y-1/2 rounded-[48%] border border-white/10 bg-[radial-gradient(circle_at_50%_40%,rgba(178,145,219,0.16)_0%,rgba(178,145,219,0.04)_58%,rgba(178,145,219,0)_100%)]" />
+            </div>
+          </section>
+
+          <section className="relative z-20 -mt-10 flex flex-1 flex-col rounded-t-[40px] bg-[linear-gradient(180deg,#ffffff_0%,#fbf8fe_100%)] px-6 pb-6 pt-6 shadow-[0_-16px_40px_rgba(44,20,77,0.18)]">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-[16px] font-medium text-[#8e5eb5]">Welcome to</p>
+                <Image
+                  src={horizontalLogo}
+                  alt="SWIPER"
+                  priority
+                  className="mt-2 h-auto w-[208px]"
+                />
+              </div>
+              <div className="mt-2 flex items-center gap-2">
+                <span className="h-2.5 w-2.5 rounded-full bg-[#dbc8ed]" />
+                <span className="h-2.5 w-8 rounded-full bg-[#8e5eb5]" />
+                <span className="h-2.5 w-2.5 rounded-full bg-[#dbc8ed]" />
+                <span className="h-2.5 w-2.5 rounded-full bg-[#dbc8ed]" />
+              </div>
+            </div>
+
+            <p className="mt-5 max-w-[19rem] text-[16px] leading-8 text-[#374151]">
+              Log in to continue, or sign up to create a new SWIPER account.
+            </p>
+
+            <div className="mt-8 space-y-4">
+              <PrimaryButton href="/login" className="min-h-[56px] w-full justify-center">
+                <UserIcon className="h-5 w-5" />
+                Log in
+              </PrimaryButton>
+              <SecondaryButton href="/signup" className="min-h-[56px] w-full justify-center border-[#b993da] text-[#24183b]">
+                <UserPlusIcon className="h-5 w-5 text-[#8e5eb5]" />
+                Sign up
+              </SecondaryButton>
+            </div>
+
+            <div className="mt-5 flex items-center justify-between">
+              <Link
+                href="/onboarding/why-della"
+                className="inline-flex h-[58px] w-[58px] items-center justify-center rounded-[18px] border border-[#b993da] bg-white text-[#8e5eb5] shadow-[0_10px_24px_rgba(90,57,128,0.06)]"
+                aria-label="Back"
+              >
+                <BackIcon className="h-6 w-6" />
+              </Link>
+              <span className="ml-4 mr-auto text-[15px] font-semibold text-[#1f2a44]">Back</span>
+              <RoundArrowButton href="/login" />
+            </div>
+          </section>
         </div>
-      </OnboardingShell>
+      </main>
       <PwaInstallPrompt />
     </>
   );
