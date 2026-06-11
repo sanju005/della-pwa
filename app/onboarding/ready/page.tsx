@@ -12,7 +12,7 @@ export default function ReadyPage() {
   return (
     <>
       <OnboardingShell step={3} accentBlob={false}>
-        <div className="overflow-hidden rounded-[32px] bg-[linear-gradient(180deg,#0b5b27_0%,#083f1f_100%)] shadow-[0_20px_36px_rgba(6,59,28,0.2)]">
+        <div className="overflow-hidden rounded-[32px] bg-[linear-gradient(180deg,#7560ab_0%,#4f4275_100%)] shadow-[0_20px_36px_rgba(79,66,117,0.22)]">
           <Image
             src="/onboarding/intro-3.png"
             alt="Premium DELLA living room hero"
@@ -25,7 +25,7 @@ export default function ReadyPage() {
         </div>
 
         <div className="-mt-11 rounded-[32px] border border-[#e0ebe2] bg-white p-5 shadow-[0_18px_36px_rgba(15,23,42,0.08)]">
-          <p className="text-[15px] text-[#16a34a]">
+          <p className="text-[15px] text-[#645394]">
             Welcome to
           </p>
           <Image
@@ -46,7 +46,7 @@ export default function ReadyPage() {
               Log in
             </PrimaryButton>
             <SecondaryButton href="/signup" className="w-full">
-              <UserPlusIcon className="h-5 w-5 text-[#16a34a]" />
+              <UserPlusIcon className="h-5 w-5 text-[#645394]" />
               Sign up
             </SecondaryButton>
           </div>

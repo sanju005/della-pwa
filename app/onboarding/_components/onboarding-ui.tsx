@@ -33,13 +33,13 @@ export function OnboardingShell({
   accentBlob = true,
 }: ShellProps) {
   return (
-    <main className="min-h-[100dvh] overflow-x-hidden bg-[radial-gradient(circle_at_top,_rgba(190,242,198,0.4),_transparent_36%),linear-gradient(180deg,#fbfffb_0%,#eef8ef_100%)]">
-      <div className="mx-auto flex min-h-[100dvh] w-full max-w-[430px] flex-col bg-[linear-gradient(180deg,#ffffff_0%,#f8fcf8_100%)] px-5 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
+    <main className="min-h-[100dvh] overflow-x-hidden bg-[radial-gradient(circle_at_top,_rgba(214,201,243,0.42),_transparent_36%),linear-gradient(180deg,#fffefe_0%,#f2eef9_100%)]">
+      <div className="mx-auto flex min-h-[100dvh] w-full max-w-[430px] flex-col bg-[linear-gradient(180deg,#ffffff_0%,#faf8fd_100%)] px-5 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
         <section className="relative flex min-h-[100dvh] flex-1 flex-col overflow-hidden">
           {accentBlob ? (
             <>
-              <div className="pointer-events-none absolute right-[-10%] top-[-4%] h-40 w-40 rounded-full bg-[radial-gradient(circle,_rgba(220,252,231,0.95),_rgba(220,252,231,0.4)_58%,_transparent_72%)]" />
-              <div className="pointer-events-none absolute inset-x-[-18%] bottom-[-10%] h-[26%] rounded-full bg-[radial-gradient(circle,_rgba(22,163,74,0.06),_transparent_72%)]" />
+              <div className="pointer-events-none absolute right-[-10%] top-[-4%] h-40 w-40 rounded-full bg-[radial-gradient(circle,_rgba(238,232,249,0.95),_rgba(238,232,249,0.42)_58%,_transparent_72%)]" />
+              <div className="pointer-events-none absolute inset-x-[-18%] bottom-[-10%] h-[26%] rounded-full bg-[radial-gradient(circle,_rgba(100,83,148,0.08),_transparent_72%)]" />
             </>
           ) : null}
 
@@ -59,7 +59,7 @@ function Header({ step }: { step: 1 | 2 | 3 }) {
       <div>
         <Link
           href="/onboarding"
-          className="text-[20px] font-extrabold tracking-[-0.05em] text-[#16a34a]"
+          className="text-[20px] font-extrabold tracking-[-0.05em] text-[#645394]"
         >
           DELLA
         </Link>
@@ -72,7 +72,7 @@ function Header({ step }: { step: 1 | 2 | 3 }) {
           <span
             key={item}
             className={`h-2.5 w-2.5 rounded-full ${
-              step === item ? "bg-[#16a34a]" : "bg-[#d8ddd8]"
+              step === item ? "bg-[#645394]" : "bg-[#d8ddd8]"
             }`}
           />
         ))}
@@ -116,7 +116,7 @@ export function ServiceChips() {
           key={label}
           className="flex items-center justify-center gap-2 rounded-[18px] border border-[#e0eee3] bg-[linear-gradient(180deg,#f8fff9_0%,#eef8ef_100%)] px-2 py-4 text-[13px] font-semibold text-[#111827] shadow-[0_8px_16px_rgba(15,23,42,0.035)]"
         >
-          <span className="text-[#16a34a]">
+          <span className="text-[#645394]">
             <Icon className="h-[18px] w-[18px]" />
           </span>
           <span>{label}</span>
@@ -152,7 +152,7 @@ export function FeatureCards() {
           key={title}
           className="flex items-start gap-3 rounded-[24px] border border-[#e5efe7] bg-white p-4 shadow-[0_14px_28px_rgba(15,23,42,0.05)]"
         >
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#f2fcf4] text-[#16a34a] shadow-[inset_0_-6px_12px_rgba(22,163,74,0.08)]">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#f3effa] text-[#645394] shadow-[inset_0_-6px_12px_rgba(100,83,148,0.12)]">
             <Icon className="h-5 w-5" />
           </div>
           <div>
@@ -169,7 +169,7 @@ export function PrimaryButton({ href, children, className = "" }: ButtonProps) {
   return (
     <Link
       href={href}
-      className={`inline-flex min-h-[58px] items-center justify-center gap-3 rounded-full bg-[linear-gradient(180deg,#12a63f_0%,#07862f_100%)] px-7 text-[16px] font-extrabold text-white shadow-[0_16px_30px_rgba(22,163,74,0.26)] ${className}`}
+      className={`inline-flex min-h-[58px] items-center justify-center gap-3 rounded-full bg-[linear-gradient(180deg,#7560ab_0%,#645394_100%)] px-7 text-[16px] font-extrabold text-white shadow-[0_16px_30px_rgba(100,83,148,0.28)] ${className}`}
     >
       {children}
     </Link>
@@ -196,7 +196,7 @@ export function RoundArrowButton({ href }: { href: string }) {
     <Link
       href={href}
       aria-label="Next"
-      className="inline-flex h-[58px] w-[58px] items-center justify-center rounded-full bg-[linear-gradient(180deg,#12a63f_0%,#07862f_100%)] text-white shadow-[0_16px_30px_rgba(22,163,74,0.26)]"
+      className="inline-flex h-[58px] w-[58px] items-center justify-center rounded-full bg-[linear-gradient(180deg,#7560ab_0%,#645394_100%)] text-white shadow-[0_16px_30px_rgba(100,83,148,0.28)]"
     >
       <ArrowRightIcon className="h-5 w-5" />
     </Link>
@@ -241,12 +241,12 @@ export function AuthPlaceholder({
   href: string;
 }) {
   return (
-    <main className="min-h-[100dvh] bg-[radial-gradient(circle_at_top,_rgba(190,242,198,0.5),_transparent_36%),linear-gradient(180deg,#fbfffb_0%,#effaf0_100%)]">
+    <main className="min-h-[100dvh] bg-[radial-gradient(circle_at_top,_rgba(214,201,243,0.5),_transparent_36%),linear-gradient(180deg,#fffefe_0%,#f3effa_100%)]">
       <div className="mx-auto flex min-h-[100dvh] w-full max-w-[430px] flex-col px-3 py-3 sm:py-4">
-        <section className="safe-top safe-bottom relative flex flex-1 flex-col items-center justify-center overflow-hidden rounded-[34px] border border-[#dcecdf] bg-[linear-gradient(180deg,#fcfffc_0%,#f4fcf5_100%)] px-8 text-center shadow-[0_24px_60px_rgba(15,139,61,0.12)]">
-          <div className="pointer-events-none absolute inset-x-[-18%] bottom-[-12%] h-[36%] rounded-full bg-[radial-gradient(circle,_rgba(22,163,74,0.14),_transparent_68%)]" />
+        <section className="safe-top safe-bottom relative flex flex-1 flex-col items-center justify-center overflow-hidden rounded-[34px] border border-[#e3ddf0] bg-[linear-gradient(180deg,#fefcff_0%,#f6f2fb_100%)] px-8 text-center shadow-[0_24px_60px_rgba(100,83,148,0.14)]">
+          <div className="pointer-events-none absolute inset-x-[-18%] bottom-[-12%] h-[36%] rounded-full bg-[radial-gradient(circle,_rgba(100,83,148,0.16),_transparent_68%)]" />
           <div className="relative z-10">
-            <p className="text-[18px] font-extrabold tracking-[-0.04em] text-[#16a34a]">
+            <p className="text-[18px] font-extrabold tracking-[-0.04em] text-[#645394]">
               DELLA
             </p>
             <h1 className="mt-5 text-4xl font-extrabold tracking-[-0.06em] text-[#0b1220]">

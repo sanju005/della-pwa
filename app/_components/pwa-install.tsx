@@ -85,7 +85,7 @@ export function PwaInstallPrompt() {
           type="button"
           onClick={handleInstall}
           disabled={isInstalling}
-          className="inline-flex h-11 shrink-0 items-center justify-center rounded-[14px] bg-[#16a34a] px-4 text-[14px] font-extrabold text-white shadow-[0_12px_24px_rgba(22,163,74,0.2)] disabled:opacity-60"
+          className="inline-flex h-11 shrink-0 items-center justify-center rounded-[14px] bg-[#645394] px-4 text-[14px] font-extrabold text-white shadow-[0_12px_24px_rgba(100,83,148,0.24)] disabled:opacity-60"
         >
           {isInstalling ? "Opening..." : "Install"}
         </button>

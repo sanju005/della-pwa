@@ -6,12 +6,12 @@
   --foreground: #0f172a;
   --font-manrope:
     "Aptos", "Segoe UI", "Helvetica Neue", "Arial", sans-serif;
-  --della-green: #16a34a;
-  --della-green-dark: #0f8b3d;
-  --della-green-soft: #d8f4dd;
+  --della-green: #645394;
+  --della-green-dark: #4f4275;
+  --della-green-soft: #e8e1f5;
   --della-surface: #f8fff8;
   --della-border: #dcecdf;
-  --della-shadow: 0 30px 70px rgba(15, 139, 61, 0.14);
+  --della-shadow: 0 30px 70px rgba(100, 83, 148, 0.18);
 }
 
 @theme inline {
@@ -26,8 +26,8 @@
 
 html {
   background:
-    radial-gradient(circle at top, rgba(177, 240, 191, 0.42), transparent 35%),
-    linear-gradient(180deg, #f8fff8 0%, #eef9f0 100%);
+    radial-gradient(circle at top, rgba(214, 201, 243, 0.45), transparent 35%),
+    linear-gradient(180deg, #fcfaff 0%, #f2eef9 100%);
 }
 
 body {
@@ -62,7 +62,7 @@ textarea {
 }
 
 ::selection {
-  background: rgba(22, 163, 74, 0.18);
+  background: rgba(100, 83, 148, 0.2);
   color: #0f172a;
 }
 

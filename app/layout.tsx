@@ -29,7 +29,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: "#16a34a",
+  themeColor: "#645394",
 };
 
 export default function RootLayout({
@@ -44,8 +44,8 @@ export default function RootLayout({
   };
 
   return (
-    <html lang="en" className="h-full bg-[#f3fbf4] antialiased">
-      <body className="min-h-full overflow-x-hidden bg-[#f3fbf4] text-[#0f172a]">
+    <html lang="en" className="h-full bg-[#f5f1fb] antialiased">
+      <body className="min-h-full overflow-x-hidden bg-[#f5f1fb] text-[#0f172a]">
         <script
           dangerouslySetInnerHTML={{
             __html: `window.__DELLA_PUBLIC_CONFIG = ${JSON.stringify(publicRuntimeConfig)};`,

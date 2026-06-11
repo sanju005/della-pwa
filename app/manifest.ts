@@ -9,8 +9,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "Book trusted home and lifestyle services in one DELLA app.",
     start_url: "/onboarding",
     display: "standalone",
-    background_color: "#f6fff8",
-    theme_color: "#16a34a",
+    background_color: "#f5f1fb",
+    theme_color: "#645394",
     icons: [
       {
         src: "/icon.png",
