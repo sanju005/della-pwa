@@ -541,10 +541,10 @@ export function EditProfileScreen({ initialProfile }: EditProps) {
               <AvatarCircle
                 initials={customerInitials(form)}
                 size="xl"
-                accent="from-emerald-500 to-green-700"
+                accent="from-[#8E5EB5] to-[#7B4EA1]"
               />
             )}
-            <span className="absolute bottom-1 right-1 inline-flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-[#16a34a] text-white shadow-[0_8px_18px_rgba(22,163,74,0.22)]">
+            <span className="absolute bottom-1 right-1 inline-flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-[#8E5EB5] text-white shadow-[0_8px_18px_rgba(142,94,181,0.22)]">
               <CameraIcon className="h-4 w-4" />
             </span>
             <input
@@ -594,7 +594,7 @@ export function EditProfileScreen({ initialProfile }: EditProps) {
         </div>
 
         {savedMessage ? (
-          <p className="mt-4 text-center text-[13px] font-semibold text-[#16a34a]">
+          <p className="mt-4 text-center text-[13px] font-semibold text-[#8E5EB5]">
             {savedMessage}
           </p>
         ) : null}
@@ -602,7 +602,7 @@ export function EditProfileScreen({ initialProfile }: EditProps) {
         <button
           type="submit"
           disabled={isPending}
-          className="mt-8 inline-flex h-12 w-full items-center justify-center rounded-[12px] bg-[#16a34a] text-[15px] font-extrabold text-white shadow-[0_16px_30px_rgba(22,163,74,0.22)]"
+          className="mt-8 inline-flex h-12 w-full items-center justify-center rounded-[12px] bg-[#8E5EB5] text-[15px] font-extrabold text-white shadow-[0_16px_30px_rgba(142,94,181,0.22)]"
         >
           {isPending ? "Saving..." : "Save Changes"}
         </button>
