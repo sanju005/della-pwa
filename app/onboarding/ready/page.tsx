@@ -62,9 +62,6 @@ export default function ReadyPage() {
                 priority
                 className="h-[430px] w-full object-cover object-top"
               />
-              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_52%_54%,rgba(178,145,219,0.55)_0%,rgba(142,94,181,0.18)_30%,rgba(94,60,132,0)_58%)]" />
-              <div className="pointer-events-none absolute left-1/2 top-[53%] h-[52%] w-[54%] -translate-x-1/2 -translate-y-1/2 rounded-[46%] bg-[radial-gradient(circle_at_50%_45%,rgba(195,163,230,0.96)_0%,rgba(142,94,181,0.94)_48%,rgba(110,72,160,0.88)_100%)]" />
-              <div className="pointer-events-none absolute left-1/2 top-[53%] h-[68%] w-[66%] -translate-x-1/2 -translate-y-1/2 rounded-[48%] border border-white/10 bg-[radial-gradient(circle_at_50%_40%,rgba(178,145,219,0.16)_0%,rgba(178,145,219,0.04)_58%,rgba(178,145,219,0)_100%)]" />
             </div>
           </section>
 

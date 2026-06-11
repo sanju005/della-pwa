@@ -167,9 +167,6 @@ export default function LoginPage() {
               </p>
             </div>
           </div>
-          <div className="pointer-events-none absolute left-1/2 top-[54%] h-[53%] w-[55%] -translate-x-1/2 -translate-y-1/2 rounded-[46%] bg-[radial-gradient(circle_at_50%_45%,rgba(195,163,230,0.95)_0%,rgba(142,94,181,0.92)_46%,rgba(110,72,160,0.86)_100%)]" />
-          <div className="pointer-events-none absolute left-1/2 top-[54%] h-[67%] w-[67%] -translate-x-1/2 -translate-y-1/2 rounded-[48%] border border-white/10 bg-[radial-gradient(circle_at_50%_40%,rgba(178,145,219,0.16)_0%,rgba(178,145,219,0.04)_58%,rgba(178,145,219,0)_100%)]" />
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_52%_52%,rgba(178,145,219,0.55)_0%,rgba(142,94,181,0.2)_32%,rgba(94,60,132,0)_62%)]" />
           <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-[linear-gradient(180deg,rgba(166,121,207,0)_0%,rgba(166,121,207,0.78)_100%)]" />
         </section>
 
