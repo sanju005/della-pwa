@@ -280,7 +280,7 @@ export function ProfileOverviewScreen({ initialData }: OverviewProps) {
             className="flex items-center justify-between border-t border-[#edf1ef] px-0 py-3 first:border-t-0 first:pt-0 last:pb-0"
           >
             <div className="flex items-center gap-3">
-              <div className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[#eff9f0] text-[#16a34a]">
+              <div className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[#f5f1fa] text-[#8E5EB5]">
                 <WalletIcon className="h-4 w-4" />
               </div>
               <div>
@@ -291,7 +291,7 @@ export function ProfileOverviewScreen({ initialData }: OverviewProps) {
             </div>
             <div className="text-right">
               {method.isDefault ? (
-                <span className="rounded-full bg-[#e9f9ec] px-2 py-1 text-[11px] font-bold text-[#16a34a]">
+                <span className="rounded-full bg-[#f5f1fa] px-2 py-1 text-[11px] font-bold text-[#8E5EB5]">
                   Default
                 </span>
               ) : null}
@@ -371,7 +371,7 @@ export function FavoritesScreen({ providers }: FavoritesProps) {
                     <h2 className="text-[16px] font-extrabold text-[#111827]">
                       {provider.name}
                     </h2>
-                    <p className="mt-1 text-[13px] font-semibold text-[#16a34a]">
+                    <p className="mt-1 text-[13px] font-semibold text-[#8E5EB5]">
                       {provider.role}
                     </p>
                   </div>
@@ -413,7 +413,7 @@ export function FavoritesScreen({ providers }: FavoritesProps) {
                 <div className="mt-4 flex justify-end">
                   <Link
                     href={provider.bookHref ?? "/profile/favourites"}
-                    className="inline-flex h-10 items-center justify-center rounded-[12px] bg-[#16a34a] px-4 text-[13px] font-extrabold text-white shadow-[0_12px_24px_rgba(22,163,74,0.18)]"
+                    className="inline-flex h-10 items-center justify-center rounded-[12px] bg-[#8E5EB5] px-4 text-[13px] font-extrabold text-white shadow-[0_12px_24px_rgba(142,94,181,0.18)]"
                   >
                     Book Now
                   </Link>
@@ -1484,7 +1484,7 @@ export function NotificationsScreen({
               className={`w-full rounded-[18px] border p-4 text-left shadow-[0_10px_26px_rgba(15,23,42,0.04)] ${
                 item.isRead
                   ? "border-[#e4ece7] bg-white"
-                  : "border-[#bbf7d0] bg-[#f6fff8]"
+                  : "border-[#d7c1eb] bg-[#faf7fd]"
               }`}
             >
               <div className="flex items-start justify-between gap-3">
@@ -1503,7 +1503,7 @@ export function NotificationsScreen({
                   </div>
                 </div>
                 {!item.isRead ? (
-                  <span className="mt-1 h-2.5 w-2.5 rounded-full bg-[#16a34a]" />
+                  <span className="mt-1 h-2.5 w-2.5 rounded-full bg-[#8E5EB5]" />
                 ) : null}
               </div>
               <p className="mt-3 text-[12px] font-semibold text-[#6b7280]">
@@ -1577,7 +1577,7 @@ function PushNotificationCard({
         <span
           className={`rounded-full px-3 py-1 text-[11px] font-bold ${
             enabled
-              ? "bg-[#e9f9ec] text-[#16a34a]"
+              ? "bg-[#f5f1fa] text-[#8E5EB5]"
               : "bg-[#eef2f7] text-[#64748b]"
           }`}
         >
@@ -1590,7 +1590,7 @@ function PushNotificationCard({
           type="button"
           disabled={busy || pushState.permission === "unsupported"}
           onClick={onEnable}
-          className="inline-flex h-10 items-center justify-center rounded-[12px] bg-[#16a34a] px-4 text-[13px] font-extrabold text-white disabled:opacity-60"
+          className="inline-flex h-10 items-center justify-center rounded-[12px] bg-[#8E5EB5] px-4 text-[13px] font-extrabold text-white disabled:opacity-60"
         >
           {busy ? "Updating..." : enabled ? "Enable Again" : "Enable Push"}
         </button>
@@ -1806,7 +1806,7 @@ function ProfileSummaryCard({
           <AvatarCircle
             initials={customerInitials(profile)}
             size="lg"
-            accent="from-emerald-500 to-green-700"
+            accent="from-[#8E5EB5] to-[#7B4EA1]"
           />
         )}
         <div className="min-w-0 flex-1">
@@ -1824,7 +1824,7 @@ function ProfileSummaryCard({
           </div>
 
           {profile.verified ? (
-            <span className="mt-3 inline-flex items-center gap-1 rounded-full bg-[#e9f9ec] px-2.5 py-1 text-[12px] font-bold text-[#16a34a]">
+            <span className="mt-3 inline-flex items-center gap-1 rounded-full bg-[#f5f1fa] px-2.5 py-1 text-[12px] font-bold text-[#8E5EB5]">
               <CheckShieldIcon className="h-4 w-4" />
               Phone Verified
             </span>
@@ -1841,12 +1841,12 @@ function ProfileCompletion({ completion }: { completion: number }) {
       <div className="mb-2 flex items-center justify-between text-[13px] text-[#6b7280]">
         <span />
         <span>
-          <strong className="text-[#16a34a]">{completion}%</strong> Complete
+          <strong className="text-[#8E5EB5]">{completion}%</strong> Complete
         </span>
       </div>
       <div className="h-2 rounded-full bg-[#e5e7eb]">
         <div
-          className="h-2 rounded-full bg-[#16a34a]"
+          className="h-2 rounded-full bg-[#8E5EB5]"
           style={{ width: `${completion}%` }}
         />
       </div>
@@ -1871,11 +1871,11 @@ function SectionCard({
         <h3 className="text-[14px] font-extrabold text-[#111827]">{title}</h3>
         {actionLabel ? (
           actionHref ? (
-            <Link href={actionHref} className="text-[13px] font-bold text-[#16a34a]">
+            <Link href={actionHref} className="text-[13px] font-bold text-[#8E5EB5]">
               {actionLabel}
             </Link>
           ) : (
-            <span className="text-[13px] font-bold text-[#16a34a]">{actionLabel}</span>
+            <span className="text-[13px] font-bold text-[#8E5EB5]">{actionLabel}</span>
           )
         ) : null}
       </div>
@@ -1900,13 +1900,13 @@ function ProfileInfoRow({
   const content = (
     <>
       <div className="flex items-center gap-3 text-[14px] text-[#111827]">
-        <span className="text-[#16a34a]">{icon}</span>
+        <span className="text-[#8E5EB5]">{icon}</span>
         <span>{label}</span>
       </div>
       <span
         className={`text-[13px] ${
           valueTone === "green"
-            ? "font-bold text-[#16a34a]"
+            ? "font-bold text-[#8E5EB5]"
             : "text-[#374151]"
         }`}
       >
