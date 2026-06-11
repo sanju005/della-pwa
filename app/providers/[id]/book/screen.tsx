@@ -36,6 +36,7 @@ const startTimeOptions = [
   "03:00 PM",
   "04:00 PM",
 ];
+const instantHourOptions = [1, 2, 3, 4, 5, 6, 7, 8];
 
 function timeToMinutes(label: string) {
   const [time, period] = label.split(" ");
@@ -98,6 +99,7 @@ export function BookingFormScreen({
   const [bookingFlow, setBookingFlow] = useState<BookingFlow>(
     initialDateQuery ? "scheduled" : "instant"
   );
+  const [instantHours, setInstantHours] = useState(1);
   const [selectedDate, setSelectedDate] = useState(defaultDateLabel);
   const [startTime, setStartTime] = useState("10:00 AM");
   const [endTime, setEndTime] = useState("01:00 PM");
@@ -114,22 +116,30 @@ export function BookingFormScreen({
 
   const computedEndTime = bookingMode === "daily" ? addHours(startTime, 9) : endTime;
   const durationHours =
-    bookingMode === "daily" ? 9 : hoursBetween(startTime, computedEndTime);
+    bookingFlow === "instant"
+      ? bookingMode === "daily"
+        ? 1
+        : instantHours
+      : bookingMode === "daily"
+        ? 9
+        : hoursBetween(startTime, computedEndTime);
   const totalAmount =
-    bookingMode === "daily" ? detail.dailyRate : detail.hourlyRate * durationHours;
+    bookingMode === "daily"
+      ? detail.dailyRate * durationHours
+      : detail.hourlyRate * durationHours;
   const bookingDateLabel = bookingFlow === "scheduled" ? selectedDate : "Today";
   const bookingStartLabel = bookingFlow === "scheduled" ? startTime : "ASAP";
   const bookingEndLabel =
     bookingFlow === "scheduled"
       ? computedEndTime
       : bookingMode === "daily"
-        ? "End of day"
+        ? `${durationHours} day booking`
         : `${durationHours} hour service`;
   const bookingTimeLabel =
     bookingFlow === "scheduled"
       ? `${startTime} - ${computedEndTime}`
       : bookingMode === "daily"
-        ? "ASAP start • Full day booking"
+        ? `ASAP start • ${durationHours} day${durationHours === 1 ? "" : "s"}`
         : `ASAP • ${durationHours} hour${durationHours === 1 ? "" : "s"}`;
 
   async function handleBooking() {
@@ -428,9 +438,83 @@ export function BookingFormScreen({
             <div className="mt-3 rounded-[14px] border border-[#E8ECE8] bg-[#FBFCFC] px-3.5 py-2.5 text-[12px] leading-5 text-[#475467]">
               {bookingFlow === "scheduled"
                 ? "Schedule booking shows the calendar and time slots below."
-                : "Book now will create the booking instantly with the package and pricing shown below."}
+                : "Book now will create the booking instantly with the duration and pricing you choose below."}
             </div>
           </section>
+
+          {bookingFlow === "instant" ? (
+            <section className="mt-5 rounded-[20px] border border-[#E7ECE8] bg-white p-4 shadow-[0_10px_24px_rgba(15,23,42,0.04)]">
+              <h2 className="text-[15px] font-extrabold text-[#0F172A]">
+                3. Duration
+              </h2>
+
+              {bookingMode === "hourly" ? (
+                <>
+                  <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
+                    {instantHourOptions.map((hours) => {
+                      const active = instantHours === hours;
+                      return (
+                        <button
+                          key={hours}
+                          type="button"
+                          onClick={() => setInstantHours(hours)}
+                          className={`min-w-[4.8rem] rounded-[16px] border px-3 py-3 text-center ${
+                            active
+                              ? "border-[#8E5EB5] bg-[#F5F1FA] text-[#8E5EB5]"
+                              : "border-[#E5ECE7] bg-white text-[#0F172A]"
+                          }`}
+                        >
+                          <p className="text-[16px] font-extrabold">{hours}</p>
+                          <p className="mt-1 text-[12px] font-semibold">
+                            {hours === 1 ? "Hour" : "Hours"}
+                          </p>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <div className="mt-4 rounded-[16px] bg-[#F8F4FC] px-4 py-3.5">
+                    <p className="text-[13px] text-[#667085]">Instant Service</p>
+                    <p className="mt-1 text-[18px] font-extrabold text-[#8E5EB5]">
+                      {instantHours} {instantHours === 1 ? "Hour" : "Hours"}
+                    </p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
+                    {[1, 2, 3].map((days) => {
+                      const active = instantHours === days;
+                      return (
+                        <button
+                          key={days}
+                          type="button"
+                          onClick={() => setInstantHours(days)}
+                          className={`min-w-[5.4rem] rounded-[16px] border px-3 py-3 text-center ${
+                            active
+                              ? "border-[#8E5EB5] bg-[#F5F1FA] text-[#8E5EB5]"
+                              : "border-[#E5ECE7] bg-white text-[#0F172A]"
+                          }`}
+                        >
+                          <p className="text-[16px] font-extrabold">{days}</p>
+                          <p className="mt-1 text-[12px] font-semibold">
+                            {days === 1 ? "Day" : "Days"}
+                          </p>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <div className="mt-4 rounded-[16px] bg-[#F8F4FC] px-4 py-3.5">
+                    <p className="text-[13px] text-[#667085]">Instant Service</p>
+                    <p className="mt-1 text-[18px] font-extrabold text-[#8E5EB5]">
+                      {durationHours} {durationHours === 1 ? "Day" : "Days"}
+                    </p>
+                  </div>
+                </>
+              )}
+            </section>
+          ) : null}
 
           {bookingFlow === "scheduled" ? (
             <section className="mt-5 rounded-[20px] border border-[#E7ECE8] bg-white p-4 shadow-[0_10px_24px_rgba(15,23,42,0.04)]">
@@ -535,7 +619,7 @@ export function BookingFormScreen({
 
           <section className="mt-5 rounded-[20px] border border-[#E7ECE8] bg-white p-4 shadow-[0_10px_24px_rgba(15,23,42,0.04)]">
             <h2 className="text-[15px] font-extrabold text-[#0F172A]">
-              {bookingFlow === "scheduled" ? "4. Additional Notes (Optional)" : "3. Additional Notes (Optional)"}
+              {bookingFlow === "scheduled" ? "4. Additional Notes (Optional)" : "4. Additional Notes (Optional)"}
             </h2>
             <textarea
               value={notes}
@@ -568,7 +652,9 @@ export function BookingFormScreen({
               <div>
                 <p className="text-[13px] text-[#667085]">Duration</p>
                 <p className="mt-2 font-semibold text-[#0F172A]">
-                  {durationHours} {durationHours === 1 ? "Hour" : "Hours"}
+                  {bookingMode === "daily"
+                    ? `${durationHours} ${durationHours === 1 ? "Day" : "Days"}`
+                    : `${durationHours} ${durationHours === 1 ? "Hour" : "Hours"}`}
                 </p>
               </div>
             </div>
