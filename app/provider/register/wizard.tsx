@@ -48,6 +48,8 @@ const DynamicLocationPickerMap = dynamic(
   }
 );
 
+const TODAY_ISO = new Date().toISOString().split("T")[0];
+
 type FlowStep =
   | { type: "basic"; label: string }
   | { type: "services"; label: string }
@@ -1386,6 +1388,7 @@ function DateInputField({
         <input
           ref={inputRef}
           type="date"
+          max={TODAY_ISO}
           value={value}
           onChange={(event) => onChange(event.target.value)}
           onClick={openPicker}

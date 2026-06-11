@@ -40,6 +40,8 @@ import type {
   SettingGroup,
 } from "@/lib/profile-types";
 
+const TODAY_ISO = new Date().toISOString().split("T")[0];
+
 type ShellProps = {
   children: React.ReactNode;
   title: string;
@@ -1998,6 +2000,7 @@ function LabeledDateInput({
         <input
           ref={inputRef}
           type="date"
+          max={TODAY_ISO}
           value={value}
           onChange={(event) => onChange(event.target.value)}
           onClick={openPicker}

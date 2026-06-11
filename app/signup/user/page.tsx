@@ -13,6 +13,8 @@ import {
   RegisterTitle,
 } from "../../register/_components/register-ui";
 
+const TODAY_ISO = new Date().toISOString().split("T")[0];
+
 export default function SignupUserPage() {
   const router = useRouter();
   const [isSubmitting, startTransition] = useTransition();
@@ -298,6 +300,7 @@ function ControlledDateField({
         <input
           ref={inputRef}
           type="date"
+          max={TODAY_ISO}
           value={value}
           onChange={(event) => onChange(event.target.value)}
           onClick={openPicker}
