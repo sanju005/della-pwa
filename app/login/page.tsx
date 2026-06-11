@@ -1,20 +1,19 @@
 "use client";
 
-import type { ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
-  BadgeCheck,
+  ArrowRight,
+  Eye,
   EyeOff,
-  Headphones,
   Lock,
-  ShieldCheck,
-  User,
+  Mail,
+  UserPlus,
 } from "lucide-react";
-import { FeaturePill, MobilePage, SecureNotice } from "@/app/_components/della-ui";
 import { getSupabaseClient } from "@/lib/supabase";
 import { requestNotificationPermission, saveFCMToken } from "@/lib/notifications";
 
@@ -117,14 +116,11 @@ export default function LoginPage() {
         const fcmToken = await requestNotificationPermission();
 
         if (fcmToken) {
-          console.log("[FCM] Received token after login.");
           const saveResult = await saveFCMToken(fcmToken);
 
           if (!saveResult.success) {
             console.error("[FCM] Failed to persist token:", saveResult.error);
           }
-        } else {
-          console.warn("[FCM] No token available after login.");
         }
       } catch (notificationError) {
         console.error("[FCM] Notification setup failed after login:", notificationError);
@@ -140,213 +136,149 @@ export default function LoginPage() {
   }
 
   return (
-    <MobilePage className="relative bg-[#F6FFF8] pb-8">
-          <section className="relative overflow-hidden px-1 pt-6">
-            <div className="absolute right-[-24%] top-[5%] h-[75%] w-[78%] rounded-full bg-[#ECF8EE]" />
-            <div className="absolute left-[45%] top-[34%] h-[55%] w-[72%] rounded-full bg-[#F1FAF3]" />
+    <main className="min-h-[100dvh] overflow-x-hidden bg-[linear-gradient(180deg,#5e3c84_0%,#8e5eb5_60%,#a679cf_100%)]">
+      <div className="mx-auto flex min-h-[100dvh] w-full max-w-[430px] flex-col">
+        <section className="relative h-[65dvh] min-h-[560px] overflow-hidden">
+          <Image
+            src="/swiper/hero-collage.png"
+            alt="SWIPER premium service collage"
+            fill
+            priority
+            sizes="(max-width: 430px) 100vw, 430px"
+            className="object-cover object-top"
+          />
+          <div className="pointer-events-none absolute left-1/2 top-[54%] h-[53%] w-[55%] -translate-x-1/2 -translate-y-1/2 rounded-[46%] bg-[radial-gradient(circle_at_50%_45%,rgba(195,163,230,0.95)_0%,rgba(142,94,181,0.92)_46%,rgba(110,72,160,0.86)_100%)]" />
+          <div className="pointer-events-none absolute left-1/2 top-[54%] h-[67%] w-[67%] -translate-x-1/2 -translate-y-1/2 rounded-[48%] border border-white/10 bg-[radial-gradient(circle_at_50%_40%,rgba(178,145,219,0.16)_0%,rgba(178,145,219,0.04)_58%,rgba(178,145,219,0)_100%)]" />
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_52%_52%,rgba(178,145,219,0.55)_0%,rgba(142,94,181,0.2)_32%,rgba(94,60,132,0)_62%)]" />
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-[linear-gradient(180deg,rgba(166,121,207,0)_0%,rgba(166,121,207,0.78)_100%)]" />
+        </section>
 
-            <div className="relative z-10">
-              <Link
-                href="/"
-                aria-label="Back"
-                className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-white text-[#16A34A] shadow-[0_12px_24px_rgba(15,23,42,0.08)]"
-              >
-                <ArrowLeft className="h-5 w-5" />
-              </Link>
-
-              <div className="mt-5">
-                <Image
-                  src="/brand/main-logo.png"
-                  alt="DELLA"
-                  width={270}
-                  height={86}
-                  priority
-                  className="h-auto w-[170px] sm:w-[190px]"
-                />
-                <p className="mt-2 text-[16px] font-medium text-[#64748B]">
-                  Home &amp; Lifestyle Marketplace
-                </p>
-              </div>
-
-              <div className="mt-8 flex flex-wrap gap-2.5">
-                <FeaturePill icon={<BadgeCheck className="h-4 w-4 text-[#16A34A]" />} label="Trusted" />
-                <FeaturePill icon={<ShieldCheck className="h-4 w-4 text-[#16A34A]" />} label="Verified" />
-                <FeaturePill icon={<Headphones className="h-4 w-4 text-[#16A34A]" />} label="Reliable" />
-              </div>
-
-              <div className="mt-7">
-                <h2 className="text-[3.5rem] font-extrabold leading-[0.94] tracking-[-0.04em] text-[#0F172A]">
-                  Welcome back
-                </h2>
-                <p className="mt-4 text-[18px] leading-8 text-[#64748B]">
-                  Sign in to continue to DELLA
-                </p>
-              </div>
-
-              <HeroScene />
-            </div>
-          </section>
-
-          <section className="relative z-20 -mt-3 rounded-[28px] border border-[#E2EAE4] bg-white px-5 py-6 shadow-[0_16px_36px_rgba(15,23,42,0.08)] sm:px-6 sm:py-7">
+        <section className="relative -mt-10 flex flex-1 flex-col rounded-t-[40px] bg-white px-6 pb-6 pt-6 shadow-[0_-14px_40px_rgba(44,20,77,0.16)]">
+          <div className="flex items-start justify-between gap-4">
             <div>
-              <label className="block text-[16px] font-extrabold text-[#0F172A]">
-                Email or Phone
-              </label>
-              <div className="mt-3 flex h-[58px] items-center rounded-[18px] border border-[#DDE5E0] bg-white px-5 shadow-[0_4px_10px_rgba(15,23,42,0.02)]">
-                <User className="mr-4 h-5 w-5 text-[#16A34A]" />
-                <input
-                  type="email"
-                  placeholder="Enter email or phone number"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  className="h-full flex-1 border-0 bg-transparent text-[16px] text-[#0F172A] outline-none placeholder:text-[#94A3B8]"
-                />
-              </div>
+              <p className="text-[16px] font-medium text-[#8e5eb5]">Welcome to</p>
+              <Image
+                src="/swiper/logo-purple.png"
+                alt="SWIPER"
+                width={210}
+                height={68}
+                priority
+                className="mt-2 h-auto w-[170px]"
+              />
             </div>
-
-            <div className="mt-7">
-              <label className="block text-[16px] font-extrabold text-[#0F172A]">
-                Password
-              </label>
-              <div className="mt-3 flex h-[58px] items-center rounded-[18px] border border-[#DDE5E0] bg-white px-5 shadow-[0_4px_10px_rgba(15,23,42,0.02)]">
-                <Lock className="mr-4 h-5 w-5 text-[#16A34A]" />
-                <input
-                  type={showPassword ? "text" : "password"}
-                  placeholder="Enter password"
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  className="h-full flex-1 border-0 bg-transparent text-[16px] text-[#0F172A] outline-none placeholder:text-[#94A3B8]"
-                />
-                <button
-                  type="button"
-                  aria-label={showPassword ? "Hide password" : "Show password"}
-                  onClick={() => setShowPassword((current) => !current)}
-                  className="ml-4 text-[#94A3B8]"
-                >
-                  <EyeOff className="h-5 w-5" />
-                </button>
-              </div>
+            <div className="mt-2 flex items-center gap-2">
+              <span className="h-2.5 w-2.5 rounded-full bg-[#dbc8ed]" />
+              <span className="h-2.5 w-8 rounded-full bg-[#8e5eb5]" />
+              <span className="h-2.5 w-2.5 rounded-full bg-[#dbc8ed]" />
+              <span className="h-2.5 w-2.5 rounded-full bg-[#dbc8ed]" />
             </div>
+          </div>
 
-            <div className="mt-4 flex justify-end">
-              <Link href="/forgot-password" className="text-[15px] font-extrabold text-[#16A34A]">
-                Forgot Password?
-              </Link>
-            </div>
+          <p className="mt-4 max-w-[19rem] text-[16px] leading-7 text-[#45556f]">
+            Log in to continue, or sign up to create a new SWIPER account.
+          </p>
 
-            {error ? (
-              <p className="mt-4 rounded-[14px] border border-[#fecaca] bg-[#fff1f2] px-4 py-3 text-[13px] font-semibold text-[#dc2626]">
-                {error}
-              </p>
-            ) : null}
+          <div className="mt-6 space-y-4">
+            <FieldLabel label="Email" />
+            <InputShell icon={<Mail className="h-5 w-5" />}>
+              <input
+                type="email"
+                placeholder="Enter your email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                className="h-full flex-1 border-0 bg-transparent text-[16px] text-[#111827] outline-none placeholder:text-[#93a1b5]"
+              />
+            </InputShell>
 
+            <FieldLabel label="Password" />
+            <InputShell icon={<Lock className="h-5 w-5" />}>
+              <input
+                type={showPassword ? "text" : "password"}
+                placeholder="Enter your password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                className="h-full flex-1 border-0 bg-transparent text-[16px] text-[#111827] outline-none placeholder:text-[#93a1b5]"
+              />
+              <button
+                type="button"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                onClick={() => setShowPassword((current) => !current)}
+                className="ml-3 text-[#8e5eb5]"
+              >
+                {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+              </button>
+            </InputShell>
+          </div>
+
+          <div className="mt-3 flex justify-end">
+            <Link href="/forgot-password" className="text-[14px] font-bold text-[#8e5eb5]">
+              Forgot Password
+            </Link>
+          </div>
+
+          {error ? (
+            <p className="mt-4 rounded-[18px] border border-[#f1d1d7] bg-[#fff5f7] px-4 py-3 text-[13px] font-semibold text-[#c2415b]">
+              {error}
+            </p>
+          ) : null}
+
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+            className="mt-5 inline-flex h-14 w-full items-center justify-center rounded-full bg-[#8e5eb5] px-6 text-[18px] font-extrabold text-white shadow-[0_16px_30px_rgba(142,94,181,0.32)] transition hover:bg-[#7b4ea1] disabled:opacity-60"
+          >
+            {isSubmitting ? "Logging in..." : "Log in"}
+          </button>
+
+          <Link
+            href="/signup"
+            className="mt-3 inline-flex h-14 w-full items-center justify-center gap-3 rounded-full border border-[#b993da] bg-white px-6 text-[18px] font-extrabold text-[#8e5eb5] shadow-[0_10px_24px_rgba(90,57,128,0.06)]"
+          >
+            <UserPlus className="h-5 w-5" />
+            Sign up
+          </Link>
+
+          <div className="mt-auto flex items-center justify-between pt-5">
+            <Link
+              href="/"
+              className="inline-flex h-14 w-14 items-center justify-center rounded-[18px] border border-[#b993da] bg-white text-[#8e5eb5] shadow-[0_10px_24px_rgba(90,57,128,0.06)]"
+              aria-label="Back"
+            >
+              <ArrowLeft className="h-7 w-7" />
+            </Link>
+            <span className="ml-4 mr-auto text-[15px] font-semibold text-[#1f2a44]">Back</span>
             <button
               type="button"
               onClick={handleSubmit}
               disabled={isSubmitting}
-              className="mt-8 inline-flex h-[56px] w-full items-center justify-center rounded-[20px] bg-[#16A34A] text-[18px] font-extrabold text-white shadow-[0_14px_28px_rgba(22,163,74,0.16)]"
+              className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-[#8e5eb5] text-white shadow-[0_16px_30px_rgba(142,94,181,0.28)] transition hover:bg-[#7b4ea1] disabled:opacity-60"
+              aria-label="Continue"
             >
-              {isSubmitting ? "Signing in..." : "Continue"}
+              <ArrowRight className="h-7 w-7" />
             </button>
-
-            <div className="mt-8 flex items-center gap-5">
-              <div className="h-px flex-1 bg-[#E2E8F0]" />
-              <span className="text-[17px] text-[#64748B]">or</span>
-              <div className="h-px flex-1 bg-[#E2E8F0]" />
-            </div>
-
-            <p className="mt-7 text-center text-[18px] text-[#334155]">
-              Don&apos;t have an account?{" "}
-              <Link href="/signup" className="font-extrabold text-[#16A34A]">
-                Create account
-              </Link>
-            </p>
-          </section>
-
-          <section className="mt-7 rounded-[26px] border border-[#E3ECE5] bg-[#FBFFFC] px-5 py-5 shadow-[0_12px_28px_rgba(15,23,42,0.045)]">
-            <div className="grid grid-cols-3 gap-0">
-              <TrustItem
-                icon={<ShieldCheck className="h-6 w-6 text-[#16A34A]" />}
-                title="Verified Professionals"
-                subtitle="Only trusted experts"
-                bordered
-              />
-              <TrustItem
-                icon={<Lock className="h-6 w-6 text-[#16A34A]" />}
-                title="Secure Bookings"
-                subtitle="Your data is safe"
-                bordered
-              />
-              <TrustItem
-                icon={<Headphones className="h-6 w-6 text-[#16A34A]" />}
-                title="Fast Support"
-                subtitle="We're here to help"
-              />
-            </div>
-          </section>
-
-          <SecureNotice />
-    </MobilePage>
+          </div>
+        </section>
+      </div>
+    </main>
   );
 }
 
-function TrustItem({
+function FieldLabel({ label }: { label: string }) {
+  return <p className="text-[14px] font-bold text-[#1f2a44]">{label}</p>;
+}
+
+function InputShell({
+  children,
   icon,
-  title,
-  subtitle,
-  bordered = false,
 }: {
+  children: ReactNode;
   icon: ReactNode;
-  title: string;
-  subtitle: string;
-  bordered?: boolean;
 }) {
   return (
-    <div
-      className={`flex flex-col items-center px-3 text-center ${bordered ? "border-r border-[#E2E8F0]" : ""}`}
-    >
-      <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#EEF8EF]">
-        {icon}
-      </div>
-      <p className="mt-3 text-[15px] font-extrabold leading-5 text-[#0F172A]">
-        {title}
-      </p>
-      <p className="mt-2 text-[14px] leading-5 text-[#64748B]">{subtitle}</p>
-    </div>
-  );
-}
-
-function HeroScene() {
-  return (
-    <div className="relative mt-4 h-[248px] overflow-hidden">
-      <div className="absolute right-[-10%] top-[6%] h-[92%] w-[76%] rounded-full bg-[#ECF8EE]" />
-      <div className="absolute left-[51%] top-[36%] h-[58%] w-[62%] rounded-full bg-[#F1FAF3]" />
-
-      <div className="absolute left-[58%] top-[56%] h-10 w-16 -translate-x-1/2 rounded-full bg-[#DDBE82]" />
-      <div className="absolute left-[58%] top-[59%] h-10 w-16 -translate-x-1/2 rounded-[14px] bg-[#F0D49A]" />
-      <div className="absolute left-[55%] top-[67%] h-11 w-1.5 rounded-full bg-[#DDB166]" />
-      <div className="absolute left-[58.5%] top-[67%] h-11 w-1.5 rounded-full bg-[#DDB166]" />
-      <div className="absolute left-[62%] top-[67%] h-11 w-1.5 rounded-full bg-[#DDB166]" />
-      <div className="absolute left-[56.8%] top-[74%] h-5 w-1.5 rotate-[16deg] rounded-full bg-[#C99545]" />
-      <div className="absolute left-[60.1%] top-[74%] h-5 w-1.5 rotate-[-16deg] rounded-full bg-[#C99545]" />
-
-      <div className="absolute right-[6%] top-[18%] h-40 w-18">
-        <div className="absolute bottom-0 left-4 h-20 w-9 rounded-t-full bg-[#63B857]" />
-        <div className="absolute bottom-11 left-0 h-14 w-9 rotate-[-30deg] rounded-full bg-[#79C96E]" />
-        <div className="absolute bottom-16 left-8 h-14 w-9 rotate-[26deg] rounded-full bg-[#77C66A]" />
-        <div className="absolute bottom-25 left-1 h-14 w-9 rotate-[-18deg] rounded-full bg-[#83D177]" />
-        <div className="absolute bottom-26 left-8 h-14 w-9 rotate-[16deg] rounded-full bg-[#72C165]" />
-        <div className="absolute bottom-0 left-1 h-12 w-14 rounded-t-[22px] rounded-b-[16px] bg-[#EFE3CA]" />
-      </div>
-
-      <div className="absolute right-[14%] top-[34%] h-44 w-40 rounded-[34px] bg-[#D3EAD3] shadow-[0_14px_28px_rgba(72,119,73,0.14)]">
-        <div className="absolute left-[10%] top-[18%] h-29 w-28 rounded-[28px] bg-[#C3DFC3]" />
-        <div className="absolute left-[7%] top-[24%] h-16 w-11 rounded-[20px] bg-[#C3DFC3]" />
-        <div className="absolute right-[7%] top-[24%] h-16 w-11 rounded-[20px] bg-[#C3DFC3]" />
-        <div className="absolute left-[29%] top-[28%] h-14 w-14 rounded-[18px] bg-[#FFF8EC] shadow-[0_8px_14px_rgba(15,23,42,0.06)]" />
-        <div className="absolute bottom-[5%] left-[28%] h-20 w-4 rotate-[14deg] rounded-full bg-[#D2A255]" />
-        <div className="absolute bottom-[5%] right-[24%] h-20 w-4 rotate-[-14deg] rounded-full bg-[#D2A255]" />
-      </div>
+    <div className="flex h-14 items-center rounded-[20px] border border-[#eadff4] bg-[#fbf8fe] px-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
+      <span className="mr-3 text-[#8e5eb5]">{icon}</span>
+      {children}
     </div>
   );
 }
