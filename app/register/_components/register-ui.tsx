@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useState, type ReactNode } from "react";
 
@@ -52,32 +51,19 @@ export function RegisterHeader({
   backHref = "/login",
 }: HeaderProps) {
   return (
-    <div className="mb-5">
+    <div className="mb-4">
       <div className="flex items-start justify-between">
-        <div className="flex items-start gap-2">
-          {showBack ? (
-            <Link
-              href={backHref}
-              aria-label="Back"
-              className="mt-0.5 inline-flex h-9 w-9 items-center justify-center rounded-full text-[#16a34a]"
-            >
-              <ArrowLeftIcon className="h-6 w-6" />
-            </Link>
-          ) : null}
-          <div className={showBack ? "pt-0.5" : ""}>
-            <Image
-              src="/brand/main-logo.png"
-              alt="DELLA"
-              width={160}
-              height={52}
-              priority
-              className="h-auto w-[128px] sm:w-[148px]"
-            />
-            <p className="mt-1 text-[13px] leading-5 text-[#6b7280]">
-              Trusted Services, Anytime, Anywhere
-            </p>
-          </div>
-        </div>
+        {showBack ? (
+          <Link
+            href={backHref}
+            aria-label="Back"
+            className="mt-0.5 inline-flex h-9 w-9 items-center justify-center rounded-full text-[#8E5EB5]"
+          >
+            <ArrowLeftIcon className="h-6 w-6" />
+          </Link>
+        ) : (
+          <div />
+        )}
       </div>
     </div>
   );
