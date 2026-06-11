@@ -128,8 +128,8 @@ export function ProvidersCatalogScreen({ data }: { data: CatalogScreenData }) {
     "Bandar Puteri Puchong, Subang Jaya City Council";
 
   return (
-    <main className="min-h-[100dvh] bg-[#f6fff8]">
-      <div className="mx-auto min-h-[100dvh] w-full max-w-[430px] bg-white px-6 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
+    <main className="min-h-[100dvh] bg-[#fbf8ff]">
+      <div className="mx-auto min-h-[100dvh] w-full max-w-[430px] bg-[linear-gradient(180deg,#ffffff_0%,#fbf8fe_100%)] px-6 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
         <div className="py-6">
           <header className="space-y-5">
             <div className="flex items-center justify-between gap-3">
@@ -151,8 +151,8 @@ export function ProvidersCatalogScreen({ data }: { data: CatalogScreenData }) {
 
             <div className="rounded-[28px] border border-[#edf1ee] bg-white px-4 py-4 shadow-[0_14px_34px_rgba(15,23,42,0.05)]">
               <div className="flex items-start gap-4">
-                <div className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-[16px] bg-[#eef9f0] text-[#16A34A]">
-                  <MapPin className="h-6 w-6 fill-[#16A34A] text-[#16A34A]" />
+                <div className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-[16px] bg-[#f3ebfc] text-[#8E5EB5]">
+                  <MapPin className="h-6 w-6 fill-[#8E5EB5] text-[#8E5EB5]" />
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="text-[13px] font-medium text-[#98A2B3]">Location name</p>
@@ -165,7 +165,7 @@ export function ProvidersCatalogScreen({ data }: { data: CatalogScreenData }) {
               <div className="my-4 h-px bg-[#edf1ee]" />
 
               <div className="flex items-start gap-4">
-                <div className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-[16px] bg-[#eef9f0] text-[#16A34A]">
+                <div className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-[16px] bg-[#f3ebfc] text-[#8E5EB5]">
                   <Building2 className="h-6 w-6" />
                 </div>
                 <div className="min-w-0 flex-1">
@@ -181,7 +181,7 @@ export function ProvidersCatalogScreen({ data }: { data: CatalogScreenData }) {
           <section className="mt-5">
             <div className="rounded-[30px] bg-white px-5 py-4 shadow-[0_20px_50px_rgba(15,23,42,0.08)] ring-1 ring-[#eff4f1]">
               <div className="flex items-start gap-4">
-                <div className="inline-flex h-20 w-20 shrink-0 items-center justify-center rounded-[22px] bg-[#F3FBF5] text-[#11233f] shadow-[0_10px_24px_rgba(15,23,42,0.04)]">
+                <div className="inline-flex h-20 w-20 shrink-0 items-center justify-center rounded-[22px] bg-[#f3ebfc] text-[#8E5EB5] shadow-[0_10px_24px_rgba(15,23,42,0.04)]">
                   <Icon className="h-12 w-12 stroke-[1.8]" />
                 </div>
                 <div className="min-w-0 flex-1 pt-1">
@@ -198,17 +198,17 @@ export function ProvidersCatalogScreen({ data }: { data: CatalogScreenData }) {
 
               <div className="mt-4 grid grid-cols-3 divide-x divide-[#ebf0ed] rounded-[20px] border border-[#eef3f0] bg-white">
                 <TrustBadge
-                  icon={<ShieldCheck className="h-5 w-5 text-[#16A34A]" />}
+                  icon={<ShieldCheck className="h-5 w-5 text-[#8E5EB5]" />}
                   title="Verified"
                   label="Background checked"
                 />
                 <TrustBadge
-                  icon={<StarIcon className="h-5 w-5 text-[#16A34A]" />}
+                  icon={<StarIcon className="h-5 w-5 text-[#8E5EB5]" />}
                   title="4.8+ Rated"
                   label="High ratings & reviews"
                 />
                 <TrustBadge
-                  icon={<ShieldCheck className="h-5 w-5 text-[#16A34A]" />}
+                  icon={<ShieldCheck className="h-5 w-5 text-[#8E5EB5]" />}
                   title="Secure Booking"
                   label="Protected payments"
                 />
@@ -232,7 +232,7 @@ export function ProvidersCatalogScreen({ data }: { data: CatalogScreenData }) {
                     </div>
                   ))}
                   {extraProviders > 0 ? (
-                    <div className="-ml-2.5 inline-flex h-11 min-w-11 items-center justify-center rounded-full border-2 border-white bg-[#16A34A] px-2 text-[13px] font-bold text-white shadow-[0_8px_18px_rgba(22,163,74,0.28)]">
+                    <div className="-ml-2.5 inline-flex h-11 min-w-11 items-center justify-center rounded-full border-2 border-white bg-[#8E5EB5] px-2 text-[13px] font-bold text-white shadow-[0_8px_18px_rgba(142,94,181,0.28)]">
                       +{extraProviders}
                     </div>
                   ) : null}
@@ -293,7 +293,7 @@ export function ProvidersCatalogScreen({ data }: { data: CatalogScreenData }) {
             <div className="flex items-center justify-between gap-4">
               <div className="min-w-0">
                 <p className="flex items-center gap-2 text-[15px] text-[#667085]">
-                  <span className="h-2.5 w-2.5 rounded-full bg-[#16A34A]" />
+                  <span className="h-2.5 w-2.5 rounded-full bg-[#8E5EB5]" />
                   <span>
                     <span className="font-semibold text-[#344054]">{filteredListings.length}</span>{" "}
                     {serviceLower} available near you
@@ -306,13 +306,13 @@ export function ProvidersCatalogScreen({ data }: { data: CatalogScreenData }) {
                   <select
                     value={sortBy}
                     onChange={(event) => setSortBy(event.target.value as SortKey)}
-                    className="appearance-none bg-transparent pl-1 pr-6 text-[15px] font-bold text-[#16A34A] outline-none"
+                    className="appearance-none bg-transparent pl-1 pr-6 text-[15px] font-bold text-[#8E5EB5] outline-none"
                   >
                     <option value="popular">Popular</option>
                     <option value="nearest">Nearest</option>
                     <option value="price-low">Low Rate</option>
                   </select>
-                  <ChevronDown className="pointer-events-none absolute right-0 top-1/2 h-4 w-4 -translate-y-1/2 text-[#16A34A]" />
+                  <ChevronDown className="pointer-events-none absolute right-0 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8E5EB5]" />
                 </span>
               </label>
             </div>
@@ -346,7 +346,7 @@ function TrustBadge({
 }) {
   return (
     <div className="min-w-0 px-3 py-2.5 text-center">
-      <div className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[#f3fbf5] text-[#16A34A]">
+      <div className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[#f3ebfc] text-[#8E5EB5]">
         {icon}
       </div>
       <p className="mt-2 text-[12px] font-bold text-[#22324c]">{title}</p>
@@ -372,11 +372,11 @@ function FilterPill({
       onClick={onClick}
       className={`inline-flex h-12 shrink-0 items-center gap-2 rounded-[18px] border px-4 text-[13px] font-semibold shadow-[0_10px_24px_rgba(15,23,42,0.04)] ${
         active
-          ? "border-[#d8ebdf] bg-[#f3fbf5] text-[#16A34A]"
+          ? "border-[#dbc8ed] bg-[#f3ebfc] text-[#8E5EB5]"
           : "border-[#e7ece8] bg-white text-[#344054]"
       }`}
     >
-      <span className={active ? "text-[#16A34A]" : "text-[#344054]"}>{icon}</span>
+      <span className={active ? "text-[#8E5EB5]" : "text-[#344054]"}>{icon}</span>
       <span>{label}</span>
     </button>
   );
@@ -398,7 +398,7 @@ function TabButton({
       type="button"
       onClick={onClick}
       className={`inline-flex w-full min-w-0 items-center justify-center gap-2 rounded-[16px] px-4 py-3 text-center transition ${
-        active ? "bg-[#16A34A] text-white shadow-[0_12px_22px_rgba(22,163,74,0.24)]" : "text-[#344054]"
+        active ? "bg-[#8E5EB5] text-white shadow-[0_12px_22px_rgba(142,94,181,0.24)]" : "text-[#344054]"
       }`}
     >
       <div className="flex items-center justify-center gap-1.5 whitespace-nowrap">
@@ -457,7 +457,7 @@ function ProviderCard({ listing }: { listing: CatalogScreenListing }) {
               <p className="mt-2 break-words text-[15px] font-bold leading-5 text-[#1f2c44]">
                 {fullName}
               </p>
-              <span className="mt-3 inline-flex max-w-full items-center gap-1.5 rounded-full bg-[#ecf9f0] px-3 py-1.5 text-[10px] font-semibold text-[#16a34a]">
+              <span className="mt-3 inline-flex max-w-full items-center gap-1.5 rounded-full bg-[#f3ebfc] px-3 py-1.5 text-[10px] font-semibold text-[#8E5EB5]">
                 <ShieldCheck className="h-3.5 w-3.5 shrink-0" />
                 <span className="break-words">Top Rated Provider</span>
               </span>
@@ -482,7 +482,7 @@ function ProviderCard({ listing }: { listing: CatalogScreenListing }) {
             suffix={`(${listing.reviews} Reviews)`}
           />
           <InfoMetric
-            icon={<ThumbsUp className="h-4.5 w-4.5 fill-[#16a34a] text-[#16a34a]" />}
+            icon={<ThumbsUp className="h-4.5 w-4.5 fill-[#8E5EB5] text-[#8E5EB5]" />}
             value="98%"
             suffix="On-Time"
           />
@@ -506,7 +506,7 @@ function ProviderCard({ listing }: { listing: CatalogScreenListing }) {
           {serviceTags.map((tag) => (
             <span
               key={tag}
-              className="inline-flex items-center rounded-full bg-[#ecf9f0] px-3 py-2 text-[12px] font-semibold leading-none text-[#15803d]"
+              className="inline-flex items-center rounded-full bg-[#f3ebfc] px-3 py-2 text-[12px] font-semibold leading-none text-[#8E5EB5]"
             >
               {tag}
             </span>
@@ -517,22 +517,22 @@ function ProviderCard({ listing }: { listing: CatalogScreenListing }) {
       <div className="mt-5 rounded-[20px] border border-[#edf1ee] bg-[#fbfdfb] px-1.5 py-2">
         <div className="grid grid-cols-4 divide-x divide-[#e8eeea] text-[12px] text-[#667085]">
           <StatPill
-            icon={<Clock3 className="h-3.5 w-3.5 text-[#16a34a]" />}
+            icon={<Clock3 className="h-3.5 w-3.5 text-[#8E5EB5]" />}
             label="Replies in"
             value="~5 min"
           />
           <StatPill
-            icon={<BriefcaseBusiness className="h-3.5 w-3.5 text-[#16a34a]" />}
+            icon={<BriefcaseBusiness className="h-3.5 w-3.5 text-[#8E5EB5]" />}
             label="Jobs Completed"
             value={jobsCompleted.toString()}
           />
           <StatPill
-            icon={<UserRound className="h-3.5 w-3.5 text-[#16a34a]" />}
+            icon={<UserRound className="h-3.5 w-3.5 text-[#8E5EB5]" />}
             label="Repeat Customers"
             value={repeatCustomers.toString()}
           />
           <StatPill
-            icon={<Clock3 className="h-3.5 w-3.5 text-[#16a34a]" />}
+            icon={<Clock3 className="h-3.5 w-3.5 text-[#8E5EB5]" />}
             label="Active"
             value="10 min ago"
           />
@@ -541,7 +541,7 @@ function ProviderCard({ listing }: { listing: CatalogScreenListing }) {
 
       <Link
         href={listing.href}
-        className="mt-4 inline-flex h-12 w-full items-center justify-center rounded-[18px] bg-[#16A34A] px-4 text-[14px] font-bold text-white shadow-[0_14px_28px_rgba(22,163,74,0.22)] transition hover:bg-[#15803d]"
+        className="mt-4 inline-flex h-12 w-full items-center justify-center rounded-[18px] bg-[#8E5EB5] px-4 text-[14px] font-bold text-white shadow-[0_14px_28px_rgba(142,94,181,0.22)] transition hover:bg-[#7b4ea1]"
       >
         View Profile
       </Link>
@@ -558,7 +558,7 @@ function VerifiedBadge({
 }) {
   return (
     <span className="inline-flex items-center justify-center gap-1.5 rounded-full border border-[#dceadf] bg-white px-3 py-2 text-[10px] font-semibold text-[#475467]">
-      <span className="inline-flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded-full bg-white text-[#16a34a] ring-1 ring-[#dceadf]">
+      <span className="inline-flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded-full bg-white text-[#8E5EB5] ring-1 ring-[#eadff6]">
         {icon}
       </span>
       <span>{label}</span>
