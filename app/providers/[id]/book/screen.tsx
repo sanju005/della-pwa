@@ -24,6 +24,7 @@ import type { ProviderDetail } from "@/lib/provider-detail";
 import { getSupabaseClient } from "@/lib/supabase";
 
 type BookingMode = "hourly" | "daily";
+type BookingFlow = "instant" | "scheduled";
 
 const startTimeOptions = [
   "09:00 AM",
@@ -94,6 +95,9 @@ export function BookingFormScreen({
     : initialDateQuery ?? toDateLabel(defaultSlot.dayLabel, defaultSlot.dateLabel);
 
   const [bookingMode, setBookingMode] = useState<BookingMode>("hourly");
+  const [bookingFlow, setBookingFlow] = useState<BookingFlow>(
+    initialDateQuery ? "scheduled" : "instant"
+  );
   const [selectedDate, setSelectedDate] = useState(defaultDateLabel);
   const [startTime, setStartTime] = useState("10:00 AM");
   const [endTime, setEndTime] = useState("01:00 PM");
@@ -113,6 +117,20 @@ export function BookingFormScreen({
     bookingMode === "daily" ? 9 : hoursBetween(startTime, computedEndTime);
   const totalAmount =
     bookingMode === "daily" ? detail.dailyRate : detail.hourlyRate * durationHours;
+  const bookingDateLabel = bookingFlow === "scheduled" ? selectedDate : "Today";
+  const bookingStartLabel = bookingFlow === "scheduled" ? startTime : "ASAP";
+  const bookingEndLabel =
+    bookingFlow === "scheduled"
+      ? computedEndTime
+      : bookingMode === "daily"
+        ? "End of day"
+        : `${durationHours} hour service`;
+  const bookingTimeLabel =
+    bookingFlow === "scheduled"
+      ? `${startTime} - ${computedEndTime}`
+      : bookingMode === "daily"
+        ? "ASAP start • Full day booking"
+        : `ASAP • ${durationHours} hour${durationHours === 1 ? "" : "s"}`;
 
   async function handleBooking() {
     try {
@@ -146,10 +164,10 @@ export function BookingFormScreen({
           serviceLabel: detail.serviceLabel,
           location: detail.location,
           bookingMode,
-          dateLabel: selectedDate,
-          startTimeLabel: startTime,
-          endTimeLabel: computedEndTime,
-          timeLabel: `${startTime} - ${computedEndTime}`,
+          dateLabel: bookingDateLabel,
+          startTimeLabel: bookingStartLabel,
+          endTimeLabel: bookingEndLabel,
+          timeLabel: bookingTimeLabel,
           durationHours,
           notes,
           hourlyRate: detail.hourlyRate,
@@ -348,106 +366,176 @@ export function BookingFormScreen({
 
           <section className="mt-5 rounded-[20px] border border-[#E7ECE8] bg-white p-4 shadow-[0_10px_24px_rgba(15,23,42,0.04)]">
             <h2 className="text-[15px] font-extrabold text-[#0F172A]">
-              2. Date & Time
+              2. Booking Option
             </h2>
 
-            <div className="mt-5 flex gap-2 overflow-x-auto pb-1">
-              {detail.availability.map((slot) => {
-                const slotValue = toDateLabel(slot.dayLabel, slot.dateLabel);
-                const active = selectedDate === slotValue;
-                return (
-                  <button
-                    key={slotValue}
-                    type="button"
-                    disabled={slot.state !== "available"}
-                    onClick={() => setSelectedDate(slotValue)}
-                    className={`min-w-[4.6rem] rounded-[16px] border px-3 py-3 text-center ${
-                      active
-                        ? "border-[#8E5EB5] bg-[#F5F1FA] text-[#8E5EB5]"
-                        : slot.state === "available"
-                          ? "border-[#E5ECE7] bg-white text-[#0F172A]"
-                          : "border-[#ECEFEC] bg-[#F8F9F8] text-[#98A2B3]"
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setBookingFlow("instant")}
+                className={`rounded-[16px] border px-4 py-3.5 text-left ${
+                  bookingFlow === "instant"
+                    ? "border-[#8E5EB5] bg-[#F8F4FC] shadow-[0_0_0_1px_rgba(142,94,181,0.16)]"
+                    : "border-[#E5ECE7] bg-white"
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#F5F1FA] text-[#8E5EB5]">
+                    <ChevronRight className="h-5 w-5" />
+                  </span>
+                  <span
+                    className={`h-6 w-6 rounded-full border-2 ${
+                      bookingFlow === "instant"
+                        ? "border-[#8E5EB5] bg-[#8E5EB5] shadow-[inset_0_0_0_3px_white]"
+                        : "border-[#D0D5DD]"
                     }`}
-                  >
-                    <p className="text-[14px] font-semibold">{slot.dayLabel}</p>
-                    <p className="mt-1 text-[13px]">{slot.dateLabel}</p>
-                  </button>
-                );
-              })}
+                  />
+                </div>
+                <p className="mt-3 text-[14px] font-extrabold text-[#0F172A]">Book Now</p>
+                <p className="mt-1 text-[13px] text-[#667085]">
+                  Book directly with price and service details.
+                </p>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setBookingFlow("scheduled")}
+                className={`rounded-[16px] border px-4 py-3.5 text-left ${
+                  bookingFlow === "scheduled"
+                    ? "border-[#8E5EB5] bg-[#F8F4FC] shadow-[0_0_0_1px_rgba(142,94,181,0.16)]"
+                    : "border-[#E5ECE7] bg-white"
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#F5F1FA] text-[#8E5EB5]">
+                    <CalendarDays className="h-5 w-5" />
+                  </span>
+                  <span
+                    className={`h-6 w-6 rounded-full border-2 ${
+                      bookingFlow === "scheduled"
+                        ? "border-[#8E5EB5] bg-[#8E5EB5] shadow-[inset_0_0_0_3px_white]"
+                        : "border-[#D0D5DD]"
+                    }`}
+                  />
+                </div>
+                <p className="mt-3 text-[14px] font-extrabold text-[#0F172A]">Schedule Booking</p>
+                <p className="mt-1 text-[13px] text-[#667085]">
+                  Choose your preferred date and time first.
+                </p>
+              </button>
             </div>
 
-            <div className={`mt-5 grid gap-3 ${bookingMode === "hourly" ? "grid-cols-2" : "grid-cols-1"}`}>
-              <label className="block">
-                <span className="mb-2 block text-[14px] font-semibold text-[#344054]">
-                  Start time
-                </span>
-                <span className="relative block">
-                  <select
-                    value={startTime}
-                    onChange={(event) => {
-                      const nextStart = event.target.value;
-                      setStartTime(nextStart);
-                      if (bookingMode === "hourly") {
-                        const nextEnd = endTimeOptions.find(
-                          (option) => option.minutes > timeToMinutes(nextStart) + 60
-                        );
-                        setEndTime(nextEnd?.label ?? addHours(nextStart, 1));
-                      }
-                    }}
-                    className="h-12 w-full appearance-none rounded-[14px] border border-[#E5ECE7] bg-white px-4 pr-10 text-[14px] font-semibold text-[#0F172A] outline-none"
-                  >
-                    {startTimeOptions.map((time) => (
-                      <option key={time} value={time}>
-                        {time}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#667085]" />
-                </span>
-              </label>
+            <div className="mt-3 rounded-[14px] border border-[#E8ECE8] bg-[#FBFCFC] px-3.5 py-2.5 text-[12px] leading-5 text-[#475467]">
+              {bookingFlow === "scheduled"
+                ? "Schedule booking shows the calendar and time slots below."
+                : "Book now will create the booking instantly with the package and pricing shown below."}
+            </div>
+          </section>
 
-              {bookingMode === "hourly" ? (
+          {bookingFlow === "scheduled" ? (
+            <section className="mt-5 rounded-[20px] border border-[#E7ECE8] bg-white p-4 shadow-[0_10px_24px_rgba(15,23,42,0.04)]">
+              <h2 className="text-[15px] font-extrabold text-[#0F172A]">
+                3. Date & Time
+              </h2>
+
+              <div className="mt-5 flex gap-2 overflow-x-auto pb-1">
+                {detail.availability.map((slot) => {
+                  const slotValue = toDateLabel(slot.dayLabel, slot.dateLabel);
+                  const active = selectedDate === slotValue;
+                  return (
+                    <button
+                      key={slotValue}
+                      type="button"
+                      disabled={slot.state !== "available"}
+                      onClick={() => setSelectedDate(slotValue)}
+                      className={`min-w-[4.6rem] rounded-[16px] border px-3 py-3 text-center ${
+                        active
+                          ? "border-[#8E5EB5] bg-[#F5F1FA] text-[#8E5EB5]"
+                          : slot.state === "available"
+                            ? "border-[#E5ECE7] bg-white text-[#0F172A]"
+                            : "border-[#ECEFEC] bg-[#F8F9F8] text-[#98A2B3]"
+                      }`}
+                    >
+                      <p className="text-[14px] font-semibold">{slot.dayLabel}</p>
+                      <p className="mt-1 text-[13px]">{slot.dateLabel}</p>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className={`mt-5 grid gap-3 ${bookingMode === "hourly" ? "grid-cols-2" : "grid-cols-1"}`}>
                 <label className="block">
                   <span className="mb-2 block text-[14px] font-semibold text-[#344054]">
-                    End time
+                    Start time
                   </span>
                   <span className="relative block">
                     <select
-                      value={endTime}
-                      onChange={(event) => setEndTime(event.target.value)}
-                    className="h-12 w-full appearance-none rounded-[14px] border border-[#E5ECE7] bg-white px-4 pr-10 text-[14px] font-semibold text-[#0F172A] outline-none"
+                      value={startTime}
+                      onChange={(event) => {
+                        const nextStart = event.target.value;
+                        setStartTime(nextStart);
+                        if (bookingMode === "hourly") {
+                          const nextEnd = endTimeOptions.find(
+                            (option) => option.minutes > timeToMinutes(nextStart) + 60
+                          );
+                          setEndTime(nextEnd?.label ?? addHours(nextStart, 1));
+                        }
+                      }}
+                      className="h-12 w-full appearance-none rounded-[14px] border border-[#E5ECE7] bg-white px-4 pr-10 text-[14px] font-semibold text-[#0F172A] outline-none"
                     >
-                      {endTimeOptions.map((time) => (
-                        <option key={time.label} value={time.label}>
-                          {time.label}
+                      {startTimeOptions.map((time) => (
+                        <option key={time} value={time}>
+                          {time}
                         </option>
                       ))}
                     </select>
                     <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#667085]" />
                   </span>
                 </label>
-              ) : null}
-            </div>
 
-            <div className="mt-4 grid grid-cols-2 gap-3">
-              <div className="rounded-[16px] bg-[#F8F4FC] px-4 py-3.5">
-                <p className="text-[13px] text-[#667085]">Estimated End Time</p>
-                <p className="mt-1 text-[18px] font-extrabold text-[#8E5EB5]">
-                  {computedEndTime}
-                </p>
+                {bookingMode === "hourly" ? (
+                  <label className="block">
+                    <span className="mb-2 block text-[14px] font-semibold text-[#344054]">
+                      End time
+                    </span>
+                    <span className="relative block">
+                      <select
+                        value={endTime}
+                        onChange={(event) => setEndTime(event.target.value)}
+                        className="h-12 w-full appearance-none rounded-[14px] border border-[#E5ECE7] bg-white px-4 pr-10 text-[14px] font-semibold text-[#0F172A] outline-none"
+                      >
+                        {endTimeOptions.map((time) => (
+                          <option key={time.label} value={time.label}>
+                            {time.label}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#667085]" />
+                    </span>
+                  </label>
+                ) : null}
               </div>
-              <div className="rounded-[16px] bg-[#F8F4FC] px-4 py-3.5">
-                <p className="text-[13px] text-[#667085]">Duration</p>
-                <p className="mt-1 text-[18px] font-extrabold text-[#0F172A]">
-                  {durationHours} {durationHours === 1 ? "Hour" : "Hours"}
-                </p>
+
+              <div className="mt-4 grid grid-cols-2 gap-3">
+                <div className="rounded-[16px] bg-[#F8F4FC] px-4 py-3.5">
+                  <p className="text-[13px] text-[#667085]">Estimated End Time</p>
+                  <p className="mt-1 text-[18px] font-extrabold text-[#8E5EB5]">
+                    {computedEndTime}
+                  </p>
+                </div>
+                <div className="rounded-[16px] bg-[#F8F4FC] px-4 py-3.5">
+                  <p className="text-[13px] text-[#667085]">Duration</p>
+                  <p className="mt-1 text-[18px] font-extrabold text-[#0F172A]">
+                    {durationHours} {durationHours === 1 ? "Hour" : "Hours"}
+                  </p>
+                </div>
               </div>
-            </div>
-          </section>
+            </section>
+          ) : null}
 
           <section className="mt-5 rounded-[20px] border border-[#E7ECE8] bg-white p-4 shadow-[0_10px_24px_rgba(15,23,42,0.04)]">
             <h2 className="text-[15px] font-extrabold text-[#0F172A]">
-              3. Additional Notes (Optional)
+              {bookingFlow === "scheduled" ? "4. Additional Notes (Optional)" : "3. Additional Notes (Optional)"}
             </h2>
             <textarea
               value={notes}
@@ -472,9 +560,9 @@ export function BookingFormScreen({
               <div>
                 <p className="text-[13px] text-[#667085]">Date & Time</p>
                 <p className="mt-2 font-semibold text-[#0F172A]">
-                  {selectedDate}
+                  {bookingDateLabel}
                   <br />
-                  {startTime}
+                  {bookingFlow === "scheduled" ? startTime : bookingTimeLabel}
                 </p>
               </div>
               <div>
@@ -512,7 +600,7 @@ export function BookingFormScreen({
               disabled={pending}
               className="inline-flex h-12 min-w-[11.5rem] items-center justify-center gap-2 rounded-[14px] bg-[#8E5EB5] px-5 text-[16px] font-extrabold text-white disabled:opacity-70"
             >
-              {pending ? "Booking..." : "Book Now"}
+              {pending ? "Booking..." : bookingFlow === "scheduled" ? "Schedule Booking" : "Book Now"}
               <ChevronRight className="h-4.5 w-4.5" />
             </button>
           </div>
