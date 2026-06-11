@@ -36,7 +36,8 @@ const startTimeOptions = [
   "03:00 PM",
   "04:00 PM",
 ];
-const instantHourOptions = [1, 2, 3, 4, 5, 6, 7, 8];
+const MIN_INSTANT_HOURS = 1;
+const MAX_INSTANT_HOURS = 8;
 
 function timeToMinutes(label: string) {
   const [time, period] = label.split(" ");
@@ -444,31 +445,44 @@ export function BookingFormScreen({
                 3. Duration
               </h2>
 
-              <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
-                {instantHourOptions.map((hours) => {
-                  const active = instantHours === hours;
-                  return (
-                    <button
-                      key={hours}
-                      type="button"
-                      onClick={() => setInstantHours(hours)}
-                      className={`min-w-[4.8rem] rounded-[16px] border px-3 py-3 text-center ${
-                        active
-                          ? "border-[#8E5EB5] bg-[#F5F1FA] text-[#8E5EB5]"
-                          : "border-[#E5ECE7] bg-white text-[#0F172A]"
-                      }`}
-                    >
-                      <p className="text-[16px] font-extrabold">{hours}</p>
-                      <p className="mt-1 text-[12px] font-semibold">
-                        {hours === 1 ? "Hour" : "Hours"}
-                      </p>
-                    </button>
-                  );
-                })}
+              <div className="mt-4 flex items-center gap-3 rounded-[18px] border border-[#E7ECE8] bg-[#FCFBFE] px-3 py-3">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setInstantHours((current) => Math.max(MIN_INSTANT_HOURS, current - 1))
+                  }
+                  disabled={instantHours <= MIN_INSTANT_HOURS}
+                  aria-label="Decrease hours"
+                  className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[#D9C7EA] bg-white text-[#8E5EB5] disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  <span className="text-[22px] font-medium leading-none">-</span>
+                </button>
+
+                <div className="min-w-0 flex-1 text-center">
+                  <p className="text-[13px] font-semibold text-[#667085]">Instant Service</p>
+                  <p className="mt-1 text-[28px] font-extrabold leading-none text-[#8E5EB5]">
+                    {instantHours}
+                  </p>
+                  <p className="mt-1 text-[13px] font-semibold text-[#0F172A]">
+                    {instantHours === 1 ? "Hour" : "Hours"}
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setInstantHours((current) => Math.min(MAX_INSTANT_HOURS, current + 1))
+                  }
+                  disabled={instantHours >= MAX_INSTANT_HOURS}
+                  aria-label="Increase hours"
+                  className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[#D9C7EA] bg-white text-[#8E5EB5] disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  <span className="text-[22px] font-medium leading-none">+</span>
+                </button>
               </div>
 
               <div className="mt-4 rounded-[16px] bg-[#F8F4FC] px-4 py-3.5">
-                <p className="text-[13px] text-[#667085]">Instant Service</p>
+                <p className="text-[13px] text-[#667085]">Selected Duration</p>
                 <p className="mt-1 text-[18px] font-extrabold text-[#8E5EB5]">
                   {instantHours} {instantHours === 1 ? "Hour" : "Hours"}
                 </p>
