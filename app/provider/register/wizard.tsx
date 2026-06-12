@@ -14,6 +14,7 @@ import {
   serviceSpecialties,
   timePresets,
 } from "@/lib/provider-registration-config";
+import { resolveCurrentLiveLocation } from "@/lib/live-location";
 import { getSupabaseClient } from "@/lib/supabase";
 import type {
   ProviderRegistrationData,
@@ -917,6 +918,33 @@ function ProviderLocationStep({
 }) {
   const [isResolvingAddress, setIsResolvingAddress] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
+  const [isSearchingAddress, setIsSearchingAddress] = useState(false);
+  const lastSearchedQueryRef = useRef("");
+
+  const addressQuery = useMemo(
+    () =>
+      [
+        data.providerLocation.houseNumber,
+        data.providerLocation.road,
+        data.providerLocation.suburb,
+        data.providerLocation.postcode,
+        data.providerLocation.city,
+        data.providerLocation.state,
+        data.providerLocation.country || "Malaysia",
+      ]
+        .map((value) => value.trim())
+        .filter(Boolean)
+        .join(", "),
+    [
+      data.providerLocation.houseNumber,
+      data.providerLocation.road,
+      data.providerLocation.suburb,
+      data.providerLocation.postcode,
+      data.providerLocation.city,
+      data.providerLocation.state,
+      data.providerLocation.country,
+    ],
+  );
 
   const updateMapLocation = async (latitude: number, longitude: number) => {
     setIsResolvingAddress(true);
@@ -949,28 +977,36 @@ function ProviderLocationStep({
   };
 
   const requestCurrentLocation = () => {
-    if (typeof navigator === "undefined" || !navigator.geolocation) {
-      setSubmitError("Location is not supported on this device.");
-      return;
-    }
-
     setIsLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
+    void resolveCurrentLiveLocation("Current location")
+      .then((nextLocation) => {
+        if (!nextLocation) {
+          setSubmitError("Location is not supported on this device.");
+          return;
+        }
+
         setSubmitError("");
-        void updateMapLocation(
-          position.coords.latitude,
-          position.coords.longitude,
-        ).finally(() => {
-          setIsLocating(false);
-        });
-      },
-      () => {
-        setIsLocating(false);
+        onUpdate("latitude", nextLocation.latitude);
+        onUpdate("longitude", nextLocation.longitude);
+        onUpdate("areaLabel", nextLocation.label || nextLocation.formattedAddress || "Current location");
+        onUpdate(
+          "formattedAddress",
+          nextLocation.formattedAddress || nextLocation.label || "Current location",
+        );
+        onUpdate("road", nextLocation.road || "");
+        onUpdate("suburb", nextLocation.suburb || "");
+        onUpdate("city", nextLocation.city || "");
+        onUpdate("state", nextLocation.state || "");
+        onUpdate("postcode", nextLocation.postcode || "");
+        onUpdate("country", nextLocation.country || "");
+        onUpdate("houseNumber", nextLocation.houseNumber || "");
+      })
+      .catch(() => {
         setSubmitError("Unable to get current location. Please allow location access.");
-      },
-      { enableHighAccuracy: true, timeout: 10000 },
-    );
+      })
+      .finally(() => {
+        setIsLocating(false);
+      });
   };
 
   useEffect(() => {
@@ -979,13 +1015,59 @@ function ProviderLocationStep({
     }
   }, [data.providerLocation.areaLabel]);
 
+  useEffect(() => {
+    const trimmedQuery = addressQuery.trim();
+
+    if (trimmedQuery.length < 8 || trimmedQuery === lastSearchedQueryRef.current) {
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      void (async () => {
+        setIsSearchingAddress(true);
+
+        try {
+          const response = await fetch(
+            `/api/location/search?q=${encodeURIComponent(trimmedQuery)}`,
+            { cache: "no-store" },
+          );
+
+          const result = (await response.json()) as {
+            results?: Array<{
+              id: number;
+              label: string;
+              latitude: number;
+              longitude: number;
+            }>;
+          };
+
+          const match = result.results?.[0];
+
+          if (!response.ok || !match) {
+            return;
+          }
+
+          lastSearchedQueryRef.current = trimmedQuery;
+          setSubmitError("");
+          await updateMapLocation(match.latitude, match.longitude);
+        } catch {
+          // Ignore background address-search failures and keep manual controls usable.
+        } finally {
+          setIsSearchingAddress(false);
+        }
+      })();
+    }, 650);
+
+    return () => clearTimeout(timer);
+  }, [addressQuery, setSubmitError]);
+
   return (
     <div className="space-y-4">
       <div className="rounded-[14px] border border-[#dfe8e2] bg-[#f6fbf7] p-4">
         <div className="space-y-3">
           <div className="min-w-0">
             <p className="text-[13px] font-semibold leading-6 text-[#111827] break-words">
-              {isResolvingAddress
+              {isResolvingAddress || isSearchingAddress
                 ? "Updating address..."
                 : data.providerLocation.areaLabel || "Current location not loaded yet."}
             </p>
@@ -1004,6 +1086,57 @@ function ProviderLocationStep({
         </div>
       </div>
 
+      <div className="rounded-[18px] border border-[#dfe8e2] bg-white p-4 shadow-[0_8px_20px_rgba(15,23,42,0.03)]">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <InputField
+            compact
+            label="Unit No"
+            value={data.providerLocation.houseNumber}
+            onChange={(value) => onUpdate("houseNumber", value)}
+          />
+          <InputField
+            compact
+            label="Postcode"
+            value={data.providerLocation.postcode}
+            onChange={(value) => onUpdate("postcode", value)}
+          />
+        </div>
+
+        <div className="mt-3 space-y-3">
+          <InputField
+            compact
+            label="Address Line 1"
+            value={data.providerLocation.road}
+            onChange={(value) => onUpdate("road", value)}
+          />
+          <InputField
+            compact
+            label="Address Line 2"
+            value={data.providerLocation.suburb}
+            onChange={(value) => onUpdate("suburb", value)}
+          />
+        </div>
+
+        <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <InputField
+            compact
+            label="City"
+            value={data.providerLocation.city}
+            onChange={(value) => onUpdate("city", value)}
+          />
+          <InputField
+            compact
+            label="State"
+            value={data.providerLocation.state}
+            onChange={(value) => onUpdate("state", value)}
+          />
+        </div>
+
+        <p className="mt-3 text-[12px] text-[#6b7280]">
+          As you type the address, we&apos;ll search and move the map pin automatically.
+        </p>
+      </div>
+
       <div className="overflow-hidden rounded-[18px] border border-[#dfe8e2] bg-[linear-gradient(180deg,#f7fbf7_0%,#eff7ef_100%)]">
         <div className="relative h-[18rem] overflow-hidden">
           <DynamicLocationPickerMap
@@ -1018,7 +1151,7 @@ function ProviderLocationStep({
             {data.providerLocation.radius} KM
           </span>
           <span className="absolute bottom-4 left-4 right-4 rounded-[12px] bg-white/92 px-3 py-2 text-[13px] font-medium text-[#111827] shadow-[0_8px_18px_rgba(15,23,42,0.08)]">
-            {isResolvingAddress
+            {isResolvingAddress || isSearchingAddress
               ? "Updating address..."
               : data.providerLocation.areaLabel || "Current location not loaded yet."}
           </span>
