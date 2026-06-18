@@ -170,7 +170,7 @@ export function BookingFormScreen({
           providerName: detail.name,
           serviceKey: detail.serviceKey,
           serviceLabel: detail.serviceLabel,
-          location: detail.location,
+          location: "",
           bookingMode,
           dateLabel: bookingDateLabel,
           startTimeLabel: bookingStartLabel,

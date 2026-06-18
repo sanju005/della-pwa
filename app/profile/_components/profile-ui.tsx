@@ -404,12 +404,6 @@ export function FavoritesScreen({ providers }: FavoritesProps) {
                       {provider.priceLabel ?? "RM200"}
                     </span>
                   </p>
-                  <p className="col-span-2">
-                    Location:{" "}
-                    <span className="font-semibold text-[#111827]">
-                      {provider.location ?? "Kuala Lumpur"}
-                    </span>
-                  </p>
                 </div>
 
                 <div className="mt-4 flex justify-end">
@@ -754,7 +748,7 @@ export function BookingsScreen({ bookings, initialTab = "upcoming" }: BookingsPr
             title={booking.service}
             provider={booking.provider}
             schedule={booking.schedule}
-            location={booking.location}
+            location=""
             statusLabel={booking.statusLabel}
             statusTone={bookingTone(booking)}
             image={<BookingThumb kind={booking.thumbnail} imageSrc={booking.imageSrc} service={booking.service} />}
@@ -898,16 +892,11 @@ export function BookingDetailScreen({ booking }: BookingDetailProps) {
         </div>
       </div>
 
-      <SectionCard title="Schedule & Location">
+      <SectionCard title="Schedule">
         <ProfileInfoRow
           icon={<CalendarIcon className="h-4 w-4" />}
           label="Date & Time"
           value={booking.schedule}
-        />
-        <ProfileInfoRow
-          icon={<PinIcon className="h-4 w-4" />}
-          label="Location"
-          value={booking.location}
         />
       </SectionCard>
 
@@ -1026,7 +1015,6 @@ export function BookingReviewScreen({ booking }: BookingReviewProps) {
               {booking.provider}
             </h2>
             <p className="mt-1 text-[14px] text-[#16a34a]">{booking.service}</p>
-            <p className="mt-2 text-[13px] text-[#4b5563]">{booking.location}</p>
           </div>
         </div>
       </div>

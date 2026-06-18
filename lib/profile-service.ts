@@ -224,7 +224,6 @@ export async function getFavoriteProviders() {
         "from-violet-500 to-fuchsia-700",
       ][index % 5] ?? "from-emerald-500 to-green-700",
     serviceKey: provider.serviceKey,
-    location: provider.location,
     rating: provider.rating,
     priceLabel: `RM${provider.hourlyRate}`,
     portraitSrc: buildProviderPortraitSrc({

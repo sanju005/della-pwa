@@ -319,7 +319,7 @@ export function BookingCard({
   title: string;
   provider: string;
   schedule: string;
-  location: string;
+  location?: string;
   statusLabel: string;
   statusTone: StatusTone;
   image?: ReactNode;
@@ -346,10 +346,12 @@ export function BookingCard({
               <CalendarDays className="h-4 w-4 text-[#8E5EB5]" />
               <span>{schedule}</span>
             </div>
-            <div className="flex items-center gap-2">
-              <MapPin className="h-4 w-4 text-[#8E5EB5]" />
-              <span>{location}</span>
-            </div>
+            {location ? (
+              <div className="flex items-center gap-2">
+                <MapPin className="h-4 w-4 text-[#8E5EB5]" />
+                <span>{location}</span>
+              </div>
+            ) : null}
           </div>
           {notes ? <div className="mt-3">{notes}</div> : null}
           {primaryAction || secondaryAction ? (

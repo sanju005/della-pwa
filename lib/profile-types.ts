@@ -20,7 +20,6 @@ export type FavoriteProvider = {
   initials: string;
   accent: string;
   serviceKey?: string;
-  location?: string;
   rating?: number;
   priceLabel?: string;
   portraitSrc?: string;
