@@ -22,6 +22,7 @@ export type StoredLiveLocation = {
 };
 
 const LIVE_LOCATION_STORAGE_KEY = "della.live.location";
+const CURRENT_LIVE_LOCATION_STORAGE_KEY = "della.current.location";
 const SAVED_PLACES_STORAGE_KEY = "della.saved.places";
 
 function buildLocationId() {
@@ -83,6 +84,47 @@ export function saveStoredLiveLocation(location: StoredLiveLocation) {
   );
 
   return normalized;
+}
+
+export function loadCurrentLiveLocation() {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  const raw = window.localStorage.getItem(CURRENT_LIVE_LOCATION_STORAGE_KEY);
+  if (!raw) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(raw) as StoredLiveLocation;
+    return normalizeStoredLocation(parsed);
+  } catch {
+    return null;
+  }
+}
+
+export function saveCurrentLiveLocation(location: StoredLiveLocation) {
+  const normalized = normalizeStoredLocation(location);
+
+  if (typeof window === "undefined") {
+    return normalized;
+  }
+
+  window.localStorage.setItem(
+    CURRENT_LIVE_LOCATION_STORAGE_KEY,
+    JSON.stringify(normalized)
+  );
+
+  return normalized;
+}
+
+export function clearCurrentLiveLocation() {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.localStorage.removeItem(CURRENT_LIVE_LOCATION_STORAGE_KEY);
 }
 
 export function clearStoredLiveLocation() {
@@ -152,20 +194,39 @@ export type ReverseGeocodeResponse = {
   houseNumber?: string;
 };
 
-export async function resolveCurrentLiveLocation(fallbackLabel: string) {
-  if (typeof window === "undefined" || !("geolocation" in navigator)) {
-    return null;
+type LiveLocationPersistMode = "current" | "saved" | "both" | "none";
+
+type ResolveCurrentLiveLocationOptions = {
+  persist?: LiveLocationPersistMode;
+};
+
+function persistResolvedLiveLocation(
+  location: StoredLiveLocation,
+  persist: LiveLocationPersistMode
+) {
+  if (persist === "saved") {
+    return saveStoredLiveLocation(location);
   }
 
-  const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-    navigator.geolocation.getCurrentPosition(resolve, reject, {
-      enableHighAccuracy: true,
-      timeout: 12000,
-      maximumAge: 300000,
-    });
-  });
+  if (persist === "both") {
+    const savedLocation = saveStoredLiveLocation(location);
+    return saveCurrentLiveLocation(savedLocation);
+  }
 
-  const { latitude, longitude } = position.coords;
+  if (persist === "none") {
+    return normalizeStoredLocation(location);
+  }
+
+  return saveCurrentLiveLocation(location);
+}
+
+export async function resolveLiveLocationFromCoordinates(
+  latitude: number,
+  longitude: number,
+  fallbackLabel: string,
+  options?: ResolveCurrentLiveLocationOptions
+) {
+  const persist = options?.persist ?? "current";
   let label = fallbackLabel;
 
   try {
@@ -200,7 +261,7 @@ export async function resolveCurrentLiveLocation(fallbackLabel: string) {
         updatedAt: new Date().toISOString(),
       };
 
-      return saveStoredLiveLocation(nextLocation);
+      return persistResolvedLiveLocation(nextLocation, persist);
     }
   } catch {
     label = fallbackLabel;
@@ -226,5 +287,29 @@ export async function resolveCurrentLiveLocation(fallbackLabel: string) {
     updatedAt: new Date().toISOString(),
   };
 
-  return saveStoredLiveLocation(nextLocation);
+  return persistResolvedLiveLocation(nextLocation, persist);
+}
+
+export async function resolveCurrentLiveLocation(
+  fallbackLabel: string,
+  options?: ResolveCurrentLiveLocationOptions
+) {
+  if (typeof window === "undefined" || !("geolocation" in navigator)) {
+    return null;
+  }
+
+  const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+    navigator.geolocation.getCurrentPosition(resolve, reject, {
+      enableHighAccuracy: true,
+      timeout: 12000,
+      maximumAge: 300000,
+    });
+  });
+
+  return resolveLiveLocationFromCoordinates(
+    position.coords.latitude,
+    position.coords.longitude,
+    fallbackLabel,
+    options
+  );
 }

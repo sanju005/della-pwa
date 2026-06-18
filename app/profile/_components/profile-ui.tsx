@@ -1627,7 +1627,7 @@ function LocationSettingsCard() {
     setIsLocating(true);
     setStatusMessage("");
 
-    void resolveCurrentLiveLocation("Current location")
+    void resolveCurrentLiveLocation("Current location", { persist: "saved" })
       .then((nextLocation) => {
         if (!nextLocation) {
           setStatusMessage("Location services are unavailable on this device.");
@@ -1670,6 +1670,7 @@ function LocationSettingsCard() {
           </p>
           <div className="mt-1">
             <LiveLocationChip
+              mode="saved"
               fallbackLabel={location?.label ?? "No live location saved yet"}
               className="text-[14px] font-semibold"
               onLocationChange={(nextLocation) => {

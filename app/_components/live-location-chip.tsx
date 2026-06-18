@@ -12,11 +12,15 @@ import {
 } from "lucide-react";
 
 import {
+  clearCurrentLiveLocation,
   clearStoredLiveLocation,
   deleteStoredPlace,
+  loadCurrentLiveLocation,
   loadStoredLiveLocation,
+  resolveLiveLocationFromCoordinates,
   type ReverseGeocodeResponse,
   resolveCurrentLiveLocation,
+  saveCurrentLiveLocation,
   saveStoredPlace,
   saveStoredLiveLocation,
   type StoredLiveLocation,
@@ -41,6 +45,7 @@ type LiveLocationChipProps = {
   displayLabel?: string;
   leadingIcon?: "pin" | "search";
   showChevron?: boolean;
+  mode?: "current" | "saved";
 };
 
 const DynamicLocationPickerMap = dynamic(
@@ -66,13 +71,15 @@ export function LiveLocationChip({
   displayLabel,
   leadingIcon = "pin",
   showChevron = true,
+  mode = "current",
 }: LiveLocationChipProps) {
   const [location, setLocation] = useState<StoredLiveLocation | null>(() =>
-    loadStoredLiveLocation()
+    mode === "saved" ? loadStoredLiveLocation() : loadCurrentLiveLocation()
   );
   const [isLoading, setIsLoading] = useState(false);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const hasResolvedInitialLocation = useRef(false);
+  const lastResolvedLocationRef = useRef<StoredLiveLocation | null>(location);
 
   useEffect(() => {
     if (location) {
@@ -81,32 +88,102 @@ export function LiveLocationChip({
   }, [location, onLocationChange]);
 
   useEffect(() => {
+    lastResolvedLocationRef.current = location;
+  }, [location]);
+
+  useEffect(() => {
     if (hasResolvedInitialLocation.current) {
       return;
     }
 
     hasResolvedInitialLocation.current = true;
 
-    if (location) {
+    if (mode === "saved") {
       return;
     }
 
-    const timerId = window.setTimeout(() => {
+    let active = true;
+    let watchId: number | null = null;
+
+    const refreshCurrentLocation = async (
+      coords?: { latitude: number; longitude: number }
+    ) => {
+      if (!active) {
+        return;
+      }
+
       setIsLoading(true);
 
-      void resolveCurrentLiveLocation(fallbackLabel)
-        .then((nextLocation) => {
-          if (nextLocation) {
-            setLocation(nextLocation);
-          }
-        })
-        .finally(() => {
+      try {
+        const nextLocation = coords
+          ? await resolveLiveLocationFromCoordinates(
+              coords.latitude,
+              coords.longitude,
+              fallbackLabel,
+              { persist: "current" }
+            )
+          : await resolveCurrentLiveLocation(fallbackLabel, {
+              persist: "current",
+            });
+
+        if (active && nextLocation) {
+          setLocation(nextLocation);
+        }
+      } finally {
+        if (active) {
           setIsLoading(false);
-        });
+        }
+      }
+    };
+
+    const timerId = window.setTimeout(() => {
+      void refreshCurrentLocation();
+
+      if (!("geolocation" in navigator)) {
+        return;
+      }
+
+      watchId = navigator.geolocation.watchPosition(
+        (position) => {
+          const previous = lastResolvedLocationRef.current;
+          const nextCoords = {
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+          };
+
+          if (
+            previous &&
+            calculateDistanceMeters(
+              previous.latitude,
+              previous.longitude,
+              nextCoords.latitude,
+              nextCoords.longitude
+            ) < 120
+          ) {
+            return;
+          }
+
+          void refreshCurrentLocation(nextCoords);
+        },
+        () => {
+          return;
+        },
+        {
+          enableHighAccuracy: true,
+          maximumAge: 60000,
+          timeout: 15000,
+        }
+      );
     }, 0);
 
-    return () => window.clearTimeout(timerId);
-  }, [fallbackLabel, location]);
+    return () => {
+      active = false;
+      window.clearTimeout(timerId);
+      if (watchId !== null && "geolocation" in navigator) {
+        navigator.geolocation.clearWatch(watchId);
+      }
+    };
+  }, [fallbackLabel, mode]);
 
   const activeLabel = location?.label ?? fallbackLabel;
   const visibleLabel = displayLabel ?? activeLabel;
@@ -139,6 +216,7 @@ export function LiveLocationChip({
         <LocationPickerModal
           fallbackLabel={fallbackLabel}
           initialLocation={location}
+          mode={mode}
           onClose={() => setIsPickerOpen(false)}
           onSave={(nextLocation) => {
             setLocation(nextLocation);
@@ -158,12 +236,14 @@ export function LiveLocationChip({
 function LocationPickerModal({
   fallbackLabel,
   initialLocation,
+  mode,
   onClose,
   onSave,
   onDelete,
 }: {
   fallbackLabel: string;
   initialLocation: StoredLiveLocation | null;
+  mode: "current" | "saved";
   onClose: () => void;
   onSave: (location: StoredLiveLocation) => void;
   onDelete: () => void;
@@ -286,7 +366,9 @@ function LocationPickerModal({
   const handlePickCurrentLocation = () => {
     setIsSaving(true);
 
-    void resolveCurrentLiveLocation(fallbackLabel)
+    void resolveCurrentLiveLocation(fallbackLabel, {
+      persist: mode === "saved" ? "saved" : "current",
+    })
       .then((nextLocation) => {
         if (!nextLocation) {
           return;
@@ -334,20 +416,34 @@ function LocationPickerModal({
       updatedAt: new Date().toISOString(),
     };
 
-    const activeLocation = saveStoredLiveLocation(nextLocation);
-    const savedPlace = saveStoredPlace(activeLocation);
-    setDraftId(savedPlace.id ?? "");
-    setSaveMessage("Address saved successfully.");
-    onSave(savedPlace);
+    if (mode === "saved") {
+      const activeLocation = saveStoredLiveLocation(nextLocation);
+      const savedPlace = saveStoredPlace(activeLocation);
+      setDraftId(savedPlace.id ?? "");
+      setSaveMessage("Address saved successfully.");
+      onSave(savedPlace);
+      return;
+    }
+
+    const currentLocation = saveCurrentLiveLocation(nextLocation);
+    setDraftId(currentLocation.id ?? "");
+    setSaveMessage("Live location updated successfully.");
+    onSave(currentLocation);
   };
 
   const handleDelete = () => {
-    if (draftId) {
+    if (mode === "saved" && draftId) {
       deleteStoredPlace(draftId);
     }
 
-    clearStoredLiveLocation();
-    setSaveMessage("Address deleted.");
+    if (mode === "saved") {
+      clearStoredLiveLocation();
+      setSaveMessage("Address deleted.");
+    } else {
+      clearCurrentLiveLocation();
+      setSaveMessage("Live location cleared.");
+    }
+
     onDelete();
   };
 
@@ -546,13 +642,15 @@ function LocationPickerModal({
                     Delete
                   </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={handleSaveAnotherPlace}
-                  className="inline-flex h-11 w-full items-center justify-center rounded-[12px] border border-dashed border-[#16a34a] bg-[#fbfffc] px-4 text-[14px] font-extrabold text-[#16a34a]"
-                >
-                  Save Another Place
-                </button>
+                {mode === "saved" ? (
+                  <button
+                    type="button"
+                    onClick={handleSaveAnotherPlace}
+                    className="inline-flex h-11 w-full items-center justify-center rounded-[12px] border border-dashed border-[#16a34a] bg-[#fbfffc] px-4 text-[14px] font-extrabold text-[#16a34a]"
+                  >
+                    Save Another Place
+                  </button>
+                ) : null}
               </div>
 
             </div>
@@ -561,6 +659,36 @@ function LocationPickerModal({
       </div>
     </div>
   );
+}
+
+function calculateDistanceMeters(
+  fromLatitude: number,
+  fromLongitude: number,
+  toLatitude: number,
+  toLongitude: number
+) {
+  const earthRadiusMeters = 6371000;
+  const latitudeDelta = degreesToRadians(toLatitude - fromLatitude);
+  const longitudeDelta = degreesToRadians(toLongitude - fromLongitude);
+  const startLatitude = degreesToRadians(fromLatitude);
+  const endLatitude = degreesToRadians(toLatitude);
+
+  const haversine =
+    Math.sin(latitudeDelta / 2) * Math.sin(latitudeDelta / 2) +
+    Math.cos(startLatitude) *
+      Math.cos(endLatitude) *
+      Math.sin(longitudeDelta / 2) *
+      Math.sin(longitudeDelta / 2);
+
+  return (
+    2 *
+    earthRadiusMeters *
+    Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine))
+  );
+}
+
+function degreesToRadians(value: number) {
+  return (value * Math.PI) / 180;
 }
 
 function LabeledField({

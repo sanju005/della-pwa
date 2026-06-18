@@ -978,7 +978,7 @@ function ProviderLocationStep({
 
   const requestCurrentLocation = () => {
     setIsLocating(true);
-    void resolveCurrentLiveLocation("Current location")
+    void resolveCurrentLiveLocation("Current location", { persist: "current" })
       .then((nextLocation) => {
         if (!nextLocation) {
           setSubmitError("Location is not supported on this device.");
