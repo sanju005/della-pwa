@@ -24,6 +24,8 @@ type ProviderCatalogRow = {
   id: string;
   marketing_name: string | null;
   service_location: string | null;
+  latitude: number | null;
+  longitude: number | null;
   average_rating: number | null;
   total_reviews: number | null;
   bio: string | null;
@@ -49,6 +51,8 @@ export type ProviderListing = {
   title: string;
   workMode: "Live-in" | "Part-time" | "Full-time";
   location: string;
+  latitude: number | null;
+  longitude: number | null;
   distanceKm: number;
   rating: number;
   reviews: number;
@@ -133,6 +137,8 @@ export const getProviderCatalog = cache(
           id,
           marketing_name,
           service_location,
+          latitude,
+          longitude,
           average_rating,
           total_reviews,
           bio,
@@ -181,6 +187,8 @@ export const getProviderCatalog = cache(
               workMode: (["Live-in", "Part-time", "Full-time"][rowIndex % 3] ??
                 "Full-time") as "Live-in" | "Part-time" | "Full-time",
               location: row.service_location ?? "Kuala Lumpur",
+              latitude: typeof row.latitude === "number" ? row.latitude : null,
+              longitude: typeof row.longitude === "number" ? row.longitude : null,
               distanceKm: [2.4, 1.8, 3.1, 2.7, 2.2, 4.0, 3.6, 2.9][rowIndex] ?? 2.5,
               rating: Number(row.average_rating ?? 4.8),
               reviews: row.total_reviews ?? 0,

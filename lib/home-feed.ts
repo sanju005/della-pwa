@@ -32,6 +32,8 @@ type HomeProviderRow = {
   id: string;
   marketing_name: string | null;
   service_location: string | null;
+  latitude: number | null;
+  longitude: number | null;
   average_rating: number | null;
   total_reviews: number | null;
   provider_services:
@@ -76,6 +78,8 @@ export type HomeProviderCard = {
   serviceKey: ProviderCategoryKey;
   name: string;
   service: string;
+  providerLatitude: number | null;
+  providerLongitude: number | null;
   rating: number;
   reviews: number;
   distanceKm: number;
@@ -222,6 +226,8 @@ export const getHomeFeedData = cache(async (): Promise<HomeFeedData> => {
           id,
           marketing_name,
           service_location,
+          latitude,
+          longitude,
           average_rating,
           total_reviews,
           provider_services (
@@ -281,6 +287,10 @@ export const getHomeFeedData = cache(async (): Promise<HomeFeedData> => {
         serviceKey: (firstService?.service_type ?? "chef") as ProviderCategoryKey,
         name: provider.marketing_name ?? "DELLA Provider",
         service: humanizeService(firstService?.service_type ?? "other"),
+        providerLatitude:
+          typeof provider.latitude === "number" ? provider.latitude : null,
+        providerLongitude:
+          typeof provider.longitude === "number" ? provider.longitude : null,
         rating: Number(provider.average_rating ?? 4.8),
         reviews: provider.total_reviews ?? 0,
         distanceKm,
@@ -301,6 +311,8 @@ export const getHomeFeedData = cache(async (): Promise<HomeFeedData> => {
       serviceKey: listing.serviceKey,
       name: listing.name,
       service: listing.serviceLabel,
+      providerLatitude: listing.latitude,
+      providerLongitude: listing.longitude,
       rating: listing.rating,
       reviews: listing.reviews,
       distanceKm: listing.distanceKm,

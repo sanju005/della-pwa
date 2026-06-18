@@ -20,6 +20,7 @@ import {
   ThumbsUp,
 } from "lucide-react";
 
+import { ProviderDistanceText } from "@/app/_components/provider-distance";
 import type { ProviderDetail } from "@/lib/provider-detail";
 import { getSupabaseClient } from "@/lib/supabase";
 
@@ -267,7 +268,13 @@ export function BookingFormScreen({
                 </div>
                 <div className="mt-1.5 flex items-center gap-1 text-[13px] text-[#475467]">
                   <MapPin className="h-3.5 w-3.5 text-[#8E5EB5]" />
-                  <span>{detail.distanceKm} km away</span>
+                  <span>
+                    <ProviderDistanceText
+                      providerLatitude={detail.latitude}
+                      providerLongitude={detail.longitude}
+                      fallbackDistanceKm={detail.distanceKm}
+                    />
+                  </span>
                 </div>
 
                 <div className="mt-3 flex flex-wrap gap-2">

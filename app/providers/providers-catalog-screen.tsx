@@ -1,7 +1,7 @@
 "use client";
 
 import type { ComponentType, ReactNode } from "react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -26,7 +26,12 @@ import {
 import { EmptyState as SharedEmptyState } from "@/app/_components/della-ui";
 
 import { LiveLocationChip } from "@/app/_components/live-location-chip";
-import type { StoredLiveLocation } from "@/lib/live-location";
+import {
+  loadCurrentLiveLocation,
+  resolveCurrentLiveLocation,
+  type StoredLiveLocation,
+} from "@/lib/live-location";
+import { calculateDistanceKm, formatDistanceKm } from "@/lib/provider-distance";
 
 type TabKey = "all" | "active-now";
 type SortKey = "popular" | "nearest" | "price-low";
@@ -51,6 +56,8 @@ type CatalogScreenListing = {
   workMode: WorkMode;
   bio: string;
   specialties: string[];
+  latitude: number | null;
+  longitude: number | null;
   distanceKm: number;
   rating: number;
   reviews: number;
@@ -85,8 +92,50 @@ const serviceIcons: Partial<
 
 export function ProvidersCatalogScreen({ data }: { data: CatalogScreenData }) {
   const [locationDetails, setLocationDetails] = useState<StoredLiveLocation | null>(null);
+  const [currentLocation, setCurrentLocation] = useState<StoredLiveLocation | null>(() =>
+    loadCurrentLiveLocation()
+  );
   const [activeTab, setActiveTab] = useState<TabKey>("all");
   const [sortBy, setSortBy] = useState<SortKey>("popular");
+
+  useEffect(() => {
+    if (currentLocation) {
+      return;
+    }
+
+    let active = true;
+
+    void resolveCurrentLiveLocation("Current location", { persist: "current" })
+      .then((nextLocation) => {
+        if (active && nextLocation) {
+          setCurrentLocation(nextLocation);
+        }
+      })
+      .catch(() => {
+        return;
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [currentLocation]);
+
+  const getListingDistanceKm = (listing: CatalogScreenListing) => {
+    if (
+      currentLocation &&
+      typeof listing.latitude === "number" &&
+      typeof listing.longitude === "number"
+    ) {
+      return calculateDistanceKm(
+        currentLocation.latitude,
+        currentLocation.longitude,
+        listing.latitude,
+        listing.longitude
+      );
+    }
+
+    return listing.distanceKm;
+  };
 
   const counts = useMemo(
     () => ({
@@ -106,14 +155,16 @@ export function ProvidersCatalogScreen({ data }: { data: CatalogScreenData }) {
     });
 
     items = [...items].sort((left, right) => {
-      if (sortBy === "nearest") return left.distanceKm - right.distanceKm;
+      if (sortBy === "nearest") {
+        return getListingDistanceKm(left) - getListingDistanceKm(right);
+      }
       if (sortBy === "price-low") return left.hourlyRate - right.hourlyRate;
       if (right.rating !== left.rating) return right.rating - left.rating;
       return right.reviews - left.reviews;
     });
 
     return items;
-  }, [activeTab, data.listings, sortBy]);
+  }, [activeTab, data.listings, sortBy, currentLocation]);
 
   const Icon = data.service
     ? serviceIcons[data.service] ?? BriefcaseBusiness
@@ -142,7 +193,10 @@ export function ProvidersCatalogScreen({ data }: { data: CatalogScreenData }) {
               <LiveLocationChip
                 fallbackLabel="Search location or address..."
                 className="flex-1 min-w-0"
-                onLocationChange={(location) => setLocationDetails(location)}
+                onLocationChange={(location) => {
+                  setLocationDetails(location);
+                  setCurrentLocation(location);
+                }}
                 displayLabel="Search location or address..."
                 leadingIcon="search"
                 showChevron={false}
@@ -246,7 +300,7 @@ export function ProvidersCatalogScreen({ data }: { data: CatalogScreenData }) {
           </section>
 
           <section className="mt-7 flex items-center gap-2.5 overflow-x-auto pb-1">
-            <FilterPill
+              <FilterPill
               active={sortBy === "nearest"}
               onClick={() => setSortBy("nearest")}
               icon={<MapPin className="h-4 w-4" />}
@@ -325,7 +379,11 @@ export function ProvidersCatalogScreen({ data }: { data: CatalogScreenData }) {
                 />
               ) : null}
               {filteredListings.map((listing) => (
-                <ProviderCard key={listing.id} listing={listing} />
+                <ProviderCard
+                  key={listing.id}
+                  listing={listing}
+                  distanceKm={getListingDistanceKm(listing)}
+                />
               ))}
             </div>
           </section>
@@ -421,7 +479,13 @@ function TabButton({
   );
 }
 
-function ProviderCard({ listing }: { listing: CatalogScreenListing }) {
+function ProviderCard({
+  listing,
+  distanceKm,
+}: {
+  listing: CatalogScreenListing;
+  distanceKm: number;
+}) {
   const fullName = buildProviderFullName(listing);
   const jobsCompleted = Math.max(listing.reviews * 2 + 68, 120);
   const repeatCustomers = Math.max(Math.round(listing.reviews * 0.61), 24);
@@ -488,7 +552,7 @@ function ProviderCard({ listing }: { listing: CatalogScreenListing }) {
           />
           <InfoMetric
             icon={<MapPin className="h-4.5 w-4.5 text-[#667085]" />}
-            value={`${listing.distanceKm} km away`}
+            value={formatDistanceKm(distanceKm)}
           />
           <InfoMetric
             icon={<BriefcaseBusiness className="h-4.5 w-4.5 text-[#667085]" />}

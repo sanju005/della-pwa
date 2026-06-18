@@ -35,6 +35,7 @@ import {
   StatusBadge,
 } from "@/app/_components/della-ui";
 
+import { ProviderDistanceText } from "@/app/_components/provider-distance";
 import { LiveLocationChip } from "@/app/_components/live-location-chip";
 import {
   buildProviderDetailHref,
@@ -326,7 +327,9 @@ function ProviderSliderSection({
                 priceLabel={provider.priceLabel}
                 rating={provider.rating.toFixed(1)}
                 reviews={`${provider.reviews} reviews`}
-                distanceLabel={`${provider.distanceKm} km away`}
+                distanceKm={provider.distanceKm}
+                providerLatitude={provider.providerLatitude}
+                providerLongitude={provider.providerLongitude}
                 portraitSrc={buildProviderPortraitSrc({
                   name: provider.name,
                   serviceKey: provider.serviceKey,
@@ -347,7 +350,9 @@ function PopularProviderCard({
   priceLabel,
   rating,
   reviews,
-  distanceLabel,
+  distanceKm,
+  providerLatitude,
+  providerLongitude,
   portraitSrc,
 }: {
   href: string;
@@ -356,7 +361,9 @@ function PopularProviderCard({
   priceLabel: string;
   rating: string;
   reviews: string;
-  distanceLabel: string;
+  distanceKm: number;
+  providerLatitude: number | null;
+  providerLongitude: number | null;
   portraitSrc: string;
 }) {
   return (
@@ -403,7 +410,13 @@ function PopularProviderCard({
         <div className="mt-3 border-t border-[#e8eeea] pt-3">
           <div className="flex items-center gap-2 text-[0.8rem] font-semibold text-[#1f2c44]">
             <MapPin className="h-5.5 w-5.5 text-[#667085]" />
-            <span>{distanceLabel}</span>
+            <span>
+              <ProviderDistanceText
+                providerLatitude={providerLatitude}
+                providerLongitude={providerLongitude}
+                fallbackDistanceKm={distanceKm}
+              />
+            </span>
           </div>
         </div>
 

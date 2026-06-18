@@ -20,6 +20,7 @@ import { EmptyState as SharedEmptyState, SectionTitle, StatusBadge } from "@/app
 import { notFound } from "next/navigation";
 
 import { BookNowButton } from "./book-now-button";
+import { ProviderDistanceText } from "@/app/_components/provider-distance";
 import { getProviderDetail } from "@/lib/provider-detail";
 
 export const dynamic = "force-dynamic";
@@ -103,14 +104,16 @@ export default async function ProviderDetailPage(props: {
                 <span>{detail.jobsCompleted} Jobs Completed</span>
               </div>
 
-              <div className="mt-2 flex items-start gap-1.5 text-[12px] leading-5 text-[#475467]">
-                <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[#475467]" />
-                <span>{detail.locationFull}</span>
-              </div>
-
               <div className="mt-2 flex items-start gap-1.5 text-[12px] font-semibold text-[#8E5EB5]">
-                <ChevronRight className="mt-0.5 h-4 w-4 shrink-0 rotate-[-45deg]" />
-                <span>{detail.distanceKm} km away from you</span>
+                <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[#8E5EB5]" />
+                <span>
+                  <ProviderDistanceText
+                    providerLatitude={detail.latitude}
+                    providerLongitude={detail.longitude}
+                    fallbackDistanceKm={detail.distanceKm}
+                    suffix=" from you"
+                  />
+                </span>
               </div>
 
               <div className="mt-3 grid grid-cols-3 gap-2 text-left text-[11px] text-[#344054]">
