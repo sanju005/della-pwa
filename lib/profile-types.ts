@@ -80,6 +80,10 @@ export type Booking = {
   imageSrc?: string;
   paymentAmount?: number;
   paymentMethod?: string;
+  baseAmount?: number;
+  additionalCharge?: number;
+  additionalChargeDescription?: string;
+  paymentNote?: string;
   notes?: string;
   cancelledBy?: string;
   cancellationReason?: string;

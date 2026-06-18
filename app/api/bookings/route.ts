@@ -2,6 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 
 import type { Booking } from "@/lib/profile-types";
+import { parsePaymentAdjustmentNote } from "@/lib/payment-adjustment";
 import { sendPushNotificationToUser } from "@/lib/push-notifications";
 import { buildProviderPortraitSrc, type ProviderCategoryKey } from "@/lib/provider-catalog";
 import {
@@ -85,6 +86,7 @@ type BookingRow = {
   scheduled_start_time: string;
   scheduled_end_time: string;
   customer_note: string | null;
+  provider_response_note: string | null;
   decline_reason: string | null;
   quoted_amount: number | null;
   created_at: string;
@@ -395,6 +397,7 @@ function mapLiveBookingToUi(
   const serviceKey = isProviderCategoryKey(row.service_key)
     ? row.service_key
     : "cleaner";
+  const paymentAdjustment = parsePaymentAdjustmentNote(row.provider_response_note);
 
   return {
     id: row.id,
@@ -415,11 +418,15 @@ function mapLiveBookingToUi(
       name: providerName,
       serviceKey,
     }),
-    paymentAmount: Number(row.quoted_amount ?? 0),
+    paymentAmount: paymentAdjustment?.finalAmount ?? Number(row.quoted_amount ?? 0),
     paymentMethod:
       row.booking_status === "paid" || row.booking_status === "review_requested" || row.booking_status === "reviewed"
-        ? "Card / FPX"
-        : "Not paid yet",
+        ? "Cash"
+        : "Cash - pay after service",
+    baseAmount: paymentAdjustment?.baseAmount,
+    additionalCharge: paymentAdjustment?.additionalCharge,
+    additionalChargeDescription: paymentAdjustment?.chargeDescription,
+    paymentNote: paymentAdjustment?.note,
     notes: row.customer_note ?? "",
     cancelledBy: row.booking_status === "declined" ? "Service provider" : "User",
     cancellationReason: row.decline_reason ?? "",
@@ -469,6 +476,7 @@ export async function GET(request: Request) {
       scheduled_start_time,
       scheduled_end_time,
       customer_note,
+      provider_response_note,
       decline_reason,
       quoted_amount,
       created_at
@@ -593,6 +601,7 @@ export async function POST(request: Request) {
       scheduled_start_time,
       scheduled_end_time,
       customer_note,
+      provider_response_note,
       decline_reason,
       quoted_amount,
       created_at

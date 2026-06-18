@@ -2,6 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 
 import { sendPushNotificationToUser } from "@/lib/push-notifications";
+import { buildPaymentAdjustmentNote } from "@/lib/payment-adjustment";
 import {
   getSupabaseServiceKey,
   getSupabaseUrl,
@@ -35,6 +36,9 @@ type BookingStatus =
 type UpdatePayload = {
   status?: BookingStatus;
   note?: string;
+  finalAmount?: number;
+  additionalCharge?: number;
+  chargeDescription?: string;
 };
 
 type BookingOwnerRow = {
@@ -43,6 +47,7 @@ type BookingOwnerRow = {
   provider_id: string;
   booking_status: BookingStatus;
   service_label: string;
+  quoted_amount: number | null;
 };
 
 function getAdminSupabaseClient() {
@@ -168,7 +173,12 @@ function notificationTypeForStatus(status: BookingStatus) {
   }
 }
 
-function notificationContent(status: BookingStatus, serviceLabel: string, note: string) {
+function notificationContent(
+  status: BookingStatus,
+  serviceLabel: string,
+  note: string,
+  finalAmount?: number
+) {
   switch (status) {
     case "accepted":
       return {
@@ -198,7 +208,7 @@ function notificationContent(status: BookingStatus, serviceLabel: string, note: 
     case "paid":
       return {
         title: "Payment done",
-        body: `Payment was marked complete for your ${serviceLabel} booking.`,
+        body: `Payment was marked complete for your ${serviceLabel} booking${typeof finalAmount === "number" ? ` (RM ${finalAmount.toFixed(2)})` : ""}.`,
       };
     case "review_requested":
       return {
@@ -229,6 +239,15 @@ export async function PATCH(
   const payload = (await request.json()) as UpdatePayload;
   const nextStatus = payload.status;
   const note = payload.note?.trim() ?? "";
+  const additionalCharge =
+    typeof payload.additionalCharge === "number" && Number.isFinite(payload.additionalCharge)
+      ? Math.max(0, payload.additionalCharge)
+      : 0;
+  const finalAmount =
+    typeof payload.finalAmount === "number" && Number.isFinite(payload.finalAmount)
+      ? Math.max(0, payload.finalAmount)
+      : null;
+  const chargeDescription = payload.chargeDescription?.trim() ?? "";
 
   if (!nextStatus) {
     return NextResponse.json(
@@ -239,7 +258,7 @@ export async function PATCH(
 
   const { data: booking, error: bookingError } = await verified.adminClient
     .from("bookings")
-    .select("id, customer_id, provider_id, booking_status, service_label")
+    .select("id, customer_id, provider_id, booking_status, service_label, quoted_amount")
     .eq("id", params.id)
     .eq("provider_id", verified.profile.id)
     .maybeSingle();
@@ -260,7 +279,14 @@ export async function PATCH(
     );
   }
 
-  const updatePayload: Record<string, string | BookingStatus> = {
+  if (nextStatus === "paid" && finalAmount === null) {
+    return NextResponse.json(
+      { error: "Final payment amount is required." },
+      { status: 400 }
+    );
+  }
+
+  const updatePayload: Record<string, string | number | BookingStatus> = {
     booking_status: nextStatus,
   };
 
@@ -287,6 +313,14 @@ export async function PATCH(
 
   if (nextStatus === "paid") {
     updatePayload.paid_at = new Date().toISOString();
+    updatePayload.provider_response_note = buildPaymentAdjustmentNote({
+      baseAmount: Number(current.quoted_amount ?? 0),
+      finalAmount: finalAmount ?? Number(current.quoted_amount ?? 0),
+      additionalCharge,
+      chargeDescription,
+      note,
+    });
+    updatePayload.quoted_amount = finalAmount ?? Number(current.quoted_amount ?? 0);
   }
 
   if (nextStatus === "review_requested") {
@@ -314,7 +348,8 @@ export async function PATCH(
   const nextNotificationContent = notificationContent(
     nextStatus,
     current.service_label,
-    note
+    note,
+    finalAmount ?? undefined
   );
 
   if (nextNotificationType && nextNotificationContent) {

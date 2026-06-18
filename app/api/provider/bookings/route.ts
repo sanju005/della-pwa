@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 
+import { parsePaymentAdjustmentNote } from "@/lib/payment-adjustment";
 import {
   getSupabaseServiceKey,
   getSupabaseUrl,
@@ -315,7 +316,18 @@ export async function GET(request: Request) {
       customerNote: row.customer_note ?? "",
       providerResponseNote: row.provider_response_note ?? "",
       declineReason: row.decline_reason ?? "",
-      quotedAmount: Number(row.quoted_amount ?? 0),
+      quotedAmount:
+        parsePaymentAdjustmentNote(row.provider_response_note)?.finalAmount ??
+        Number(row.quoted_amount ?? 0),
+      baseAmount:
+        parsePaymentAdjustmentNote(row.provider_response_note)?.baseAmount ??
+        Number(row.quoted_amount ?? 0),
+      additionalCharge:
+        parsePaymentAdjustmentNote(row.provider_response_note)?.additionalCharge ?? 0,
+      additionalChargeDescription:
+        parsePaymentAdjustmentNote(row.provider_response_note)?.chargeDescription ?? "",
+      paymentNote:
+        parsePaymentAdjustmentNote(row.provider_response_note)?.note ?? "",
       createdAt: row.created_at,
     })),
   });

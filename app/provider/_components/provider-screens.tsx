@@ -48,6 +48,7 @@ import {
   getTodayKey,
   providerStatusTone,
   ProviderBottomNav,
+  type ProviderBookingItem,
   useProviderAppData,
 } from "./provider-app";
 
@@ -713,6 +714,51 @@ export function BookingsScreen() {
     return fallback;
   }
 
+  async function handleFinalizePayment(booking: ProviderBookingItem) {
+    const extraChargeInput = window.prompt(
+      "Additional charge amount (RM). Use 0 if none.",
+      booking.additionalCharge > 0 ? String(booking.additionalCharge) : "0"
+    );
+
+    if (extraChargeInput === null) {
+      return;
+    }
+
+    const additionalCharge = Number(extraChargeInput);
+
+    if (!Number.isFinite(additionalCharge) || additionalCharge < 0) {
+      state.setError("Additional charge must be a valid number.");
+      return;
+    }
+
+    const chargeDescription = window.prompt(
+      "Additional charge description",
+      booking.additionalChargeDescription || "Extra hours / extra work"
+    );
+
+    if (chargeDescription === null) {
+      return;
+    }
+
+    const paymentNote = window.prompt(
+      "Payment note for customer",
+      booking.paymentNote || "Final cash payment confirmed by provider."
+    );
+
+    if (paymentNote === null) {
+      return;
+    }
+
+    const baseAmount = booking.baseAmount || booking.quotedAmount;
+    const finalAmount = Math.max(0, baseAmount + additionalCharge);
+
+    state.handleBookingAction(booking.id, "paid", paymentNote, {
+      finalAmount,
+      additionalCharge,
+      chargeDescription: chargeDescription.trim(),
+    });
+  }
+
   const todayKey = getTodayKey();
   const items = state.bookings.filter((booking) => {
     if (tab === "pending") {
@@ -798,6 +844,17 @@ export function BookingsScreen() {
                     <Wallet className="h-4 w-4 text-[#8E5EB5]" />
                     <span>{formatCurrency(booking.quotedAmount)}</span>
                   </div>
+                  {booking.additionalCharge > 0 ? (
+                    <div className="flex items-center gap-2">
+                      <Wallet className="h-4 w-4 text-[#16a34a]" />
+                      <span>
+                        Additional charge: {formatCurrency(booking.additionalCharge)}
+                        {booking.additionalChargeDescription
+                          ? ` (${booking.additionalChargeDescription})`
+                          : ""}
+                      </span>
+                    </div>
+                  ) : null}
                 </div>
                 {tab === "ongoing" ? (
                   <div className="mt-4 rounded-[18px] border border-[#ebe3f5] bg-white px-4 py-4">
@@ -921,6 +978,24 @@ export function BookingsScreen() {
                       </AppButton>
                     ) : null}
                     <AppButton href={`/provider/bookings?booking=${booking.id}`} tone="secondary" className="flex-1">
+                      Open Booking
+                    </AppButton>
+                  </div>
+                ) : null}
+                {tab === "completes" && booking.bookingStatus === "completed" ? (
+                  <div className="mt-4 flex gap-3">
+                    <AppButton
+                      className="flex-1"
+                      disabled={state.actionBookingId === booking.id}
+                      onClick={() => void handleFinalizePayment(booking)}
+                    >
+                      Finalize Payment
+                    </AppButton>
+                    <AppButton
+                      href={`/provider/bookings?booking=${booking.id}`}
+                      tone="secondary"
+                      className="flex-1"
+                    >
                       Open Booking
                     </AppButton>
                   </div>

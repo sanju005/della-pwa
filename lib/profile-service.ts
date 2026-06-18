@@ -33,7 +33,6 @@ const mockProfile: CustomerProfile = {
 
 const paymentMethods = [
   { id: "cash", label: "Cash", type: "Cash", isDefault: true },
-  { id: "fpx", label: "Online Payment", type: "Card / FPX" },
 ];
 
 const paymentHistory: PaymentHistoryItem[] = [];
@@ -164,7 +163,7 @@ export async function getBookings(): Promise<Booking[]> {
           serviceKey,
         }),
         paymentAmount: booking.totalAmount,
-        paymentMethod: booking.bookingMode === "hourly" ? "Card / FPX" : "Cash",
+        paymentMethod: "Cash",
         notes: booking.notes,
         activitySteps:
           booking.status === "pending"

@@ -72,6 +72,10 @@ export type ProviderBookingItem = {
   providerResponseNote: string;
   declineReason: string;
   quotedAmount: number;
+  baseAmount: number;
+  additionalCharge: number;
+  additionalChargeDescription: string;
+  paymentNote: string;
   createdAt: string;
   customerStatusLabel: string;
 };
@@ -385,6 +389,11 @@ export function useProviderAppData() {
     bookingId: string,
     status: ProviderBookingItem["bookingStatus"],
     note = "",
+    paymentDetails?: {
+      finalAmount: number;
+      additionalCharge: number;
+      chargeDescription: string;
+    },
   ) {
     const client = getSupabaseClient();
 
@@ -415,7 +424,13 @@ export function useProviderAppData() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({ status, note }),
+        body: JSON.stringify({
+          status,
+          note,
+          finalAmount: paymentDetails?.finalAmount,
+          additionalCharge: paymentDetails?.additionalCharge,
+          chargeDescription: paymentDetails?.chargeDescription,
+        }),
       });
 
       const result = (await response.json()) as { success?: true; error?: string };

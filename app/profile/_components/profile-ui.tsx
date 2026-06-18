@@ -952,15 +952,49 @@ export function BookingDetailScreen({ booking }: BookingDetailProps) {
       <SectionCard title="Payment">
         <ProfileInfoRow
           icon={<WalletIcon className="h-4 w-4" />}
-          label="Amount Paid"
+          label="Final Amount"
           value={`RM${booking.paymentAmount ?? 0}`}
           valueTone="green"
         />
+        {typeof booking.baseAmount === "number" ? (
+          <ProfileInfoRow
+            icon={<WalletIcon className="h-4 w-4" />}
+            label="Base Amount"
+            value={`RM${booking.baseAmount}`}
+          />
+        ) : null}
+        {typeof booking.additionalCharge === "number" && booking.additionalCharge > 0 ? (
+          <ProfileInfoRow
+            icon={<WalletIcon className="h-4 w-4" />}
+            label="Additional Charge"
+            value={`RM${booking.additionalCharge}`}
+          />
+        ) : null}
         <ProfileInfoRow
           icon={<WalletIcon className="h-4 w-4" />}
           label="Payment Method"
           value={booking.paymentMethod ?? "Not available"}
         />
+        {booking.additionalChargeDescription ? (
+          <div className="border-t border-[#edf1ef] pt-3">
+            <p className="text-[13px] font-semibold text-[#111827]">
+              Additional Charge Description
+            </p>
+            <p className="mt-2 text-[14px] leading-6 text-[#374151]">
+              {booking.additionalChargeDescription}
+            </p>
+          </div>
+        ) : null}
+        {booking.paymentNote ? (
+          <div className="border-t border-[#edf1ef] pt-3">
+            <p className="text-[13px] font-semibold text-[#111827]">
+              Provider Payment Note
+            </p>
+            <p className="mt-2 text-[14px] leading-6 text-[#374151]">
+              {booking.paymentNote}
+            </p>
+          </div>
+        ) : null}
       </SectionCard>
 
       {booking.status === "cancelled" ? (
