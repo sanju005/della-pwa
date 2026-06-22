@@ -2,7 +2,6 @@ import { ProvidersCatalogScreen } from "./providers-catalog-screen";
 import {
   buildCategoryBannerSrc,
   buildProviderDetailHref,
-  buildProviderPortraitSrc,
   getProviderCatalog,
 } from "@/lib/provider-catalog";
 
@@ -19,7 +18,7 @@ export default async function ProvidersPage(props: {
     listings: data.listings.map((listing) => ({
       ...listing,
       href: buildProviderDetailHref(listing),
-      portraitSrc: buildProviderPortraitSrc(listing),
+      portraitSrc: listing.profileImageUrl,
     })),
   };
 

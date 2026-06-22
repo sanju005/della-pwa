@@ -3,7 +3,11 @@ import "server-only";
 import { cache } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { getSupabaseServiceKey, getSupabaseUrl } from "./supabase-env";
-import { serviceOrder, type ProviderCategoryKey } from "./provider-catalog-shared";
+import {
+  buildProviderPortraitSrc,
+  serviceOrder,
+  type ProviderCategoryKey,
+} from "./provider-catalog-shared";
 export {
   buildCategoryBannerSrc,
   buildProviderDetailHref,
@@ -37,9 +41,23 @@ type ProviderCatalogRow = {
         hourly_rate: number | null;
         daily_rate: number | null;
         years_experience: string | null;
+        image_data_urls?: string[] | null;
+        image_captions?: string[] | null;
         provider_service_specialties: ProviderServiceSpecialtyRow[] | null;
       }>
     | null;
+};
+
+type ProviderCatalogServiceRow = NonNullable<ProviderCatalogRow["provider_services"]>[number];
+
+type ProviderProfileMediaRow = {
+  id: string;
+  avatar_url: string | null;
+};
+
+export type ProviderPortfolioImage = {
+  src: string;
+  caption: string;
 };
 
 export type ProviderListing = {
@@ -64,6 +82,8 @@ export type ProviderListing = {
   availabilityLabel: string;
   imageTone: string;
   isApproved: boolean;
+  profileImageUrl: string;
+  portfolioImages: ProviderPortfolioImage[];
 };
 
 export type ProviderCatalogData = {
@@ -116,6 +136,92 @@ function humanizeService(serviceKey: ProviderCategoryKey) {
   return serviceLabels[serviceKey];
 }
 
+const providerCatalogSelectWithMedia = `
+  id,
+  marketing_name,
+  service_location,
+  latitude,
+  longitude,
+  average_rating,
+  total_reviews,
+  bio,
+  approval_status,
+  provider_verifications (
+    email_verified
+  ),
+  provider_services (
+    service_type,
+    hourly_rate,
+    daily_rate,
+    years_experience,
+    image_data_urls,
+    image_captions,
+    provider_service_specialties (
+      specialty
+    )
+  )
+`;
+
+const providerCatalogSelectBase = `
+  id,
+  marketing_name,
+  service_location,
+  latitude,
+  longitude,
+  average_rating,
+  total_reviews,
+  bio,
+  approval_status,
+  provider_verifications (
+    email_verified
+  ),
+  provider_services (
+    service_type,
+    hourly_rate,
+    daily_rate,
+    years_experience,
+    provider_service_specialties (
+      specialty
+    )
+  )
+`;
+
+function buildServicePortfolio(serviceRow: ProviderCatalogServiceRow) {
+  const imageUrls = serviceRow.image_data_urls?.map((item) => item?.trim()).filter(Boolean) ?? [];
+  const captions = serviceRow.image_captions ?? [];
+
+  return imageUrls.map((src, index) => ({
+    src,
+    caption: captions[index]?.trim() || `Work ${index + 1}`,
+  }));
+}
+
+async function fetchProviderProfileMediaMap(
+  supabase: NonNullable<ReturnType<typeof buildSupabaseAdminClient>>,
+  providerIds: string[],
+) {
+  const uniqueIds = [...new Set(providerIds.filter(Boolean))];
+
+  if (uniqueIds.length === 0) {
+    return new Map<string, string>();
+  }
+
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id, avatar_url")
+    .in("id", uniqueIds);
+
+  if (error || !data) {
+    return new Map<string, string>();
+  }
+
+  return new Map(
+    (data as ProviderProfileMediaRow[])
+      .map((row) => [row.id, row.avatar_url?.trim() || ""] as const)
+      .filter(([, avatarUrl]) => Boolean(avatarUrl)),
+  );
+}
+
 export const getProviderCatalog = cache(
   async (service: string | null): Promise<ProviderCatalogData> => {
     const serviceKey = service && isProviderCategoryKey(service) ? service : null;
@@ -130,37 +236,27 @@ export const getProviderCatalog = cache(
       };
     }
 
-    const { data, error } = await supabase
+    const providerQueryWithMedia = await supabase
       .from("provider_profiles")
-      .select(
-        `
-          id,
-          marketing_name,
-          service_location,
-          latitude,
-          longitude,
-          average_rating,
-          total_reviews,
-          bio,
-          approval_status,
-          provider_verifications (
-            email_verified
-          ),
-          provider_services (
-            service_type,
-            hourly_rate,
-            daily_rate,
-            years_experience,
-            provider_service_specialties (
-              specialty
-            )
-          )
-        `
-      )
+      .select(providerCatalogSelectWithMedia)
       .eq("is_visible", true)
       .order("average_rating", { ascending: false });
 
-    const rows = (data ?? []) as ProviderCatalogRow[];
+    const providerQuery = providerQueryWithMedia.error?.message
+      ?.toLowerCase()
+      .includes("image_data_urls")
+      ? await supabase
+        .from("provider_profiles")
+        .select(providerCatalogSelectBase)
+        .eq("is_visible", true)
+        .order("average_rating", { ascending: false })
+      : providerQueryWithMedia;
+
+    const rows = (providerQuery.data ?? []) as ProviderCatalogRow[];
+    const profileMediaMap = await fetchProviderProfileMediaMap(
+      supabase,
+      rows.map((row) => row.id),
+    );
 
     const realListings = rows
       .flatMap((row, rowIndex) =>
@@ -206,6 +302,13 @@ export const getProviderCatalog = cache(
               isApproved:
                 row.approval_status === "approved" &&
                 Boolean(verificationRow?.email_verified),
+              profileImageUrl:
+                profileMediaMap.get(row.id) ||
+                buildProviderPortraitSrc({
+                  name: row.marketing_name ?? "DELLA Provider",
+                  serviceKey: serviceRow.service_type,
+                }),
+              portfolioImages: buildServicePortfolio(serviceRow),
             } satisfies ProviderListing,
           ];
         })
@@ -216,7 +319,7 @@ export const getProviderCatalog = cache(
         service: null,
         serviceLabel: "All Providers",
         listings: realListings.slice(0, 24),
-        errorMessage: error?.message ?? null,
+        errorMessage: providerQuery.error?.message ?? null,
       };
     }
 
@@ -224,7 +327,7 @@ export const getProviderCatalog = cache(
       service: serviceKey,
       serviceLabel: humanizeService(serviceKey),
       listings: realListings,
-      errorMessage: error?.message ?? null,
+      errorMessage: providerQuery.error?.message ?? null,
     };
   }
 );

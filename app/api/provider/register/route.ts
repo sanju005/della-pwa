@@ -64,6 +64,16 @@ function toServiceType(service: string) {
   return service.trim().toLowerCase();
 }
 
+function normalizeStoredMedia(items: string[] | undefined) {
+  return (items ?? [])
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function normalizeStoredCaptions(captions: string[] | undefined, mediaItems: string[]) {
+  return mediaItems.map((_, index) => captions?.[index]?.trim() || `Work ${index + 1}`);
+}
+
 function buildProviderBio(payload: ProviderRegistrationData) {
   const specialties = payload.selectedServices
     .flatMap((service) => payload.serviceDetails[service].specialties)
@@ -144,6 +154,29 @@ async function upsertProviderVerification(
       },
       { onConflict: "id" },
     );
+}
+
+function isMissingProviderServiceMediaColumnError(message?: string) {
+  const normalized = message?.trim().toLowerCase() ?? "";
+
+  return (
+    normalized.includes("column") &&
+    (normalized.includes("image_data_urls") ||
+      normalized.includes("image_captions") ||
+      normalized.includes("certificate_data_urls") ||
+      normalized.includes("certificate_captions"))
+  );
+}
+
+function stripProviderServiceMediaFields(
+  providerService: Record<string, unknown>,
+) {
+  const nextProviderService = { ...providerService };
+  delete nextProviderService.image_data_urls;
+  delete nextProviderService.image_captions;
+  delete nextProviderService.certificate_data_urls;
+  delete nextProviderService.certificate_captions;
+  return nextProviderService;
 }
 
 export async function POST(request: Request) {
@@ -325,6 +358,8 @@ export async function POST(request: Request) {
 
     const providerServicesPayload = payload.selectedServices.map((service) => {
       const details = payload.serviceDetails[service];
+      const imageDataUrls = normalizeStoredMedia(details.imageDataUrls);
+      const certificateDataUrls = normalizeStoredMedia(details.certificateDataUrls);
 
       return {
         provider_id: providerId,
@@ -332,13 +367,36 @@ export async function POST(request: Request) {
         years_experience: details.yearsExperience,
         hourly_rate: Number(details.hourlyRate || 0),
         daily_rate: Number(details.dailyRate || 0),
+        image_data_urls: imageDataUrls,
+        image_captions: normalizeStoredCaptions(details.imageCaptions, imageDataUrls),
+        certificate_data_urls: certificateDataUrls,
+        certificate_captions: normalizeStoredCaptions(
+          details.certificateCaptions,
+          certificateDataUrls,
+        ),
       };
     });
 
-    const { data: insertedServices, error: providerServicesError } = await adminClient
+    let providerServicesWrite = await adminClient
       .from("provider_services")
       .insert(providerServicesPayload)
       .select("id, service_type");
+
+    if (
+      providerServicesWrite.error &&
+      isMissingProviderServiceMediaColumnError(providerServicesWrite.error.message)
+    ) {
+      providerServicesWrite = await adminClient
+        .from("provider_services")
+        .insert(
+          providerServicesPayload.map((providerService) =>
+            stripProviderServiceMediaFields(providerService),
+          ),
+        )
+        .select("id, service_type");
+    }
+
+    const { data: insertedServices, error: providerServicesError } = providerServicesWrite;
 
     if (providerServicesError) {
       return NextResponse.json(

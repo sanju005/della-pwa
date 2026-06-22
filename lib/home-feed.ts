@@ -8,6 +8,7 @@ import {
 } from "./supabase-env";
 import { getLatestCustomerBooking } from "./customer-booking-storage";
 import { getProviderCatalog, type ProviderCategoryKey } from "./provider-catalog";
+import { buildProviderPortraitSrc } from "./provider-catalog-shared";
 
 type HomeCustomerRow = {
   id: string;
@@ -86,6 +87,7 @@ export type HomeProviderCard = {
   priceLabel: string;
   statusLabel: string;
   specialties: string[];
+  portraitSrc: string;
 };
 
 export type HomeUpcomingBooking = {
@@ -297,6 +299,10 @@ export const getHomeFeedData = cache(async (): Promise<HomeFeedData> => {
         priceLabel: `RM${Number(firstService?.hourly_rate ?? 25)}/hr`,
         statusLabel: "Available Today",
         specialties,
+        portraitSrc: buildProviderPortraitSrc({
+          name: provider.marketing_name ?? "DELLA Provider",
+          serviceKey: (firstService?.service_type ?? "chef") as ProviderCategoryKey,
+        }),
       };
     }
   );
@@ -319,6 +325,7 @@ export const getHomeFeedData = cache(async (): Promise<HomeFeedData> => {
       priceLabel: `RM${listing.hourlyRate}/hr`,
       statusLabel: listing.availabilityLabel,
       specialties: listing.specialties,
+      portraitSrc: listing.profileImageUrl,
     }));
 
   const popularChefProviders = mapCatalogToHomeCards(chefCatalog.listings);

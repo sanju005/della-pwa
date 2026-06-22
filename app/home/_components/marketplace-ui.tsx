@@ -39,7 +39,6 @@ import { ProviderDistanceText } from "@/app/_components/provider-distance";
 import { LiveLocationChip } from "@/app/_components/live-location-chip";
 import {
   buildProviderDetailHref,
-  buildProviderPortraitSrc,
 } from "@/lib/provider-catalog-shared";
 import { getSupabaseClient } from "@/lib/supabase";
 import type { HomeFeedData, HomeServiceCategory } from "@/lib/home-feed";
@@ -330,10 +329,7 @@ function ProviderSliderSection({
                 distanceKm={provider.distanceKm}
                 providerLatitude={provider.providerLatitude}
                 providerLongitude={provider.providerLongitude}
-                portraitSrc={buildProviderPortraitSrc({
-                  name: provider.name,
-                  serviceKey: provider.serviceKey,
-                })}
+                portraitSrc={provider.portraitSrc}
               />
             </div>
           ))}

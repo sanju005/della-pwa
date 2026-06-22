@@ -8,6 +8,7 @@ import {
   type ProviderCategoryKey,
   type ProviderListing,
 } from "./provider-catalog";
+import { getProviderRegistration } from "./provider-registration-storage";
 
 type ProviderGalleryImage = {
   src: string;
@@ -154,6 +155,27 @@ function providerMediaUrl(serviceKey: ProviderCategoryKey, kind: string) {
   return `/api/provider-media/${serviceKey}/${kind}`;
 }
 
+function registrationServiceLabel(serviceKey: ProviderCategoryKey) {
+  switch (serviceKey) {
+    case "chef":
+      return "Chef";
+    case "maid":
+      return "Maid";
+    case "babysitter":
+      return "Babysitter";
+    case "driver":
+      return "Driver";
+    case "cleaner":
+      return "Cleaner";
+    case "tutor":
+      return "Tutor";
+    case "plumber":
+      return "Plumber";
+    case "electrician":
+      return "Electrician";
+  }
+}
+
 function addDays(date: Date, days: number) {
   const next = new Date(date);
   next.setDate(next.getDate() + days);
@@ -249,7 +271,7 @@ function mergeSpecialties(listing: ProviderListing) {
 }
 
 function buildCustomerReviews(listing: ProviderListing): ProviderCustomerReview[] {
-  const imageA = buildProviderPortraitSrc(listing);
+  const imageA = listing.profileImageUrl || buildProviderPortraitSrc(listing);
   const imageB = providerMediaUrl(listing.serviceKey, "gallery-1");
   const imageC = providerMediaUrl(listing.serviceKey, "gallery-2");
 
@@ -326,15 +348,41 @@ function buildCustomerReviews(listing: ProviderListing): ProviderCustomerReview[
   ];
 }
 
-function buildDetailFromListing(listing: ProviderListing): ProviderDetail {
+function buildDetailFromListing(
+  listing: ProviderListing,
+  overrides?: {
+    profileImage?: string | null;
+    gallery?: ProviderGalleryImage[];
+  },
+): ProviderDetail {
   const captions = galleryCaptions[listing.serviceKey];
   const calendar = buildCalendarDates(listing.serviceKey);
+  const fallbackGallery = [
+    {
+      src: providerMediaUrl(listing.serviceKey, "gallery-1"),
+      alt: `${listing.name} gallery image 1`,
+      caption: captions[0],
+    },
+    {
+      src: providerMediaUrl(listing.serviceKey, "gallery-2"),
+      alt: `${listing.name} gallery image 2`,
+      caption: captions[1],
+    },
+    {
+      src: providerMediaUrl(listing.serviceKey, "gallery-3"),
+      alt: `${listing.name} gallery image 3`,
+      caption: captions[2],
+    },
+  ];
 
   return {
     ...listing,
     href: buildProviderDetailHref(listing),
     title: titleForService(listing.serviceKey),
-    profileImage: buildProviderPortraitSrc(listing),
+    profileImage:
+      overrides?.profileImage?.trim() ||
+      listing.profileImageUrl ||
+      buildProviderPortraitSrc(listing),
     reviewsLabel: `${listing.rating.toFixed(1)} (${listing.reviews} reviews)`,
     jobsCompleted: Math.max(listing.reviews, 12),
     locationFull: `${listing.location}, Malaysia`,
@@ -343,23 +391,16 @@ function buildDetailFromListing(listing: ProviderListing): ProviderDetail {
     backgroundChecked: listing.isApproved,
     about: providerDescriptions[listing.serviceKey],
     specialties: mergeSpecialties(listing),
-    gallery: [
-      {
-        src: providerMediaUrl(listing.serviceKey, "gallery-1"),
-        alt: `${listing.name} gallery image 1`,
-        caption: captions[0],
-      },
-      {
-        src: providerMediaUrl(listing.serviceKey, "gallery-2"),
-        alt: `${listing.name} gallery image 2`,
-        caption: captions[1],
-      },
-      {
-        src: providerMediaUrl(listing.serviceKey, "gallery-3"),
-        alt: `${listing.name} gallery image 3`,
-        caption: captions[2],
-      },
-    ],
+    gallery:
+      overrides?.gallery && overrides.gallery.length > 0
+        ? overrides.gallery
+        : listing.portfolioImages.length > 0
+          ? listing.portfolioImages.slice(0, 3).map((image, index) => ({
+              src: image.src,
+              alt: `${listing.name} work image ${index + 1}`,
+              caption: image.caption || captions[index] || `Work ${index + 1}`,
+            }))
+          : fallbackGallery,
     availability: buildAvailability(listing.serviceKey),
     calendarMonthLabel: calendar.monthLabel,
     calendarDates: calendar.dates,
@@ -373,7 +414,23 @@ export const getProviderDetail = cache(
     const scopedMatch = scopedCatalog.listings.find((listing) => listing.id === id);
 
     if (scopedMatch) {
-      return buildDetailFromListing(scopedMatch);
+      const registration = await getProviderRegistration(id);
+      const registrationService = registration?.data.serviceDetails[
+        registrationServiceLabel(scopedMatch.serviceKey)
+      ];
+      const registrationGallery =
+        registrationService?.imageDataUrls
+          .map((src, index) => ({
+            src: src.trim(),
+            alt: `${scopedMatch.name} work image ${index + 1}`,
+            caption: registrationService.imageCaptions[index]?.trim() || `Work ${index + 1}`,
+          }))
+          .filter((image) => Boolean(image.src)) ?? [];
+
+      return buildDetailFromListing(scopedMatch, {
+        profileImage: registration?.data.basicProfile.avatarDataUrl || null,
+        gallery: registrationGallery,
+      });
     }
 
     const allCatalog = await getProviderCatalog(null);
@@ -383,6 +440,22 @@ export const getProviderDetail = cache(
       return null;
     }
 
-    return buildDetailFromListing(fallbackMatch);
+    const registration = await getProviderRegistration(id);
+    const registrationService = registration?.data.serviceDetails[
+      registrationServiceLabel(fallbackMatch.serviceKey)
+    ];
+    const registrationGallery =
+      registrationService?.imageDataUrls
+        .map((src, index) => ({
+          src: src.trim(),
+          alt: `${fallbackMatch.name} work image ${index + 1}`,
+          caption: registrationService.imageCaptions[index]?.trim() || `Work ${index + 1}`,
+        }))
+        .filter((image) => Boolean(image.src)) ?? [];
+
+    return buildDetailFromListing(fallbackMatch, {
+      profileImage: registration?.data.basicProfile.avatarDataUrl || null,
+      gallery: registrationGallery,
+    });
   }
 );
