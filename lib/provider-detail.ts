@@ -51,6 +51,7 @@ export type ProviderDetail = ProviderListing & {
   backgroundChecked: boolean;
   about: string;
   gallery: ProviderGalleryImage[];
+  hasUploadedGallery: boolean;
   availability: ProviderAvailabilitySlot[];
   calendarMonthLabel: string;
   calendarDates: ProviderCalendarDate[];
@@ -357,23 +358,16 @@ function buildDetailFromListing(
 ): ProviderDetail {
   const captions = galleryCaptions[listing.serviceKey];
   const calendar = buildCalendarDates(listing.serviceKey);
-  const fallbackGallery = [
-    {
-      src: providerMediaUrl(listing.serviceKey, "gallery-1"),
-      alt: `${listing.name} gallery image 1`,
-      caption: captions[0],
-    },
-    {
-      src: providerMediaUrl(listing.serviceKey, "gallery-2"),
-      alt: `${listing.name} gallery image 2`,
-      caption: captions[1],
-    },
-    {
-      src: providerMediaUrl(listing.serviceKey, "gallery-3"),
-      alt: `${listing.name} gallery image 3`,
-      caption: captions[2],
-    },
-  ];
+  const uploadedGallery =
+    overrides?.gallery && overrides.gallery.length > 0
+      ? overrides.gallery
+      : listing.portfolioImages.length > 0
+        ? listing.portfolioImages.map((image, index) => ({
+            src: image.src,
+            alt: `${listing.name} work image ${index + 1}`,
+            caption: image.caption || captions[index] || `Work ${index + 1}`,
+          }))
+        : [];
 
   return {
     ...listing,
@@ -391,16 +385,8 @@ function buildDetailFromListing(
     backgroundChecked: listing.isApproved,
     about: providerDescriptions[listing.serviceKey],
     specialties: mergeSpecialties(listing),
-    gallery:
-      overrides?.gallery && overrides.gallery.length > 0
-        ? overrides.gallery
-        : listing.portfolioImages.length > 0
-          ? listing.portfolioImages.slice(0, 3).map((image, index) => ({
-              src: image.src,
-              alt: `${listing.name} work image ${index + 1}`,
-              caption: image.caption || captions[index] || `Work ${index + 1}`,
-            }))
-          : fallbackGallery,
+    gallery: uploadedGallery,
+    hasUploadedGallery: uploadedGallery.length > 0,
     availability: buildAvailability(listing.serviceKey),
     calendarMonthLabel: calendar.monthLabel,
     calendarDates: calendar.dates,

@@ -145,43 +145,45 @@ export default async function ProviderDetailPage(props: {
             />
           </section>
 
-          <section className="mt-5">
-            <div className="grid grid-cols-3 gap-2">
-              {detail.gallery.map((image, index) => (
-                <div
-                  key={`${detail.id}-${image.src}`}
-                  className="relative h-[8.8rem] overflow-hidden rounded-[16px]"
-                >
-                  <Image
-                    src={image.src}
-                    alt={image.alt}
-                    width={256}
-                    height={296}
-                    unoptimized
-                    className="h-full w-full object-cover"
-                  />
-                  <div className="absolute inset-x-0 bottom-0 h-16 bg-[linear-gradient(180deg,transparent_0%,rgba(0,0,0,0.66)_100%)]" />
-                  <p className="absolute bottom-2.5 left-2.5 right-2.5 text-[10px] font-semibold leading-4 text-white">
-                    {image.caption}
-                  </p>
-                  {index === 2 ? (
-                    <div className="absolute bottom-2.5 right-2.5 rounded-full bg-black/40 px-2 py-0.5 text-[10px] font-bold text-white">
-                      +12
-                    </div>
-                  ) : null}
-                </div>
-              ))}
-            </div>
-            <div className="mt-3 flex items-center justify-center gap-1.5">
-              {[0, 1, 2, 3].map((dot) => (
-                <span
-                  key={dot}
-                  className={`h-2 w-2 rounded-full ${
-                    dot === 0 ? "bg-[#8E5EB5]" : "bg-[#D9DDE3]"
-                  }`}
+          <section className="mt-5 rounded-[20px] border border-[#E6ECE7] bg-white p-4 shadow-[0_10px_24px_rgba(15,23,42,0.04)]">
+            <SectionTitle
+              title="Recent Works"
+              subtitle={
+                detail.hasUploadedGallery
+                  ? `${detail.gallery.length} photo${detail.gallery.length === 1 ? "" : "s"} uploaded by this provider`
+                  : "This provider has not uploaded recent work photos yet"
+              }
+            />
+
+            {detail.hasUploadedGallery ? (
+              <div className="mt-4 flex gap-3 overflow-x-auto pb-1">
+                {detail.gallery.map((image) => (
+                  <div
+                    key={`${detail.id}-${image.src}`}
+                    className="relative h-[9.25rem] w-[7.8rem] shrink-0 overflow-hidden rounded-[18px] bg-[#f3f4f6]"
+                  >
+                    <Image
+                      src={image.src}
+                      alt={image.alt}
+                      fill
+                      unoptimized
+                      className="object-cover"
+                    />
+                    <div className="absolute inset-x-0 bottom-0 h-16 bg-[linear-gradient(180deg,transparent_0%,rgba(0,0,0,0.7)_100%)]" />
+                    <p className="absolute bottom-2.5 left-2.5 right-2.5 text-[10px] font-semibold leading-4 text-white">
+                      {image.caption}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="mt-4">
+                <SharedEmptyState
+                  title="No recent works yet"
+                  description="Uploaded work photos will appear here after the provider adds them to their profile."
                 />
-              ))}
-            </div>
+              </div>
+            )}
           </section>
 
           <section className="mt-5 rounded-[20px] border border-[#E6ECE7] bg-white p-4 shadow-[0_10px_24px_rgba(15,23,42,0.04)]">
