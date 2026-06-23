@@ -168,7 +168,7 @@ export function createDefaultProviderRegistration(): ProviderRegistrationData {
     basicProfile: {
       firstName: "",
       lastName: "",
-      sex: "",
+      sex: "Male",
       profileImageName: "",
       avatarDataUrl: "",
       marketingName: "",

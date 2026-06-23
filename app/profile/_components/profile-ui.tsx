@@ -243,7 +243,7 @@ export function ProfileOverviewScreen({ initialData }: OverviewProps) {
       >
         <ProfileInfoRow icon={<UserIcon className="h-4 w-4" />} label="First Name" value={profile.firstName} />
         <ProfileInfoRow icon={<UserIcon className="h-4 w-4" />} label="Last Name" value={profile.lastName} />
-        <ProfileInfoRow icon={<UserIcon className="h-4 w-4" />} label="Sex" value={profile.sex || "-"} />
+        <ProfileInfoRow icon={<UserIcon className="h-4 w-4" />} label="Gender" value={profile.sex || "Male"} />
         <ProfileInfoRow icon={<CalendarIcon className="h-4 w-4" />} label="Date of Birth" value={profile.dateOfBirth} />
         <ProfileInfoRow icon={<MailIcon className="h-4 w-4" />} label="Email" value={profile.email} />
         <ProfileInfoRow icon={<PhoneIcon className="h-4 w-4" />} label="Phone Number" value={`${profile.countryCode} ${profile.phoneNumber}`} />
@@ -447,6 +447,7 @@ export function EditProfileScreen({ initialProfile }: EditProps) {
   const [isPending, startTransition] = useTransition();
   const [savedMessage, setSavedMessage] = useState("");
   const [form, setForm] = useState(initialProfile);
+  const [verificationBusy, startVerificationTransition] = useTransition();
 
   useEffect(() => {
     let active = true;
@@ -505,14 +506,13 @@ export function EditProfileScreen({ initialProfile }: EditProps) {
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = () => {
+    void (async () => {
+      const cropped = await cropImageToSquareDataUrl(file);
       setForm((current) => ({
         ...current,
-        avatarUrl: typeof reader.result === "string" ? reader.result : current.avatarUrl,
+        avatarUrl: cropped,
       }));
-    };
-    reader.readAsDataURL(file);
+    })();
   };
 
   const handleSave = (event: React.FormEvent<HTMLFormElement>) => {
@@ -570,7 +570,7 @@ export function EditProfileScreen({ initialProfile }: EditProps) {
           <LabeledInput label="First Name" value={form.firstName} onChange={updateField("firstName")} icon={<UserIcon className="h-5 w-5" />} />
           <LabeledInput label="Last Name" value={form.lastName} onChange={updateField("lastName")} icon={<UserIcon className="h-5 w-5" />} />
           <LabeledSelect
-            label="Sex"
+            label="Gender"
             value={form.sex}
             onChange={(event) =>
               setForm((current) => ({
@@ -580,6 +580,7 @@ export function EditProfileScreen({ initialProfile }: EditProps) {
             }
             icon={<UserIcon className="h-5 w-5" />}
             options={["Male", "Female"]}
+            hidePlaceholder
           />
           <LabeledDateInput label="Date of Birth" value={form.dateOfBirth} onChange={(value) => setForm((current) => ({ ...current, dateOfBirth: value }))} icon={<CalendarIcon className="h-5 w-5" />} />
           <LabeledInput label="Email" value={form.email} onChange={updateField("email")} icon={<MailIcon className="h-5 w-5" />} />
@@ -600,6 +601,40 @@ export function EditProfileScreen({ initialProfile }: EditProps) {
               </div>
             </div>
           </div>
+        </div>
+
+        <div className="mt-5 rounded-[18px] border border-[#e4ece7] bg-white p-4 shadow-[0_10px_26px_rgba(15,23,42,0.04)]">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h3 className="text-[15px] font-extrabold text-[#111827]">
+                Verification
+              </h3>
+              <p className="mt-1 text-[13px] leading-5 text-[#4b5563]">
+                Your account can use all functions now. You can still mark the profile as verified here.
+              </p>
+            </div>
+            <span className={`rounded-full px-3 py-1 text-[11px] font-bold ${form.verified ? "bg-[#f5f1fa] text-[#8E5EB5]" : "bg-[#fff7ed] text-[#f59e0b]"}`}>
+              {form.verified ? "Verified" : "Pending"}
+            </span>
+          </div>
+          <button
+            type="button"
+            disabled={verificationBusy || form.verified}
+            onClick={() => {
+              startVerificationTransition(async () => {
+                setForm((current) => ({ ...current, verified: true, completion: Math.max(current.completion, 100) }));
+                await saveCustomerProfile({
+                  ...form,
+                  verified: true,
+                  completion: Math.max(form.completion, 100),
+                });
+                setSavedMessage("Verification updated.");
+              });
+            }}
+            className="mt-4 inline-flex h-11 items-center justify-center rounded-[12px] bg-[#8E5EB5] px-4 text-[14px] font-extrabold text-white disabled:opacity-70"
+          >
+            {verificationBusy ? "Updating..." : form.verified ? "Already Verified" : "Verify Account"}
+          </button>
         </div>
 
         {savedMessage ? (
@@ -2533,12 +2568,14 @@ function LabeledSelect({
   onChange,
   icon,
   options,
+  hidePlaceholder = false,
 }: {
   label: string;
   value: string;
   onChange: (event: React.ChangeEvent<HTMLSelectElement>) => void;
   icon: React.ReactNode;
   options: string[];
+  hidePlaceholder?: boolean;
 }) {
   return (
     <label className="block">
@@ -2552,7 +2589,7 @@ function LabeledSelect({
           onChange={onChange}
           className="h-11 flex-1 appearance-none border-0 bg-transparent text-[14px] text-[#111827] outline-none"
         >
-          <option value="">Select sex</option>
+          {!hidePlaceholder ? <option value="">Select</option> : null}
           {options.map((option) => (
             <option key={option} value={option}>
               {option}
@@ -2828,6 +2865,42 @@ function CalendarIcon({ className }: { className?: string }) {
       <path d="M16 3v4M8 3v4M3 10h18" strokeLinecap="round" />
     </svg>
   );
+}
+
+async function readFileAsDataUrl(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(typeof reader.result === "string" ? reader.result : "");
+    reader.onerror = () => reject(new Error("Unable to read the selected image."));
+    reader.readAsDataURL(file);
+  });
+}
+
+async function cropImageToSquareDataUrl(file: File) {
+  const sourceDataUrl = await readFileAsDataUrl(file);
+
+  return new Promise<string>((resolve, reject) => {
+    const image = new window.Image();
+    image.onload = () => {
+      const size = Math.min(image.width, image.height);
+      const offsetX = Math.max(0, (image.width - size) / 2);
+      const offsetY = Math.max(0, (image.height - size) / 2);
+      const canvas = document.createElement("canvas");
+      canvas.width = size;
+      canvas.height = size;
+      const context = canvas.getContext("2d");
+
+      if (!context) {
+        reject(new Error("Unable to process this image."));
+        return;
+      }
+
+      context.drawImage(image, offsetX, offsetY, size, size, 0, 0, size, size);
+      resolve(canvas.toDataURL("image/jpeg", 0.92));
+    };
+    image.onerror = () => reject(new Error("Unable to process this image."));
+    image.src = sourceDataUrl;
+  });
 }
 
 function MailIcon({ className }: { className?: string }) {

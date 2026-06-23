@@ -23,7 +23,7 @@ export default function SignupUserPage() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [dateOfBirth, setDateOfBirth] = useState("");
-  const [sex, setSex] = useState<"" | "Male" | "Female">("");
+  const [sex, setSex] = useState<"" | "Male" | "Female">("Male");
   const [avatarDataUrl, setAvatarDataUrl] = useState("");
   const [email, setEmail] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -101,12 +101,15 @@ export default function SignupUserPage() {
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      setError("");
-      setAvatarDataUrl(typeof reader.result === "string" ? reader.result : "");
-    };
-    reader.readAsDataURL(file);
+    void (async () => {
+      try {
+        const cropped = await cropImageToSquareDataUrl(file);
+        setError("");
+        setAvatarDataUrl(cropped);
+      } catch {
+        setError("Unable to process the selected profile image.");
+      }
+    })();
   };
 
   const applyAddressSuggestion = async (suggestion: {
@@ -527,7 +530,7 @@ function ProfileImageField({
           <div className="min-w-0 flex-1">
             <p className="text-[14px] font-semibold text-[#111827]">Add a profile photo</p>
             <p className="mt-1 text-[12px] text-[#6b7280]">
-              JPG or PNG, up to 2MB. Good for testing and profile preview.
+              JPG or PNG, up to 2MB. Saved as cropped square image.
             </p>
             <input
               type="file"
@@ -807,4 +810,40 @@ function MapPinIcon({ className }: { className?: string }) {
       <circle cx="12" cy="10" r="2.5" />
     </svg>
   );
+}
+
+async function readFileAsDataUrl(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(typeof reader.result === "string" ? reader.result : "");
+    reader.onerror = () => reject(new Error("Unable to read the selected image."));
+    reader.readAsDataURL(file);
+  });
+}
+
+async function cropImageToSquareDataUrl(file: File) {
+  const sourceDataUrl = await readFileAsDataUrl(file);
+
+  return new Promise<string>((resolve, reject) => {
+    const image = new window.Image();
+    image.onload = () => {
+      const size = Math.min(image.width, image.height);
+      const offsetX = Math.max(0, (image.width - size) / 2);
+      const offsetY = Math.max(0, (image.height - size) / 2);
+      const canvas = document.createElement("canvas");
+      canvas.width = size;
+      canvas.height = size;
+      const context = canvas.getContext("2d");
+
+      if (!context) {
+        reject(new Error("Unable to process this image."));
+        return;
+      }
+
+      context.drawImage(image, offsetX, offsetY, size, size, 0, 0, size, size);
+      resolve(canvas.toDataURL("image/jpeg", 0.92));
+    };
+    image.onerror = () => reject(new Error("Unable to process this image."));
+    image.src = sourceDataUrl;
+  });
 }

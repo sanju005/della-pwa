@@ -830,7 +830,7 @@ function BasicProfileStep({
         }}
       />
       <SelectField
-        label="Sex"
+        label="Gender"
         value={data.basicProfile.sex}
         invalid={invalidFields.includes("sex")}
         onChange={(value) => {
@@ -1359,7 +1359,7 @@ function ReviewStep({
           </div>
         ) : null}
         <ReviewLine icon={<UserIcon className="h-4 w-4" />} text={`${getProviderFullName(data)} (${data.basicProfile.marketingName})`} />
-        <ReviewLine icon={<UserIcon className="h-4 w-4" />} text={`Sex: ${data.basicProfile.sex || "Not selected"}`} />
+        <ReviewLine icon={<UserIcon className="h-4 w-4" />} text={`Gender: ${data.basicProfile.sex || "Male"}`} />
         <ReviewLine icon={<PhoneIcon className="h-4 w-4" />} text={`${data.account.phoneCountryCode} ${data.account.phoneNumber}`} />
         <ReviewLine icon={<RangeIcon className="h-4 w-4" />} text={`${data.providerLocation.radius} KM`} />
         <ReviewLine icon={<PinIcon className="h-4 w-4" />} text={combineResidentialAddress(data.basicProfile) || "No residential address provided"} />

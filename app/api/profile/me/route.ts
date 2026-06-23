@@ -209,7 +209,7 @@ function buildCustomerProfile(
         ? customerProfile.sex
         : fallbackSex === "Male" || fallbackSex === "Female"
           ? fallbackSex
-          : "",
+          : "Male",
     dateOfBirth: customerProfile?.date_of_birth?.trim() || "",
     avatarUrl: profile.avatar_url?.trim() || "",
     email: profile.email?.trim() || "",
