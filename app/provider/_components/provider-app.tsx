@@ -40,6 +40,10 @@ export type ProviderDashboardData = {
     hourlyRate: number;
     dailyRate: number;
     specialties: string[];
+    imageDataUrls: string[];
+    imageCaptions: string[];
+    certificateDataUrls: string[];
+    certificateCaptions: string[];
   }>;
 };
 

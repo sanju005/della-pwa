@@ -19,6 +19,10 @@ type ProviderServiceRow = {
   years_experience: string | null;
   hourly_rate: number | null;
   daily_rate: number | null;
+  image_data_urls?: string[] | null;
+  image_captions?: string[] | null;
+  certificate_data_urls?: string[] | null;
+  certificate_captions?: string[] | null;
   provider_service_specialties:
     | Array<{ specialty: string | null }>
     | null;
@@ -104,6 +108,18 @@ function isMissingProviderProfileColumnError(message?: string) {
   const normalized = message?.trim().toLowerCase() ?? "";
 
   return normalized.includes("column") && normalized.includes("verification_status");
+}
+
+function isMissingProviderServiceMediaColumnError(message?: string) {
+  const normalized = message?.trim().toLowerCase() ?? "";
+
+  return (
+    normalized.includes("column") &&
+    (normalized.includes("image_data_urls") ||
+      normalized.includes("image_captions") ||
+      normalized.includes("certificate_data_urls") ||
+      normalized.includes("certificate_captions"))
+  );
 }
 
 async function upsertProviderProfile(
@@ -234,8 +250,45 @@ async function fetchProviderSnapshot(
     return null;
   }
 
-  const [{ data: services }, { data: verifications }] = await Promise.all([
-    adminClient
+  const servicesWithMediaQuery = adminClient
+    .from("provider_services")
+    .select(`
+      id,
+      service_type,
+      years_experience,
+      hourly_rate,
+      daily_rate,
+      image_data_urls,
+      image_captions,
+      certificate_data_urls,
+      certificate_captions,
+      provider_service_specialties (
+        specialty
+      )
+    `)
+    .eq("provider_id", providerId);
+
+  const verificationsQuery = adminClient
+    .from("provider_verifications")
+    .select(`
+      phone_verified,
+      email_verified,
+      identity_verified,
+      kyc_verified,
+      background_check_verified
+    `)
+    .or(`provider_id.eq.${providerId},id.eq.${providerId}`)
+    .limit(1);
+
+  const [serviceWrite, verificationWrite] = await Promise.all([
+    servicesWithMediaQuery,
+    verificationsQuery,
+  ]);
+
+  let services = (serviceWrite.data as ProviderServiceRow[] | null) ?? null;
+
+  if (serviceWrite.error && isMissingProviderServiceMediaColumnError(serviceWrite.error.message)) {
+    const fallback = await adminClient
       .from("provider_services")
       .select(`
         id,
@@ -247,19 +300,12 @@ async function fetchProviderSnapshot(
           specialty
         )
       `)
-      .eq("provider_id", providerId),
-    adminClient
-      .from("provider_verifications")
-      .select(`
-        phone_verified,
-        email_verified,
-        identity_verified,
-        kyc_verified,
-        background_check_verified
-      `)
-      .or(`provider_id.eq.${providerId},id.eq.${providerId}`)
-      .limit(1),
-  ]);
+      .eq("provider_id", providerId);
+
+    services = (fallback.data as ProviderServiceRow[] | null) ?? null;
+  }
+
+  const verifications = verificationWrite.data;
 
   return {
     ...(providerProfile as ProviderProfileRow),
@@ -335,6 +381,12 @@ function buildResponse(profile: ProfileRow, providerProfile: ProviderProfileRow,
           service.provider_service_specialties
             ?.map((item) => item.specialty)
             .filter((item): item is string => Boolean(item)) ?? [],
+        imageDataUrls:
+          service.image_data_urls?.filter((item): item is string => Boolean(item?.trim())) ?? [],
+        imageCaptions: service.image_captions ?? [],
+        certificateDataUrls:
+          service.certificate_data_urls?.filter((item): item is string => Boolean(item?.trim())) ?? [],
+        certificateCaptions: service.certificate_captions ?? [],
       })) ?? [],
   };
 }

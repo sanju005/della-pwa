@@ -229,6 +229,18 @@ export async function POST(request: Request) {
       );
     }
 
+    if (
+      !/[A-Z]/.test(payload.account.password) ||
+      !/[a-z]/.test(payload.account.password) ||
+      !/\d/.test(payload.account.password) ||
+      !/[^\w\s]/.test(payload.account.password)
+    ) {
+      return NextResponse.json(
+        { error: "Password must contain uppercase, lowercase, number, and symbol." },
+        { status: 400 }
+      );
+    }
+
     const adminClient = getAdminSupabaseClient();
 
     if (!adminClient) {

@@ -118,6 +118,42 @@ async function cropImageToSquareDataUrl(file: File) {
   });
 }
 
+async function cropImageWithViewport(
+  sourceDataUrl: string,
+  zoom: number,
+  offsetX: number,
+  offsetY: number,
+) {
+  return new Promise<string>((resolve, reject) => {
+    const image = new window.Image();
+    image.onload = () => {
+      const canvas = document.createElement("canvas");
+      const size = 1080;
+      canvas.width = size;
+      canvas.height = size;
+      const context = canvas.getContext("2d");
+
+      if (!context) {
+        reject(new Error("Unable to process this image."));
+        return;
+      }
+
+      context.fillStyle = "#ffffff";
+      context.fillRect(0, 0, size, size);
+
+      const scaledWidth = image.width * zoom;
+      const scaledHeight = image.height * zoom;
+      const drawX = (size - scaledWidth) / 2 + offsetX;
+      const drawY = (size - scaledHeight) / 2 + offsetY;
+
+      context.drawImage(image, drawX, drawY, scaledWidth, scaledHeight);
+      resolve(canvas.toDataURL("image/jpeg", 0.92));
+    };
+    image.onerror = () => reject(new Error("Unable to process this image."));
+    image.src = sourceDataUrl;
+  });
+}
+
 async function prepareImageUpload(file: File) {
   if (!["image/jpeg", "image/jpg", "image/png", "image/gif"].includes(file.type)) {
     throw new Error("Only JPG, JPEG, PNG, or GIF images are allowed.");
@@ -185,6 +221,12 @@ export function ProviderRegistrationWizard() {
   const [invalidBasicFields, setInvalidBasicFields] = useState<string[]>([]);
   const [isSubmitting, startTransition] = useTransition();
   const [hasProviderSession, setHasProviderSession] = useState(false);
+  const [cropState, setCropState] = useState<{
+    sourceDataUrl: string;
+    fileName: string;
+    tone: "profile" | "service";
+    onApply: (dataUrl: string, fileName: string) => void;
+  } | null>(null);
 
   const steps = useMemo<FlowStep[]>(() => {
     const dynamicServiceSteps = data.selectedServices.map((service) => ({
@@ -289,6 +331,13 @@ export function ProviderRegistrationWizard() {
       if (data.account.password.length < 8) {
         setInvalidBasicFields(["password"]);
         setSubmitError("Password must be at least 8 characters long.");
+        return;
+      }
+
+      const passwordRuleFailures = getPasswordRuleFailures(data.account.password);
+      if (passwordRuleFailures.length > 0) {
+        setInvalidBasicFields(["password", "confirmPassword"]);
+        setSubmitError("Password must contain uppercase, lowercase, number, and symbol.");
         return;
       }
 
@@ -467,6 +516,33 @@ export function ProviderRegistrationWizard() {
     }));
   };
 
+  const openCropper = async ({
+    file,
+    tone,
+    onApply,
+  }: {
+    file: File;
+    tone: "profile" | "service";
+    onApply: (dataUrl: string, fileName: string) => void;
+  }) => {
+    if (!["image/jpeg", "image/jpg", "image/png", "image/gif"].includes(file.type)) {
+      throw new Error("Only JPG, JPEG, PNG, or GIF images are allowed.");
+    }
+
+    if (file.size > IMAGE_UPLOAD_MAX_BYTES) {
+      throw new Error("Image must be smaller than 2MB.");
+    }
+
+    const sourceDataUrl = await readFileAsDataUrl(file);
+
+    setCropState({
+      sourceDataUrl,
+      fileName: file.name,
+      tone,
+      onApply,
+    });
+  };
+
   return (
     <main className="min-h-[100dvh] overflow-x-hidden bg-[#faf7fd]">
       <div className="mx-auto flex min-h-[100dvh] w-full max-w-[430px] flex-col px-4 py-4 sm:justify-center">
@@ -503,6 +579,7 @@ export function ProviderRegistrationWizard() {
                 data={data}
                 updateBasic={updateBasic}
                 updateAccount={updateAccount}
+                openCropper={openCropper}
                 invalidFields={invalidBasicFields}
                 clearInvalidField={(field) =>
                   setInvalidBasicFields((current) =>
@@ -524,6 +601,7 @@ export function ProviderRegistrationWizard() {
                 details={data.serviceDetails[activeStep.service]}
                 onUpdate={updateServiceDetail}
                 setSubmitError={setSubmitError}
+                openCropper={openCropper}
               />
             ) : null}
             {activeStep.type === "availability" ? (
@@ -550,7 +628,24 @@ export function ProviderRegistrationWizard() {
                 }
               />
             ) : null}
-            {activeStep.type === "review" ? <ReviewStep data={data} /> : null}
+            {activeStep.type === "review" ? (
+              <ReviewStep
+                data={data}
+                onEditSection={(section) => {
+                  if (section === "profile") {
+                    setStepIndex(0);
+                    return;
+                  }
+                  if (section === "services") {
+                    setStepIndex(1);
+                    return;
+                  }
+                  if (section === "availability") {
+                    setStepIndex(steps.findIndex((step) => step.type === "availability"));
+                  }
+                }}
+              />
+            ) : null}
             {activeStep.type === "submitted" ? (
               <SubmissionChoiceStep
                 registrationId={registrationId}
@@ -592,6 +687,29 @@ export function ProviderRegistrationWizard() {
           </div>
         </div>
       </div>
+      {cropState ? (
+        <ImageCropModal
+          imageDataUrl={cropState.sourceDataUrl}
+          tone={cropState.tone}
+          onClose={() => setCropState(null)}
+          onApply={async ({ zoom, offsetX, offsetY }) => {
+            try {
+              const cropped = await cropImageWithViewport(
+                cropState.sourceDataUrl,
+                zoom,
+                offsetX,
+                offsetY,
+              );
+              cropState.onApply(cropped, cropState.fileName);
+              setCropState(null);
+            } catch (error) {
+              setSubmitError(
+                error instanceof Error ? error.message : "Unable to crop this image.",
+              );
+            }
+          }}
+        />
+      ) : null}
     </main>
   );
 }
@@ -600,6 +718,7 @@ function BasicProfileStep({
   data,
   updateBasic,
   updateAccount,
+  openCropper,
   invalidFields,
   clearInvalidField,
   setSubmitError,
@@ -613,11 +732,17 @@ function BasicProfileStep({
     field: keyof ProviderRegistrationData["account"],
     value: string
   ) => void;
+  openCropper: (options: {
+    file: File;
+    tone: "profile" | "service";
+    onApply: (dataUrl: string, fileName: string) => void;
+  }) => Promise<void>;
   invalidFields: string[];
   clearInvalidField: (field: string) => void;
   setSubmitError: (value: string) => void;
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const passwordRuleFailures = getPasswordRuleFailures(data.account.password);
 
   const handleAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -628,11 +753,16 @@ function BasicProfileStep({
 
     void (async () => {
       try {
-        const prepared = await prepareImageUpload(file);
         setSubmitError("");
         clearInvalidField("profileImage");
-        updateBasic("profileImageName", prepared.displayName);
-        updateBasic("avatarDataUrl", prepared.dataUrl);
+        await openCropper({
+          file,
+          tone: "profile",
+          onApply: (dataUrl, fileName) => {
+            updateBasic("profileImageName", fileName);
+            updateBasic("avatarDataUrl", dataUrl);
+          },
+        });
       } catch (error) {
         setSubmitError(
           error instanceof Error ? error.message : "Unable to process the profile photo."
@@ -667,7 +797,7 @@ function BasicProfileStep({
                 Add a profile photo
               </p>
               <p className="mt-1 text-[12px] text-[#6b7280]">
-                JPG, JPEG, PNG, or GIF. Max 2MB. Auto-cropped to square before upload.
+                JPG, JPEG, PNG, or GIF. Max 2MB. Crop before upload.
               </p>
               <input
                 ref={fileInputRef}
@@ -719,6 +849,14 @@ function BasicProfileStep({
           updateBasic("dateOfBirth", value);
         }}
       />
+      <div className="rounded-[16px] border border-[#ebe4f6] bg-[#fbf8ff] px-4 py-3">
+        <p className="text-[13px] font-extrabold uppercase tracking-[0.08em] text-[#8E5EB5]">
+          Address
+        </p>
+        <p className="mt-1 text-[12px] text-[#6b7280]">
+          Enter the residential address used for your provider account.
+        </p>
+      </div>
       <InputField
         label="Unit No"
         value={data.basicProfile.unitNumber}
@@ -815,6 +953,23 @@ function BasicProfileStep({
         rightIcon={<EyeIcon className="h-4 w-4 text-[#6b7280]" />}
         type="password"
       />
+      <div className="rounded-[14px] bg-[#f5f1fa] px-4 py-3 text-[12px] leading-6 text-[#4b5563]">
+        <p className={passwordRuleFailures.some((item) => item.includes("uppercase")) ? "text-[#dc2626]" : ""}>
+          At least 1 uppercase letter
+        </p>
+        <p className={passwordRuleFailures.some((item) => item.includes("lowercase")) ? "text-[#dc2626]" : ""}>
+          At least 1 lowercase letter
+        </p>
+        <p className={passwordRuleFailures.some((item) => item.includes("digit")) ? "text-[#dc2626]" : ""}>
+          At least 1 number
+        </p>
+        <p className={passwordRuleFailures.some((item) => item.includes("symbol")) ? "text-[#dc2626]" : ""}>
+          At least 1 symbol
+        </p>
+        <p className={passwordRuleFailures.some((item) => item.includes("8 characters")) ? "text-[#dc2626]" : ""}>
+          At least 8 characters
+        </p>
+      </div>
       <InputField
         label="Retype Password"
         value={data.account.confirmPassword}
@@ -869,6 +1024,7 @@ function ServiceDetailsStep({
   details,
   onUpdate,
   setSubmitError,
+  openCropper,
 }: {
   service: ProviderService;
   details: ProviderRegistrationData["serviceDetails"][ProviderService];
@@ -878,6 +1034,11 @@ function ServiceDetailsStep({
     value: string | string[]
   ) => void;
   setSubmitError: (value: string) => void;
+  openCropper: (options: {
+    file: File;
+    tone: "profile" | "service";
+    onApply: (dataUrl: string, fileName: string) => void;
+  }) => Promise<void>;
 }) {
   const specialtyExamples = serviceSpecialties[service];
 
@@ -885,20 +1046,11 @@ function ServiceDetailsStep({
     <div className="space-y-4">
       <SelectField label="Years of Experience" value={details.yearsExperience} onChange={(value) => onUpdate(service, "yearsExperience", value)} options={["1 Year", "2 Years", "3 Years", "4 Years", "5 Years", "6 Years", "7 Years", "8+ Years"]} />
 
-      <InputField
+      <TagInput
         label={`${service} Service Types / Specialties`}
-        hint={`Type your own options. Examples: ${specialtyExamples.join(", ")}`}
-        value={details.specialties.join(", ")}
-        onChange={(value) =>
-          onUpdate(
-            service,
-            "specialties",
-            value
-              .split(",")
-              .map((item) => item.trim())
-              .filter(Boolean),
-          )
-        }
+        hint={`Type and press comma or Enter. Examples: ${specialtyExamples.join(", ")}`}
+        values={details.specialties}
+        onChange={(nextValues) => onUpdate(service, "specialties", nextValues)}
       />
 
       <AssetStrip
@@ -919,6 +1071,7 @@ function ServiceDetailsStep({
           onUpdate(service, "imageCaptions", nextCaptions);
         }}
         setSubmitError={setSubmitError}
+        openCropper={openCropper}
       />
       <AssetStrip
         label="Certificates"
@@ -938,6 +1091,7 @@ function ServiceDetailsStep({
           onUpdate(service, "certificateCaptions", nextCaptions);
         }}
         setSubmitError={setSubmitError}
+        openCropper={openCropper}
       />
 
       <div>
@@ -1172,10 +1326,25 @@ function ProviderLocationStep({
   );
 }
 
-function ReviewStep({ data }: { data: ProviderRegistrationData }) {
+function ReviewStep({
+  data,
+  onEditSection,
+}: {
+  data: ProviderRegistrationData;
+  onEditSection: (section: "profile" | "services" | "availability") => void;
+}) {
   return (
     <div className="space-y-5">
       <ReviewCard title="Profile">
+        <div className="mb-4 flex justify-end">
+          <button
+            type="button"
+            onClick={() => onEditSection("profile")}
+            className="rounded-[10px] border border-[#e6daf1] bg-[#fbf8ff] px-3 py-1.5 text-[12px] font-bold text-[#8E5EB5]"
+          >
+            Edit
+          </button>
+        </div>
         {data.basicProfile.avatarDataUrl ? (
           <div className="mb-4 flex justify-center">
             <div className="relative h-24 w-24 overflow-hidden rounded-full border border-[#e5d9f3]">
@@ -1192,12 +1361,20 @@ function ReviewStep({ data }: { data: ProviderRegistrationData }) {
         <ReviewLine icon={<UserIcon className="h-4 w-4" />} text={`${getProviderFullName(data)} (${data.basicProfile.marketingName})`} />
         <ReviewLine icon={<UserIcon className="h-4 w-4" />} text={`Sex: ${data.basicProfile.sex || "Not selected"}`} />
         <ReviewLine icon={<PhoneIcon className="h-4 w-4" />} text={`${data.account.phoneCountryCode} ${data.account.phoneNumber}`} />
-        <ReviewLine icon={<PinIcon className="h-4 w-4" />} text={data.basicProfile.serviceLocation} />
         <ReviewLine icon={<RangeIcon className="h-4 w-4" />} text={`${data.providerLocation.radius} KM`} />
         <ReviewLine icon={<PinIcon className="h-4 w-4" />} text={combineResidentialAddress(data.basicProfile) || "No residential address provided"} />
       </ReviewCard>
 
       <ReviewCard title="Services">
+        <div className="mb-4 flex justify-end">
+          <button
+            type="button"
+            onClick={() => onEditSection("services")}
+            className="rounded-[10px] border border-[#e6daf1] bg-[#fbf8ff] px-3 py-1.5 text-[12px] font-bold text-[#8E5EB5]"
+          >
+            Edit
+          </button>
+        </div>
         <div className="space-y-4">
           {data.selectedServices.map((service) => {
             const details = data.serviceDetails[service];
@@ -1248,6 +1425,15 @@ function ReviewStep({ data }: { data: ProviderRegistrationData }) {
       </ReviewCard>
 
       <ReviewCard title="Availability">
+        <div className="mb-4 flex justify-end">
+          <button
+            type="button"
+            onClick={() => onEditSection("availability")}
+            className="rounded-[10px] border border-[#e6daf1] bg-[#fbf8ff] px-3 py-1.5 text-[12px] font-bold text-[#8E5EB5]"
+          >
+            Edit
+          </button>
+        </div>
         <p className="text-[13px] text-[#374151]">
           {formatAvailabilityDays(data.availability.days)} - {data.availability.timePreset === "Custom Time" ? `${data.availability.startTime} - ${data.availability.endTime}` : data.availability.timePreset}
         </p>
@@ -1375,10 +1561,6 @@ function SuccessStep({
             <ReviewLine
               icon={<UserIcon className="h-4 w-4" />}
               text={getProviderFullName(data) || "No name provided"}
-            />
-            <ReviewLine
-              icon={<PinIcon className="h-4 w-4" />}
-              text={data.providerLocation.areaLabel || data.basicProfile.serviceLocation || "No service area selected"}
             />
             <ReviewLine
               icon={<RangeIcon className="h-4 w-4" />}
@@ -1755,6 +1937,7 @@ function AssetStrip({
   onSelect,
   onCaptionChange,
   setSubmitError,
+  openCropper,
 }: {
   label: string;
   captions: string[];
@@ -1763,13 +1946,18 @@ function AssetStrip({
   onSelect: (index: number, dataUrl: string) => void;
   onCaptionChange: (index: number, caption: string) => void;
   setSubmitError: (value: string) => void;
+  openCropper: (options: {
+    file: File;
+    tone: "profile" | "service";
+    onApply: (dataUrl: string, fileName: string) => void;
+  }) => Promise<void>;
 }) {
   return (
     <div>
       <p className="mb-2 text-[13px] font-semibold text-[#111827]">{label}</p>
       <p className="mb-3 text-[12px] text-[#6b7280]">
         {tone === "media"
-          ? "Square images only. JPG, JPEG, PNG, or GIF under 2MB. Images are auto-cropped to square."
+          ? "Square images only. JPG, JPEG, PNG, or GIF under 2MB. Crop each image before upload."
           : "Certificates can be JPG, JPEG, PNG, GIF, or PDF up to 5MB."}
       </p>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -1783,6 +1971,7 @@ function AssetStrip({
             onSelect={onSelect}
             onCaptionChange={onCaptionChange}
             setSubmitError={setSubmitError}
+            openCropper={openCropper}
           />
         ))}
       </div>
@@ -1798,6 +1987,7 @@ function AssetUploadSlot({
   onSelect,
   onCaptionChange,
   setSubmitError,
+  openCropper,
 }: {
   index: number;
   caption: string;
@@ -1806,6 +1996,11 @@ function AssetUploadSlot({
   onSelect: (index: number, dataUrl: string) => void;
   onCaptionChange: (index: number, caption: string) => void;
   setSubmitError: (value: string) => void;
+  openCropper: (options: {
+    file: File;
+    tone: "profile" | "service";
+    onApply: (dataUrl: string, fileName: string) => void;
+  }) => Promise<void>;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -1817,17 +2012,31 @@ function AssetUploadSlot({
     }
 
     try {
-      const prepared =
-        tone === "media"
-          ? await prepareImageUpload(file)
-          : await prepareCertificateUpload(file);
-      setSubmitError("");
-      onSelect(index, prepared.dataUrl);
-      if (!caption.trim()) {
-        onCaptionChange(
-          index,
-          tone === "media" ? `Work ${index + 1}` : prepared.displayName,
-        );
+      if (tone === "media") {
+        setSubmitError("");
+        await openCropper({
+          file,
+          tone: "service",
+          onApply: (dataUrl, fileName) => {
+            onSelect(index, dataUrl);
+            if (!caption.trim()) {
+              onCaptionChange(index, `Work ${index + 1}`);
+            }
+            if (fileName) {
+              setSubmitError("");
+            }
+          },
+        });
+      } else {
+        const prepared = await prepareCertificateUpload(file);
+        setSubmitError("");
+        onSelect(index, prepared.dataUrl);
+        if (!caption.trim()) {
+          onCaptionChange(
+            index,
+            prepared.displayName,
+          );
+        }
       }
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : "Unable to process the selected file.");
@@ -1877,6 +2086,173 @@ function AssetUploadSlot({
         placeholder={tone === "media" ? "Add image caption" : "Add certificate caption"}
         className="mt-2 h-10 w-full rounded-[10px] border border-[#dfe8e2] px-3 text-[12px] text-[#111827] outline-none"
       />
+    </div>
+  );
+}
+
+function TagInput({
+  label,
+  hint,
+  values,
+  onChange,
+}: {
+  label: string;
+  hint?: string;
+  values: string[];
+  onChange: (nextValues: string[]) => void;
+}) {
+  const [draft, setDraft] = useState("");
+
+  const commitDraft = () => {
+    const cleaned = draft.trim().replace(/,$/, "");
+    if (!cleaned) {
+      setDraft("");
+      return;
+    }
+
+    if (!values.includes(cleaned)) {
+      onChange([...values, cleaned]);
+    }
+    setDraft("");
+  };
+
+  return (
+    <div>
+      <label className="mb-2 block text-[13px] font-semibold text-[#111827]">
+        {label}
+      </label>
+      {hint ? <p className="mb-2 text-[12px] text-[#6b7280]">{hint}</p> : null}
+      <div className="rounded-[14px] border border-[#dfe8e2] bg-white px-3 py-3 shadow-[0_8px_18px_rgba(15,23,42,0.03)]">
+        {values.length > 0 ? (
+          <div className="mb-2 flex flex-wrap gap-2">
+            {values.map((value) => (
+              <span
+                key={value}
+                className="inline-flex items-center gap-2 rounded-full bg-[#f5f1fa] px-3 py-1.5 text-[12px] font-semibold text-[#8E5EB5]"
+              >
+                {value}
+                <button
+                  type="button"
+                  onClick={() => onChange(values.filter((item) => item !== value))}
+                  className="text-[#8E5EB5]"
+                  aria-label={`Remove ${value}`}
+                >
+                  x
+                </button>
+              </span>
+            ))}
+          </div>
+        ) : null}
+        <input
+          value={draft}
+          onChange={(event) => {
+            const nextValue = event.target.value;
+            if (nextValue.includes(",")) {
+              const parts = nextValue.split(",");
+              const nextDraft = parts.pop() ?? "";
+              const nextTags = parts
+                .map((item) => item.trim())
+                .filter(Boolean)
+                .filter((item) => !values.includes(item));
+
+              if (nextTags.length > 0) {
+                onChange([...values, ...nextTags]);
+              }
+              setDraft(nextDraft);
+              return;
+            }
+            setDraft(nextValue);
+          }}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              commitDraft();
+            }
+            if (event.key === "Backspace" && !draft && values.length > 0) {
+              onChange(values.slice(0, -1));
+            }
+          }}
+          onBlur={commitDraft}
+          placeholder="Type and press comma"
+          className="h-10 w-full border-0 bg-transparent text-[14px] text-[#111827] outline-none placeholder:text-[#9ca3af]"
+        />
+      </div>
+    </div>
+  );
+}
+
+function ImageCropModal({
+  imageDataUrl,
+  tone,
+  onClose,
+  onApply,
+}: {
+  imageDataUrl: string;
+  tone: "profile" | "service";
+  onClose: () => void;
+  onApply: (value: { zoom: number; offsetX: number; offsetY: number }) => void;
+}) {
+  const [zoom, setZoom] = useState(1);
+  const [offsetX, setOffsetX] = useState(0);
+  const [offsetY, setOffsetY] = useState(0);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#111827]/70 px-4">
+      <div className="w-full max-w-[430px] rounded-[24px] bg-white p-4 shadow-[0_24px_60px_rgba(15,23,42,0.28)]">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h3 className="text-[18px] font-extrabold text-[#111827]">Crop image</h3>
+            <p className="mt-1 text-[12px] text-[#6b7280]">
+              Adjust the image before uploading your {tone === "profile" ? "profile photo" : "service image"}.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-full bg-[#f3f4f6] px-3 py-2 text-[12px] font-bold text-[#374151]"
+          >
+            Close
+          </button>
+        </div>
+
+        <div className="mt-4 flex justify-center">
+          <div className="relative h-[18rem] w-[18rem] overflow-hidden rounded-[22px] border border-[#e5d9f3] bg-[#f5f1fa]">
+            <Image
+              src={imageDataUrl}
+              alt="Crop preview"
+              fill
+              unoptimized
+              className="object-cover"
+              style={{
+                transform: `translate(${offsetX}px, ${offsetY}px) scale(${zoom})`,
+              }}
+            />
+          </div>
+        </div>
+
+        <div className="mt-4 space-y-3">
+          <RangeField label="Zoom" value={Math.round(zoom * 100)} min={100} max={220} suffix="%" onChange={(value) => setZoom(value / 100)} />
+          <RangeField label="Move Left / Right" value={offsetX} min={-120} max={120} suffix="px" onChange={setOffsetX} />
+          <RangeField label="Move Up / Down" value={offsetY} min={-120} max={120} suffix="px" onChange={setOffsetY} />
+        </div>
+
+        <div className="mt-5 flex gap-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="inline-flex h-11 flex-1 items-center justify-center rounded-[14px] border border-[#dfe8e2] bg-white text-[14px] font-extrabold text-[#111827]"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={() => onApply({ zoom, offsetX, offsetY })}
+            className="inline-flex h-11 flex-1 items-center justify-center rounded-[14px] bg-[#8E5EB5] text-[14px] font-extrabold text-white"
+          >
+            Use Crop
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -2098,6 +2474,28 @@ function screenSubtitle(step: FlowStep) {
     case "success":
       return "Verification saved successfully";
   }
+}
+
+function getPasswordRuleFailures(value: string) {
+  const failures: string[] = [];
+
+  if (value.length < 8) {
+    failures.push("8 characters");
+  }
+  if (!/[A-Z]/.test(value)) {
+    failures.push("uppercase");
+  }
+  if (!/[a-z]/.test(value)) {
+    failures.push("lowercase");
+  }
+  if (!/\d/.test(value)) {
+    failures.push("digit");
+  }
+  if (!/[^\w\s]/.test(value)) {
+    failures.push("symbol");
+  }
+
+  return failures;
 }
 
 function formatAvailabilityDays(days: string[]) {

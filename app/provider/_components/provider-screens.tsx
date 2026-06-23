@@ -2594,6 +2594,177 @@ export function ProfileScreen() {
           <InfoRow icon={<ShieldCheck className="h-4.5 w-4.5 text-[#16a34a]" />} label="Phone Verified" value={data.phoneVerified ? "Yes" : "No"} />
           <InfoRow icon={<ShieldCheck className="h-4.5 w-4.5 text-[#16a34a]" />} label="Identity Verified" value={data.identityVerified ? "Yes" : "No"} />
         </div>
+        <div className="mt-5 grid grid-cols-2 gap-3">
+          <Link
+            href="/provider/services"
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-[14px] bg-[#8E5EB5] px-4 text-[13px] font-extrabold text-white"
+          >
+            <PencilLine className="h-4 w-4" />
+            Edit Services
+          </Link>
+          <Link
+            href="/provider/availability"
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-[14px] border border-[#d8ebdf] bg-white px-4 text-[13px] font-extrabold text-[#16a34a]"
+          >
+            <CalendarDays className="h-4 w-4" />
+            Edit Availability
+          </Link>
+        </div>
+      </section>
+
+      <section className="rounded-[26px] bg-white p-5 shadow-[0_18px_44px_rgba(15,23,42,0.08)] ring-1 ring-[#e6eee8]">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h3 className="text-[1.1rem] font-black tracking-[-0.04em] text-[#0f172a]">
+              Listing Details
+            </h3>
+            <p className="mt-1 text-[12px] text-[#64748b]">
+              Review your public provider details and uploaded work.
+            </p>
+          </div>
+          <Link
+            href="/provider/services"
+            className="rounded-[12px] border border-[#e5d5fa] bg-[#fbf8ff] px-3 py-2 text-[12px] font-bold text-[#8E5EB5]"
+          >
+            Edit
+          </Link>
+        </div>
+
+        <div className="mt-4 space-y-3">
+          <DetailRow icon={<MapPin className="h-4.5 w-4.5 text-[#8E5EB5]" />} label="Coverage" value={`${data.serviceRadiusKm} KM from current location`} />
+          <DetailRow icon={<BriefcaseBusiness className="h-4.5 w-4.5 text-[#8E5EB5]" />} label="Bio" value={data.bio || "No bio added yet."} />
+        </div>
+      </section>
+
+      <section className="rounded-[26px] bg-white p-5 shadow-[0_18px_44px_rgba(15,23,42,0.08)] ring-1 ring-[#e6eee8]">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h3 className="text-[1.1rem] font-black tracking-[-0.04em] text-[#0f172a]">
+              Verification
+            </h3>
+            <p className="mt-1 text-[12px] text-[#64748b]">
+              Verification status for your provider account.
+            </p>
+          </div>
+          <Link
+            href="/provider/more"
+            className="rounded-[12px] border border-[#e5d5fa] bg-[#fbf8ff] px-3 py-2 text-[12px] font-bold text-[#8E5EB5]"
+          >
+            Verify / Help
+          </Link>
+        </div>
+
+        <div className="mt-4 grid grid-cols-2 gap-3">
+          <MetricCard label="Email" value={data.emailVerified ? "Verified" : "Pending"} meta="Email status" accent={data.emailVerified ? "text-[#16a34a]" : "text-[#f59e0b]"} />
+          <MetricCard label="Phone" value={data.phoneVerified ? "Verified" : "Pending"} meta="Phone status" accent={data.phoneVerified ? "text-[#16a34a]" : "text-[#f59e0b]"} />
+          <MetricCard label="Identity" value={data.identityVerified ? "Verified" : "Pending"} meta="ID check" accent={data.identityVerified ? "text-[#16a34a]" : "text-[#f59e0b]"} />
+          <MetricCard label="KYC / Background" value={data.backgroundCheckVerified || data.kycVerified ? "Verified" : "Pending"} meta="Trust checks" accent={data.backgroundCheckVerified || data.kycVerified ? "text-[#16a34a]" : "text-[#f59e0b]"} />
+        </div>
+      </section>
+
+      <section className="space-y-4">
+        {data.services.map((service) => (
+          <div
+            key={service.id}
+            className="rounded-[26px] bg-white p-5 shadow-[0_18px_44px_rgba(15,23,42,0.08)] ring-1 ring-[#e6eee8]"
+          >
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <h3 className="text-[1.1rem] font-black tracking-[-0.04em] text-[#0f172a]">
+                  {formatServiceLabel(service.serviceType)}
+                </h3>
+                <p className="mt-1 text-[12px] text-[#64748b]">
+                  {service.yearsExperience || "Experience not added yet"}
+                </p>
+              </div>
+              <Link
+                href="/provider/services"
+                className="rounded-[12px] border border-[#e5d5fa] bg-[#fbf8ff] px-3 py-2 text-[12px] font-bold text-[#8E5EB5]"
+              >
+                Edit
+              </Link>
+            </div>
+
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              <MetricCard label="Hourly" value={formatCompactCurrency(service.hourlyRate)} meta="per hour" />
+              <MetricCard label="Daily" value={formatCompactCurrency(service.dailyRate)} meta="per day" />
+            </div>
+
+            <div className="mt-4">
+              <p className="text-[12px] font-bold uppercase tracking-[0.12em] text-[#9a90ac]">
+                Service Types
+              </p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {service.specialties.length > 0 ? (
+                  service.specialties.map((specialty) => (
+                    <span
+                      key={`${service.id}-${specialty}`}
+                      className="rounded-full bg-[#f5f1fa] px-3 py-1.5 text-[12px] font-semibold text-[#8E5EB5]"
+                    >
+                      {specialty}
+                    </span>
+                  ))
+                ) : (
+                  <p className="text-[13px] text-[#64748b]">No service tags added yet.</p>
+                )}
+              </div>
+            </div>
+
+            <div className="mt-5">
+              <p className="text-[12px] font-bold uppercase tracking-[0.12em] text-[#9a90ac]">
+                Service Images
+              </p>
+              {service.imageDataUrls.length > 0 ? (
+                <div className="mt-3 grid grid-cols-3 gap-3">
+                  {service.imageDataUrls.map((image, index) => (
+                    <div key={`${service.id}-image-${index}`} className="space-y-2">
+                      <div className="relative aspect-square overflow-hidden rounded-[16px] border border-[#e7eee8] bg-[#f8faf9]">
+                        <Image
+                          src={image}
+                          alt={service.imageCaptions[index] || `${service.serviceType} work ${index + 1}`}
+                          fill
+                          unoptimized
+                          className="object-cover"
+                        />
+                      </div>
+                      <p className="text-[11px] leading-4 text-[#64748b]">
+                        {service.imageCaptions[index] || `Work ${index + 1}`}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="mt-2 text-[13px] text-[#64748b]">No service images uploaded yet.</p>
+              )}
+            </div>
+
+            <div className="mt-5">
+              <p className="text-[12px] font-bold uppercase tracking-[0.12em] text-[#9a90ac]">
+                Certificates
+              </p>
+              {service.certificateDataUrls.length > 0 ? (
+                <div className="mt-3 space-y-2">
+                  {service.certificateDataUrls.map((file, index) => (
+                    <a
+                      key={`${service.id}-certificate-${index}`}
+                      href={file}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex items-center justify-between rounded-[16px] border border-[#e7eee8] bg-[#fbfffc] px-4 py-3"
+                    >
+                      <span className="text-[13px] font-semibold text-[#0f172a]">
+                        {service.certificateCaptions[index] || `Certificate ${index + 1}`}
+                      </span>
+                      <span className="text-[12px] font-bold text-[#8E5EB5]">View</span>
+                    </a>
+                  ))}
+                </div>
+              ) : (
+                <p className="mt-2 text-[13px] text-[#64748b]">No certificates uploaded yet.</p>
+              )}
+            </div>
+          </div>
+        ))}
       </section>
     </PageShell>
   );
