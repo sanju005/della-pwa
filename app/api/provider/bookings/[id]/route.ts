@@ -50,6 +50,37 @@ type BookingOwnerRow = {
   quoted_amount: number | null;
 };
 
+function isUnknownColumnError(message?: string | null) {
+  const normalized = message?.trim().toLowerCase() ?? "";
+  return normalized.includes("column") && (
+    normalized.includes("accepted_at") ||
+    normalized.includes("provider_response_note") ||
+    normalized.includes("decline_reason") ||
+    normalized.includes("on_the_way_at") ||
+    normalized.includes("arrived_at") ||
+    normalized.includes("completed_at") ||
+    normalized.includes("paid_at") ||
+    normalized.includes("review_requested_at") ||
+    normalized.includes("cancelled_at")
+  );
+}
+
+function buildFallbackUpdatePayload(
+  nextStatus: BookingStatus,
+  current: BookingOwnerRow,
+  finalAmount: number | null,
+) {
+  const payload: Record<string, string | number | BookingStatus> = {
+    booking_status: nextStatus,
+  };
+
+  if (nextStatus === "paid") {
+    payload.quoted_amount = finalAmount ?? Number(current.quoted_amount ?? 0);
+  }
+
+  return payload;
+}
+
 function getAdminSupabaseClient() {
   const url = getSupabaseUrl();
   const serviceRoleKey = getSupabaseServiceKey();
@@ -331,13 +362,30 @@ export async function PATCH(
     updatePayload.cancelled_at = new Date().toISOString();
   }
 
-  const { error: updateError } = await verified.adminClient
+  let { error: updateError } = await verified.adminClient
     .from("bookings")
     .update(updatePayload)
     .eq("id", current.id)
     .eq("provider_id", verified.profile.id);
 
+  if (updateError && isUnknownColumnError(updateError.message)) {
+    const fallbackPayload = buildFallbackUpdatePayload(
+      nextStatus,
+      current,
+      finalAmount,
+    );
+
+    const fallbackWrite = await verified.adminClient
+      .from("bookings")
+      .update(fallbackPayload)
+      .eq("id", current.id)
+      .eq("provider_id", verified.profile.id);
+
+    updateError = fallbackWrite.error;
+  }
+
   if (updateError) {
+    console.error("[Provider booking update] Failed to update booking:", updateError);
     return NextResponse.json(
       { error: updateError.message || "Unable to update booking." },
       { status: 500 }

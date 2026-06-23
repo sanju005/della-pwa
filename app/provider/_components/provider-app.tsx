@@ -431,9 +431,21 @@ export function useProviderAppData() {
           additionalCharge: paymentDetails?.additionalCharge,
           chargeDescription: paymentDetails?.chargeDescription,
         }),
+      }).catch((error) => {
+        console.error("[Provider app] Booking action request failed:", error);
+        return null;
       });
 
-      const result = (await response.json()) as { success?: true; error?: string };
+      if (!response) {
+        setError("Unable to reach the server. Please try again.");
+        setActionBookingId("");
+        return;
+      }
+
+      const result = (await response.json().catch(() => ({}))) as {
+        success?: true;
+        error?: string;
+      };
 
       if (!response.ok || !result.success) {
         setError(result.error || "Unable to update booking.");
@@ -442,7 +454,13 @@ export function useProviderAppData() {
       }
 
       await reloadWorkspace();
-      setNotice(status === "accepted" ? "Booking accepted." : "Booking updated.");
+      setNotice(
+        status === "accepted"
+          ? "Booking accepted."
+          : status === "declined"
+            ? "Booking declined."
+            : "Booking updated.",
+      );
       setActionBookingId("");
     });
   }
