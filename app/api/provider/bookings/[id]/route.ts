@@ -65,6 +65,19 @@ function isUnknownColumnError(message?: string | null) {
   );
 }
 
+function mapBookingUpdateError(message?: string | null) {
+  const normalized = message?.trim().toLowerCase() ?? "";
+
+  if (
+    normalized.includes("invalid input value for enum booking_status") ||
+    normalized.includes("invalid input value for enum") && normalized.includes("booking_status")
+  ) {
+    return "The live booking workflow database migration is missing. Apply the latest Supabase migration for booking status values, then try again.";
+  }
+
+  return message || "Unable to update booking.";
+}
+
 function buildFallbackUpdatePayload(
   nextStatus: BookingStatus,
   current: BookingOwnerRow,
@@ -387,7 +400,7 @@ export async function PATCH(
   if (updateError) {
     console.error("[Provider booking update] Failed to update booking:", updateError);
     return NextResponse.json(
-      { error: updateError.message || "Unable to update booking." },
+      { error: mapBookingUpdateError(updateError.message) },
       { status: 500 }
     );
   }
