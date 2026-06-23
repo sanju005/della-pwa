@@ -30,7 +30,6 @@ export default function SignupUserPage() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [addressLabel, setAddressLabel] = useState("Address 1");
-  const [unitNumber, setUnitNumber] = useState("");
   const [addressLine1, setAddressLine1] = useState("");
   const [addressLine2, setAddressLine2] = useState("");
   const [postcode, setPostcode] = useState("");
@@ -43,9 +42,13 @@ export default function SignupUserPage() {
   const [selectedAddressPreview, setSelectedAddressPreview] = useState("");
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [error, setError] = useState("");
+  const [invalidFields, setInvalidFields] = useState<string[]>([]);
 
   useEffect(() => {
-    const query = [unitNumber, addressLine1, city].filter(Boolean).join(" ").trim();
+    const query = [addressLine1, addressLine2, postcode, city, stateName]
+      .filter(Boolean)
+      .join(" ")
+      .trim();
 
     if (query.length < 3) {
       setAddressSuggestions([]);
@@ -79,7 +82,7 @@ export default function SignupUserPage() {
       active = false;
       window.clearTimeout(timeoutId);
     };
-  }, [addressLine1, city, unitNumber]);
+  }, [addressLine1, addressLine2, city, postcode, stateName]);
 
   const handleAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -137,20 +140,31 @@ export default function SignupUserPage() {
     }
   };
 
+  const clearInvalidField = (field: string) => {
+    setInvalidFields((current) => current.filter((item) => item !== field));
+  };
+
   const handleSubmit = () => {
+    const missingFields = [
+      !firstName ? "firstName" : null,
+      !lastName ? "lastName" : null,
+      !sex ? "sex" : null,
+      !dateOfBirth ? "dateOfBirth" : null,
+      !email ? "email" : null,
+      !phoneNumber ? "phoneNumber" : null,
+      !addressLine1 ? "addressLine1" : null,
+      !postcode ? "postcode" : null,
+      !city ? "city" : null,
+      !stateName ? "state" : null,
+      !country ? "country" : null,
+      !password ? "password" : null,
+      !confirmPassword ? "confirmPassword" : null,
+    ].filter((value): value is string => Boolean(value));
+
+    setInvalidFields(missingFields);
+
     if (
-      !firstName ||
-      !lastName ||
-      !dateOfBirth ||
-      !sex ||
-      !email ||
-      !phoneNumber ||
-      !password ||
-      !confirmPassword ||
-      !addressLine1 ||
-      !postcode ||
-      !city ||
-      !stateName
+      missingFields.length > 0
     ) {
       setError("Please fill in all required fields.");
       return;
@@ -180,7 +194,6 @@ export default function SignupUserPage() {
           password,
           confirmPassword,
           addressLabel,
-          unitNumber,
           addressLine1,
           addressLine2,
           postcode,
@@ -203,6 +216,7 @@ export default function SignupUserPage() {
         return;
       }
 
+      setInvalidFields([]);
       if (result.requiresEmailVerification) {
         router.push(`/signup/check-email?email=${encodeURIComponent(result.email)}`);
         return;
@@ -245,62 +259,65 @@ export default function SignupUserPage() {
           label="First Name"
           placeholder="Enter your first name"
           value={firstName}
-          onChange={setFirstName}
+          onChange={(value) => {
+            clearInvalidField("firstName");
+            setFirstName(value);
+          }}
           icon={<Icons.User className="h-5 w-5" />}
+          invalid={invalidFields.includes("firstName")}
         />
         <ControlledField
           label="Last Name"
           placeholder="Enter your last name"
           value={lastName}
-          onChange={setLastName}
+          onChange={(value) => {
+            clearInvalidField("lastName");
+            setLastName(value);
+          }}
           icon={<Icons.User className="h-5 w-5" />}
+          invalid={invalidFields.includes("lastName")}
         />
         <ControlledSelectField
           label="Gender"
           value={sex}
-          onChange={(value) => setSex(value as "" | "Male" | "Female")}
+          onChange={(value) => {
+            clearInvalidField("sex");
+            setSex(value as "" | "Male" | "Female");
+          }}
           icon={<Icons.User className="h-5 w-5" />}
           options={["Male", "Female"]}
           hidePlaceholder
+          invalid={invalidFields.includes("sex")}
         />
         <ControlledDateField
           label="Date of Birth"
           value={dateOfBirth}
-          onChange={setDateOfBirth}
+          onChange={(value) => {
+            clearInvalidField("dateOfBirth");
+            setDateOfBirth(value);
+          }}
           icon={<CalendarIcon className="h-5 w-5" />}
+          invalid={invalidFields.includes("dateOfBirth")}
         />
         <ControlledField
           label="Email"
           placeholder="Enter email address"
           value={email}
-          onChange={setEmail}
+          onChange={(value) => {
+            clearInvalidField("email");
+            setEmail(value);
+          }}
           icon={<Icons.Mail className="h-5 w-5" />}
           type="email"
+          invalid={invalidFields.includes("email")}
         />
-        <ControlledPhoneField value={phoneNumber} onChange={setPhoneNumber} />
-        <ControlledField
-          label="Password"
-          placeholder="Create a password"
-          value={password}
-          onChange={setPassword}
-          icon={<Icons.Lock className="h-5 w-5" />}
-          rightIcon={<Icons.EyeOff className="h-5 w-5" />}
-          type="password"
-        />
-        <div className="rounded-[18px] bg-[#f5f1fa] px-4 py-3 text-[13px] leading-6 text-[#4b5563]">
-          <p>At least 8 characters</p>
-          <p>One uppercase letter</p>
-          <p>One number</p>
-          <p>One special character</p>
-        </div>
-        <ControlledField
-          label="Confirm Password"
-          placeholder="Confirm your password"
-          value={confirmPassword}
-          onChange={setConfirmPassword}
-          icon={<Icons.Lock className="h-5 w-5" />}
-          rightIcon={<Icons.EyeOff className="h-5 w-5" />}
-          type="password"
+        <ControlledPhoneField
+          value={phoneNumber}
+          onChange={(value) => {
+            clearInvalidField("phoneNumber");
+            setPhoneNumber(value);
+          }}
+          invalid={invalidFields.includes("phoneNumber")}
         />
         <div className="rounded-[22px] border border-[#e7ece8] bg-white p-4 shadow-[0_8px_20px_rgba(15,23,42,0.03)]">
           <h2 className="text-[15px] font-extrabold text-[#111827]">Saved Address</h2>
@@ -316,18 +333,15 @@ export default function SignupUserPage() {
               icon={<MapPinIcon className="h-5 w-5" />}
             />
             <ControlledField
-              label="Unit Number"
-              placeholder="Unit / House No"
-              value={unitNumber}
-              onChange={setUnitNumber}
-              icon={<MapPinIcon className="h-5 w-5" />}
-            />
-            <ControlledField
               label="Address Line 1"
               placeholder="Street name, building, area"
               value={addressLine1}
-              onChange={setAddressLine1}
+              onChange={(value) => {
+                clearInvalidField("addressLine1");
+                setAddressLine1(value);
+              }}
               icon={<MapPinIcon className="h-5 w-5" />}
+              invalid={invalidFields.includes("addressLine1")}
             />
             {addressSuggestions.length > 0 ? (
               <div className="rounded-[16px] border border-[#e5e7eb] bg-[#fbfcff] p-2">
@@ -357,39 +371,90 @@ export default function SignupUserPage() {
               label="Address Line 2"
               placeholder="Apartment, floor, landmark"
               value={addressLine2}
-              onChange={setAddressLine2}
+              onChange={(value) => {
+                clearInvalidField("addressLine2");
+                setAddressLine2(value);
+              }}
               icon={<MapPinIcon className="h-5 w-5" />}
             />
             <ControlledField
               label="Postcode"
               placeholder="Postcode"
               value={postcode}
-              onChange={setPostcode}
+              onChange={(value) => {
+                clearInvalidField("postcode");
+                setPostcode(value);
+              }}
               icon={<MapPinIcon className="h-5 w-5" />}
+              invalid={invalidFields.includes("postcode")}
             />
             <ControlledField
               label="City"
               placeholder="City"
               value={city}
-              onChange={setCity}
+              onChange={(value) => {
+                clearInvalidField("city");
+                setCity(value);
+              }}
               icon={<MapPinIcon className="h-5 w-5" />}
+              invalid={invalidFields.includes("city")}
             />
             <ControlledSelectField
               label="State"
               value={stateName}
-              onChange={setStateName}
+              onChange={(value) => {
+                clearInvalidField("state");
+                setStateName(value);
+              }}
               icon={<MapPinIcon className="h-5 w-5" />}
               options={malaysianStates}
+              invalid={invalidFields.includes("state")}
             />
             <ControlledField
               label="Country"
               placeholder="Country"
               value={country}
-              onChange={setCountry}
+              onChange={(value) => {
+                clearInvalidField("country");
+                setCountry(value);
+              }}
               icon={<MapPinIcon className="h-5 w-5" />}
+              invalid={invalidFields.includes("country")}
             />
           </div>
         </div>
+        <ControlledField
+          label="Password"
+          placeholder="Create a password"
+          value={password}
+          onChange={(value) => {
+            clearInvalidField("password");
+            setPassword(value);
+          }}
+          icon={<Icons.Lock className="h-5 w-5" />}
+          rightIcon={<Icons.EyeOff className="h-5 w-5" />}
+          type="password"
+          invalid={invalidFields.includes("password")}
+        />
+        <div className="rounded-[18px] bg-[#f5f1fa] px-4 py-3 text-[13px] leading-6 text-[#4b5563]">
+          <p>At least 8 characters</p>
+          <p>One uppercase letter</p>
+          <p>One number</p>
+          <p>One special character</p>
+        </div>
+        <ControlledField
+          label="Confirm Password"
+          placeholder="Confirm your password"
+          value={confirmPassword}
+          onChange={(value) => {
+            clearInvalidField("confirmPassword");
+            setConfirmPassword(value);
+          }}
+          icon={<Icons.Lock className="h-5 w-5" />}
+          rightIcon={<Icons.EyeOff className="h-5 w-5" />}
+          type="password"
+          invalid={invalidFields.includes("confirmPassword")}
+        />
       </div>
 
       <label className="mt-5 flex items-start gap-3 text-[14px] leading-6 text-[#4b5563]">
@@ -482,11 +547,13 @@ function ControlledDateField({
   value,
   onChange,
   icon,
+  invalid = false,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   icon: ReactNode;
+  invalid?: boolean;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -506,7 +573,11 @@ function ControlledDateField({
       <span className="mb-2 block text-[15px] font-semibold text-[#111827]">
         {label}
       </span>
-      <div className="flex h-13 items-center rounded-[14px] border border-[#d9e2dd] bg-white px-4 shadow-[0_8px_20px_rgba(15,23,42,0.03)]">
+      <div
+        className={`flex h-13 items-center rounded-[14px] border bg-white px-4 shadow-[0_8px_20px_rgba(15,23,42,0.03)] ${
+          invalid ? "border-[#ef4444] bg-[#fff5f5]" : "border-[#d9e2dd]"
+        }`}
+      >
         <span className="mr-3 text-[#8E5EB5]">{icon}</span>
         <input
           ref={inputRef}
@@ -537,6 +608,7 @@ function ControlledSelectField({
   icon,
   options,
   hidePlaceholder = false,
+  invalid = false,
 }: {
   label: string;
   value: string;
@@ -544,13 +616,18 @@ function ControlledSelectField({
   icon: ReactNode;
   options: string[];
   hidePlaceholder?: boolean;
+  invalid?: boolean;
 }) {
   return (
     <label className="block">
       <span className="mb-2 block text-[15px] font-semibold text-[#111827]">
         {label}
       </span>
-      <div className="flex h-13 items-center rounded-[14px] border border-[#d9e2dd] bg-white px-4 shadow-[0_8px_20px_rgba(15,23,42,0.03)]">
+      <div
+        className={`flex h-13 items-center rounded-[14px] border bg-white px-4 shadow-[0_8px_20px_rgba(15,23,42,0.03)] ${
+          invalid ? "border-[#ef4444] bg-[#fff5f5]" : "border-[#d9e2dd]"
+        }`}
+      >
         <span className="mr-3 text-[#8E5EB5]">{icon}</span>
         <select
           value={value}
@@ -580,6 +657,7 @@ function ControlledField({
   icon,
   rightIcon,
   type = "text",
+  invalid = false,
 }: {
   label: string;
   placeholder: string;
@@ -588,6 +666,7 @@ function ControlledField({
   icon: ReactNode;
   rightIcon?: ReactNode;
   type?: string;
+  invalid?: boolean;
 }) {
   const [showPassword, setShowPassword] = useState(false);
   const isPasswordField = type === "password";
@@ -597,7 +676,11 @@ function ControlledField({
       <span className="mb-2 block text-[15px] font-semibold text-[#111827]">
         {label}
       </span>
-      <div className="flex h-13 items-center rounded-[14px] border border-[#d9e2dd] bg-white px-4 shadow-[0_8px_20px_rgba(15,23,42,0.03)]">
+      <div
+        className={`flex h-13 items-center rounded-[14px] border bg-white px-4 shadow-[0_8px_20px_rgba(15,23,42,0.03)] ${
+          invalid ? "border-[#ef4444] bg-[#fff5f5]" : "border-[#d9e2dd]"
+        }`}
+      >
         <span className="mr-3 text-[#8E5EB5]">{icon}</span>
         <input
           type={isPasswordField && showPassword ? "text" : type}
@@ -628,9 +711,11 @@ function ControlledField({
 function ControlledPhoneField({
   value,
   onChange,
+  invalid = false,
 }: {
   value: string;
   onChange: (value: string) => void;
+  invalid?: boolean;
 }) {
   return (
     <label className="block">
@@ -644,7 +729,11 @@ function ControlledPhoneField({
           </span>
           <span className="text-[15px] font-medium text-[#111827]">+60</span>
         </div>
-        <div className="flex h-13 flex-1 items-center rounded-[14px] border border-[#d9e2dd] bg-white px-4 shadow-[0_8px_20px_rgba(15,23,42,0.03)]">
+        <div
+          className={`flex h-13 flex-1 items-center rounded-[14px] border bg-white px-4 shadow-[0_8px_20px_rgba(15,23,42,0.03)] ${
+            invalid ? "border-[#ef4444] bg-[#fff5f5]" : "border-[#d9e2dd]"
+          }`}
+        >
           <PhoneIcon className="mr-3 h-5 w-5 text-[#8E5EB5]" />
           <input
             type="tel"
