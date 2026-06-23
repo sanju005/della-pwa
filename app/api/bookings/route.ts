@@ -327,7 +327,11 @@ function toBookingTab(status: BookingRow["booking_status"]): Booking["status"] {
     return "completed";
   }
 
-  return "upcoming";
+  if (status === "accepted" || status === "on_the_way" || status === "arrived") {
+    return "ongoing";
+  }
+
+  return "pending";
 }
 
 function toBadgeTone(status: BookingRow["booking_status"]): Booking["badgeTone"] {

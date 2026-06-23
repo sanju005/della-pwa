@@ -10,9 +10,12 @@ export default async function ProfileBookingsPage(props: {
   const bookings = await getBookings();
   const requestedTab = searchParams.tab;
   const initialTab: BookingStatus =
-    requestedTab === "completed" || requestedTab === "cancelled" || requestedTab === "upcoming"
+    requestedTab === "pending" ||
+    requestedTab === "ongoing" ||
+    requestedTab === "completed" ||
+    requestedTab === "cancelled"
       ? requestedTab
-      : "upcoming";
+      : "pending";
 
   return <BookingsScreen bookings={bookings} initialTab={initialTab} />;
 }

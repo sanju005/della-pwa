@@ -65,7 +65,7 @@ export type Address = {
   kind: "home" | "office" | "other";
 };
 
-export type BookingStatus = "upcoming" | "completed" | "cancelled";
+export type BookingStatus = "pending" | "ongoing" | "completed" | "cancelled";
 
 export type Booking = {
   id: string;
@@ -114,7 +114,8 @@ export type ProfileOverviewData = {
     lastPaymentLabel: string;
   };
   bookingSummary: {
-    upcoming: number;
+    pending: number;
+    ongoing: number;
     completed: number;
     cancelled: number;
   };

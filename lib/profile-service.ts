@@ -118,8 +118,9 @@ export async function getProfileOverviewData(): Promise<ProfileOverviewData> {
         : "No payment yet",
     },
     bookingSummary: {
-      upcoming: storedBookings.filter((booking) => booking.status === "pending").length,
-      completed: storedBookings.filter((booking) => booking.status !== "pending").length,
+      pending: storedBookings.filter((booking) => booking.status === "pending").length,
+      ongoing: storedBookings.filter((booking) => booking.status === "confirmed").length,
+      completed: 0,
       cancelled: 0,
     },
   };
@@ -149,9 +150,18 @@ export async function getBookings(): Promise<Booking[]> {
         provider: booking.providerName,
         schedule: `${booking.dateLabel}, ${booking.timeLabel}`,
         location: booking.location,
-        status: booking.status === "pending" ? "upcoming" : "completed",
-        statusLabel: booking.status === "pending" ? "Pending" : "Confirmed",
-        badgeTone: booking.status === "pending" ? "amber" : "green",
+        status:
+          booking.status === "pending"
+            ? "pending"
+            : "ongoing",
+        statusLabel:
+          booking.status === "pending"
+            ? "Request Sent"
+            : "Confirmed",
+        badgeTone:
+          booking.status === "pending"
+            ? "amber"
+            : "green",
         thumbnail:
           serviceKey === "chef"
             ? "food"
@@ -168,20 +178,19 @@ export async function getBookings(): Promise<Booking[]> {
         activitySteps:
           booking.status === "pending"
             ? [
-                { label: "Accepted", status: "done" },
-                { label: "Confirmed", status: "current" },
+                { label: "Request Sent", status: "current" },
                 { label: "On the way", status: "pending" },
                 { label: "Arrived", status: "pending" },
                 { label: "Task Completed", status: "pending" },
                 { label: "Payment Done", status: "pending" },
               ]
             : [
-                { label: "Accepted", status: "done" },
+                { label: "Request Sent", status: "done" },
                 { label: "Confirmed", status: "done" },
-                { label: "On the way", status: "done" },
-                { label: "Arrived", status: "done" },
-                { label: "Task Completed", status: "done" },
-                { label: "Payment Done", status: "done" },
+                { label: "On the way", status: "current" },
+                { label: "Arrived", status: "pending" },
+                { label: "Task Completed", status: "pending" },
+                { label: "Payment Done", status: "pending" },
               ],
       } satisfies Booking;
     })(),

@@ -227,28 +227,40 @@ function buildCustomerProfile(
 }
 
 function mapBookingSummary(rows: BookingAggregateRow[]) {
-  let upcoming = 0;
+  let pending = 0;
+  let ongoing = 0;
   let completed = 0;
   let cancelled = 0;
 
   for (const row of rows) {
     const status = row.booking_status?.trim().toLowerCase() ?? "";
 
-    if (status === "cancelled" || status === "canceled") {
+    if (status === "declined" || status === "cancelled" || status === "canceled") {
       cancelled += 1;
       continue;
     }
 
-    if (status === "completed" || status === "confirmed") {
+    if (
+      status === "completed" ||
+      status === "paid" ||
+      status === "review_requested" ||
+      status === "reviewed"
+    ) {
       completed += 1;
       continue;
     }
 
-    upcoming += 1;
+    if (status === "accepted" || status === "confirmed" || status === "on_the_way" || status === "arrived") {
+      ongoing += 1;
+      continue;
+    }
+
+    pending += 1;
   }
 
   return {
-    upcoming,
+    pending,
+    ongoing,
     completed,
     cancelled,
   };

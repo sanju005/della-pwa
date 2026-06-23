@@ -267,6 +267,18 @@ function TaskPath({
   );
 }
 
+function BookingActionBar({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="sticky bottom-[5.5rem] z-20 mt-5 rounded-[22px] border border-[#ebe3f5] bg-white/95 p-3 shadow-[0_18px_44px_rgba(15,23,42,0.12)] backdrop-blur">
+      <div className="flex gap-3">{children}</div>
+    </div>
+  );
+}
+
 function getBookingTab(
   booking: ProviderBookingItem,
 ): "ongoing" | "upcoming" | "pending" | "canceled" | "completes" {
@@ -949,6 +961,18 @@ export function BookingsScreen({
       title="Bookings"
       subtitle="Manage pending requests, active jobs, and completed provider work."
     >
+      {state.error ? (
+        <p className="rounded-[18px] border border-[#fecaca] bg-[#fff1f2] px-4 py-3 text-[13px] font-semibold text-[#dc2626]">
+          {state.error}
+        </p>
+      ) : null}
+
+      {state.notice ? (
+        <p className="rounded-[18px] border border-[#bbf7d0] bg-[#f0fdf4] px-4 py-3 text-[13px] font-semibold text-[#15803d]">
+          {state.notice}
+        </p>
+      ) : null}
+
       {selectedBooking ? (
         <section className="rounded-[26px] bg-white p-5 shadow-[0_18px_44px_rgba(15,23,42,0.08)] ring-1 ring-[#e6eee8]">
           <div className="flex items-start justify-between gap-3">
@@ -1051,7 +1075,7 @@ export function BookingsScreen({
             ) : null}
 
             {selectedBooking.bookingStatus === "pending" ? (
-              <div className="mt-5 flex gap-3">
+              <BookingActionBar>
                 <AppButton
                   className="flex-1"
                   tone="danger"
@@ -1079,11 +1103,11 @@ export function BookingsScreen({
                 >
                   Accept Request
                 </AppButton>
-              </div>
+              </BookingActionBar>
             ) : null}
 
             {selectedBooking.bookingStatus === "accepted" ? (
-              <div className="mt-5 flex gap-3">
+              <BookingActionBar>
                 <AppButton
                   className="flex-1"
                   disabled={state.actionBookingId === selectedBooking.id}
@@ -1097,11 +1121,11 @@ export function BookingsScreen({
                 >
                   Update On The Way
                 </AppButton>
-              </div>
+              </BookingActionBar>
             ) : null}
 
             {selectedBooking.bookingStatus === "on_the_way" ? (
-              <div className="mt-5 flex gap-3">
+              <BookingActionBar>
                 <AppButton
                   className="flex-1"
                   disabled={state.actionBookingId === selectedBooking.id}
@@ -1115,11 +1139,11 @@ export function BookingsScreen({
                 >
                   Update Arrived
                 </AppButton>
-              </div>
+              </BookingActionBar>
             ) : null}
 
             {selectedBooking.bookingStatus === "arrived" ? (
-              <div className="mt-5 flex gap-3">
+              <BookingActionBar>
                 <AppButton
                   className="flex-1"
                   disabled={state.actionBookingId === selectedBooking.id}
@@ -1133,11 +1157,11 @@ export function BookingsScreen({
                 >
                   Update Task Completed
                 </AppButton>
-              </div>
+              </BookingActionBar>
             ) : null}
 
             {selectedBooking.bookingStatus === "completed" ? (
-              <div className="mt-5 flex gap-3">
+              <BookingActionBar>
                 <AppButton
                   className="flex-1"
                   disabled={state.actionBookingId === selectedBooking.id}
@@ -1145,11 +1169,11 @@ export function BookingsScreen({
                 >
                   Update Paid
                 </AppButton>
-              </div>
+              </BookingActionBar>
             ) : null}
 
             {selectedBooking.bookingStatus === "paid" ? (
-              <div className="mt-5 flex gap-3">
+              <BookingActionBar>
                 <AppButton
                   className="flex-1"
                   disabled={state.actionBookingId === selectedBooking.id}
@@ -1163,7 +1187,7 @@ export function BookingsScreen({
                 >
                   Request Review
                 </AppButton>
-              </div>
+              </BookingActionBar>
             ) : null}
           </div>
         </section>

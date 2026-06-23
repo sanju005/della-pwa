@@ -353,20 +353,30 @@ export async function PATCH(
   );
 
   if (nextNotificationType && nextNotificationContent) {
-    await verified.adminClient.from("notifications").insert({
-      user_id: current.customer_id,
-      booking_id: current.id,
-      notification_type: nextNotificationType,
-      title: nextNotificationContent.title,
-      body: nextNotificationContent.body,
-    });
+    const { error: notificationError } = await verified.adminClient
+      .from("notifications")
+      .insert({
+        user_id: current.customer_id,
+        booking_id: current.id,
+        notification_type: nextNotificationType,
+        title: nextNotificationContent.title,
+        body: nextNotificationContent.body,
+      });
 
-    await sendPushNotificationToUser(current.customer_id, {
-      title: nextNotificationContent.title,
-      body: nextNotificationContent.body,
-      bookingId: current.id,
-      path: `/profile/notifications?booking=${current.id}`,
-    });
+    if (notificationError) {
+      console.error("[Provider booking update] Failed to store notification:", notificationError);
+    }
+
+    try {
+      await sendPushNotificationToUser(current.customer_id, {
+        title: nextNotificationContent.title,
+        body: nextNotificationContent.body,
+        bookingId: current.id,
+        path: `/profile/notifications?booking=${current.id}`,
+      });
+    } catch (pushError) {
+      console.error("[Provider booking update] Failed to send push notification:", pushError);
+    }
   }
 
   return NextResponse.json({ success: true });

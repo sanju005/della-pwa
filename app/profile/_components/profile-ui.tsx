@@ -139,6 +139,18 @@ export function ProfileShell({
   );
 }
 
+function StickyActionBar({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="sticky bottom-[5.5rem] z-20 mt-5 rounded-[18px] border border-[#e4ece7] bg-white/95 p-3 shadow-[0_18px_44px_rgba(15,23,42,0.12)] backdrop-blur">
+      {children}
+    </div>
+  );
+}
+
 export function ProfileOverviewScreen({ initialData }: OverviewProps) {
   const [profile, setProfile] = useState(initialData.profile);
   const [bookingSummary, setBookingSummary] = useState(initialData.bookingSummary);
@@ -242,7 +254,8 @@ export function ProfileOverviewScreen({ initialData }: OverviewProps) {
         actionHref="/profile/bookings"
         actionLabel="View All"
       >
-        <ProfileInfoRow icon={<CalendarIcon className="h-4 w-4" />} label="Upcoming Bookings" value={String(bookingSummary.upcoming)} valueTone="green" href="/profile/bookings?tab=upcoming" />
+        <ProfileInfoRow icon={<CalendarIcon className="h-4 w-4" />} label="Pending Bookings" value={String(bookingSummary.pending)} valueTone="green" href="/profile/bookings?tab=pending" />
+        <ProfileInfoRow icon={<CheckCircleIcon className="h-4 w-4" />} label="On Going Bookings" value={String(bookingSummary.ongoing)} valueTone="green" href="/profile/bookings?tab=ongoing" />
         <ProfileInfoRow icon={<CheckCircleIcon className="h-4 w-4" />} label="Completed Bookings" value={String(bookingSummary.completed)} valueTone="green" href="/profile/bookings?tab=completed" />
         <ProfileInfoRow icon={<CloseCircleIcon className="h-4 w-4" />} label="Cancelled Bookings" value={String(bookingSummary.cancelled)} valueTone="green" href="/profile/bookings?tab=cancelled" />
       </SectionCard>
@@ -665,9 +678,15 @@ export function AddressesScreen({ addresses }: AddressesProps) {
   );
 }
 
-export function BookingsScreen({ bookings, initialTab = "upcoming" }: BookingsProps) {
+export function BookingsScreen({ bookings, initialTab = "pending" }: BookingsProps) {
   const [items, setItems] = useState(bookings);
   const [activeTab, setActiveTab] = useState<BookingStatus>(initialTab);
+  const tabLabels: Record<BookingStatus, string> = {
+    pending: "Pending",
+    ongoing: "On Going",
+    completed: "Completed",
+    cancelled: "Cancel",
+  };
 
   useEffect(() => {
     let active = true;
@@ -718,7 +737,7 @@ export function BookingsScreen({ bookings, initialTab = "upcoming" }: BookingsPr
   return (
     <ProfileShell title="My Bookings" showBack backHref="/profile">
       <div className="mb-4 flex items-center justify-between border-b border-[#edf1ef] px-2 text-[14px] font-semibold text-[#6b7280]">
-        {(["upcoming", "completed", "cancelled"] as BookingStatus[]).map((tab) => (
+        {(["pending", "ongoing", "completed", "cancelled"] as BookingStatus[]).map((tab) => (
           <button
             key={tab}
             type="button"
@@ -729,7 +748,7 @@ export function BookingsScreen({ bookings, initialTab = "upcoming" }: BookingsPr
                 : "border-transparent"
             }`}
           >
-            {tab}
+            {tabLabels[tab]}
           </button>
         ))}
       </div>
@@ -737,7 +756,7 @@ export function BookingsScreen({ bookings, initialTab = "upcoming" }: BookingsPr
       <div className="space-y-4">
         {filtered.length === 0 ? (
           <SharedEmptyState
-            title={`No ${activeTab} bookings yet`}
+            title={`No ${tabLabels[activeTab]} bookings yet`}
             description="When you create or finish bookings, they will appear here with live status updates."
             action={<AppButton href="/providers">Find Providers</AppButton>}
           />
@@ -772,14 +791,14 @@ export function BookingsScreen({ bookings, initialTab = "upcoming" }: BookingsPr
               </>
             }
             secondaryAction={
-              booking.status === "upcoming" ? (
+              booking.status === "ongoing" ? (
                 <AppButton href="/profile/messages" tone="secondary" className="flex-1">
                   Message
                 </AppButton>
               ) : undefined
             }
             primaryAction={
-              booking.status === "upcoming" ? (
+              booking.status === "pending" || booking.status === "ongoing" ? (
                 <AppButton href={`/profile/bookings/${booking.id}`} className="flex-1">
                   See Details
                 </AppButton>
@@ -793,10 +812,7 @@ export function BookingsScreen({ bookings, initialTab = "upcoming" }: BookingsPr
         ))}
       </div>
 
-      <AppButton
-        type="button"
-        className="mt-5 w-full"
-      >
+      <AppButton href="/profile/bookings" className="mt-5 w-full">
         View All Bookings
       </AppButton>
     </ProfileShell>
@@ -1059,14 +1075,14 @@ export function BookingDetailScreen({ booking }: BookingDetailProps) {
       </SectionCard>
 
       {booking.status === "completed" ? (
-        <div className="mt-5">
+        <StickyActionBar>
           <Link
             href={`/profile/bookings/${booking.id}/review`}
             className="inline-flex h-11 w-full items-center justify-center rounded-[12px] bg-[#16a34a] text-[15px] font-extrabold text-white shadow-[0_16px_30px_rgba(22,163,74,0.22)]"
           >
             Review This Service
           </Link>
-        </div>
+        </StickyActionBar>
       ) : null}
     </ProfileShell>
   );
