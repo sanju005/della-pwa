@@ -959,8 +959,30 @@ export function BookingsScreen({
   return (
     <PageShell
       title="Bookings"
-      subtitle="Manage pending requests, active jobs, and completed provider work."
+      subtitle="Manage incoming requests, task progress, and completed provider work."
     >
+      <section className="rounded-[26px] border border-[#eee5f7] bg-white p-5 shadow-[0_18px_44px_rgba(86,38,135,0.08)]">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-[12px] font-extrabold uppercase tracking-[0.14em] text-[#8E5EB5]">
+              Provider App
+            </p>
+            <h2 className="mt-2 text-[1.35rem] font-black tracking-[-0.05em] text-[#1f1630]">
+              Booking Journey
+            </h2>
+            <p className="mt-1 text-[13px] leading-6 text-[#7b728a]">
+              Accept bookings, view progress, and keep customer updates live.
+            </p>
+          </div>
+          <div className="rounded-[18px] bg-[#f7f1fc] px-4 py-3 text-center">
+            <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#8E5EB5]">Requests</p>
+            <p className="mt-1 text-[1.5rem] font-black text-[#1f1630]">
+              {state.bookings.filter((booking) => booking.bookingStatus === "pending").length}
+            </p>
+          </div>
+        </div>
+      </section>
+
       {state.error ? (
         <p className="rounded-[18px] border border-[#fecaca] bg-[#fff1f2] px-4 py-3 text-[13px] font-semibold text-[#dc2626]">
           {state.error}
@@ -974,10 +996,10 @@ export function BookingsScreen({
       ) : null}
 
       {selectedBooking ? (
-        <section className="rounded-[26px] bg-white p-5 shadow-[0_18px_44px_rgba(15,23,42,0.08)] ring-1 ring-[#e6eee8]">
+        <section className="rounded-[26px] border border-[#eee5f7] bg-white p-5 shadow-[0_18px_44px_rgba(86,38,135,0.08)]">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-[#16a34a]">
+              <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-[#8E5EB5]">
                 Booking Request
               </p>
               <h2 className="mt-2 text-[1.45rem] font-black tracking-[-0.05em] text-[#0f172a]">
@@ -997,7 +1019,7 @@ export function BookingsScreen({
             </button>
           </div>
 
-          <div className="mt-4 rounded-[20px] border border-[#e7eee8] bg-[#fbfffc] p-4">
+          <div className="mt-4 rounded-[20px] border border-[#eee5f7] bg-[#fcfaff] p-4">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-[15px] font-black text-[#0f172a]">{selectedBooking.customerName}</p>
@@ -1193,7 +1215,7 @@ export function BookingsScreen({
         </section>
       ) : null}
 
-      <section className="rounded-[26px] bg-white p-5 shadow-[0_18px_44px_rgba(15,23,42,0.08)] ring-1 ring-[#e6eee8]">
+      <section className="rounded-[26px] border border-[#eee5f7] bg-white p-5 shadow-[0_18px_44px_rgba(86,38,135,0.08)]">
         <div className="flex flex-wrap gap-2">
           {[
             ["ongoing", "Ongoing"],
@@ -1207,7 +1229,7 @@ export function BookingsScreen({
               type="button"
               onClick={() => setTab(value as typeof tab)}
               className={`rounded-full px-4 py-2 text-[12px] font-bold ${
-                tab === value ? "bg-[#8E5EB5] text-white" : "bg-[#f3f6f4] text-[#64748b]"
+                tab === value ? "bg-[#8E5EB5] text-white" : "bg-[#f7f1fc] text-[#7b728a]"
               }`}
             >
               {label}
@@ -1226,7 +1248,7 @@ export function BookingsScreen({
             items.map((booking) => (
               <div
                 key={booking.id}
-                className="rounded-[22px] border border-[#e7eee8] bg-[#fbfffc] p-4"
+                className="rounded-[22px] border border-[#eee5f7] bg-[#fcfaff] p-4"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div>
@@ -1250,7 +1272,7 @@ export function BookingsScreen({
                   </div>
                   {booking.additionalCharge > 0 ? (
                     <div className="flex items-center gap-2">
-                      <Wallet className="h-4 w-4 text-[#16a34a]" />
+                    <Wallet className="h-4 w-4 text-[#8E5EB5]" />
                       <span>
                         Additional charge: {formatCurrency(booking.additionalCharge)}
                         {booking.additionalChargeDescription
@@ -1772,10 +1794,10 @@ export function EarningsScreen() {
     .reduce((sum, booking) => sum + booking.quotedAmount, 0);
 
   return (
-    <PageShell title="Earnings" subtitle="Wallet balance, earnings summary, and transaction history.">
-      <section className="rounded-[26px] bg-[#16a34a] p-5 text-white shadow-[0_22px_52px_rgba(22,163,74,0.22)]">
+    <PageShell title="Payment / Earnings" subtitle="Live provider earnings breakdown and payment release summary.">
+      <section className="rounded-[26px] bg-[linear-gradient(135deg,#8E5EB5_0%,#6F3EA1_100%)] p-5 text-white shadow-[0_22px_52px_rgba(142,94,181,0.28)]">
         <p className="text-[12px] font-semibold uppercase tracking-[0.14em] text-white/80">
-          Wallet Balance
+          You Will Receive
         </p>
         <p className="mt-2 text-[2rem] font-black tracking-[-0.06em]">{formatCurrency(total)}</p>
         <div className="mt-4">
@@ -1796,10 +1818,10 @@ export function EarningsScreen() {
         <MetricCard label="This Month" value={formatCurrency(thisMonth)} meta="Current month" accent="text-[#0f172a]" />
       </section>
 
-      <section className="rounded-[26px] bg-white p-5 shadow-[0_18px_44px_rgba(15,23,42,0.08)] ring-1 ring-[#e6eee8]">
+      <section className="rounded-[26px] border border-[#eee5f7] bg-white p-5 shadow-[0_18px_44px_rgba(86,38,135,0.08)]">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <h2 className="text-[17px] font-black text-[#0f172a]">Transactions</h2>
+            <h2 className="text-[17px] font-black text-[#0f172a]">Earnings Breakdown</h2>
             <p className="mt-1 text-[13px] text-[#64748b]">Derived from completed and paid bookings.</p>
           </div>
         </div>
@@ -1814,15 +1836,30 @@ export function EarningsScreen() {
             completed.slice(0, 8).map((booking) => (
               <div
                 key={booking.id}
-                className="flex items-center justify-between gap-3 rounded-[20px] border border-[#e7eee8] bg-[#fbfffc] px-4 py-3"
+                className="rounded-[20px] border border-[#eee5f7] bg-[#fcfaff] px-4 py-4"
               >
-                <div>
-                  <p className="text-[14px] font-black text-[#0f172a]">{booking.serviceLabel}</p>
-                  <p className="mt-1 text-[12px] text-[#64748b]">{formatDateLabel(booking.scheduledDate)}</p>
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-[14px] font-black text-[#0f172a]">{booking.serviceLabel}</p>
+                    <p className="mt-1 text-[12px] text-[#64748b]">{formatDateLabel(booking.scheduledDate)}</p>
+                  </div>
+                  <span className="rounded-full bg-[#eadcf7] px-3 py-1 text-[11px] font-bold text-[#8E5EB5]">
+                    {booking.statusLabel}
+                  </span>
                 </div>
-                <div className="text-right">
-                  <p className="text-[13px] font-black text-[#16a34a]">+{formatCurrency(booking.quotedAmount)}</p>
-                  <p className="mt-1 text-[11px] text-[#94a3b8]">{booking.statusLabel}</p>
+                <div className="mt-4 grid grid-cols-2 gap-3 text-[12px] text-[#544b66]">
+                  <div className="rounded-[14px] bg-white px-3 py-3 ring-1 ring-[#f0e8f8]">
+                    <p className="font-bold text-[#7b728a]">Service Amount</p>
+                    <p className="mt-1 text-[14px] font-black text-[#1f1630]">{formatCurrency(booking.baseAmount || booking.quotedAmount)}</p>
+                  </div>
+                  <div className="rounded-[14px] bg-white px-3 py-3 ring-1 ring-[#f0e8f8]">
+                    <p className="font-bold text-[#7b728a]">Additional Charge</p>
+                    <p className="mt-1 text-[14px] font-black text-[#1f1630]">{formatCurrency(booking.additionalCharge || 0)}</p>
+                  </div>
+                </div>
+                <div className="mt-4 rounded-[16px] bg-[#f7f1fc] px-4 py-3">
+                  <p className="text-[12px] font-bold uppercase tracking-[0.12em] text-[#8E5EB5]">Net Amount</p>
+                  <p className="mt-1 text-[18px] font-black text-[#6F3EA1]">{formatCurrency(booking.quotedAmount)}</p>
                 </div>
               </div>
             ))
@@ -1851,7 +1888,7 @@ export function TasksScreen() {
   );
 
   return (
-    <PageShell title="Tasks" subtitle="Your live ongoing provider tasks and quick actions.">
+    <PageShell title="Task Progress" subtitle="Follow the live provider task path and update each step in order.">
       <section className="grid grid-cols-2 gap-3">
         <MetricCard
           label="Ongoing"
@@ -1867,7 +1904,7 @@ export function TasksScreen() {
         />
       </section>
 
-      <section className="rounded-[26px] bg-white p-5 shadow-[0_18px_44px_rgba(15,23,42,0.08)] ring-1 ring-[#e6eee8]">
+      <section className="rounded-[26px] border border-[#eee5f7] bg-white p-5 shadow-[0_18px_44px_rgba(86,38,135,0.08)]">
         <div className="flex items-center justify-between gap-3">
           <div>
             <h2 className="text-[17px] font-black text-[#0f172a]">Ongoing Tasks</h2>
@@ -1875,7 +1912,7 @@ export function TasksScreen() {
               These are the jobs you should work on right now.
             </p>
           </div>
-          <Link href="/provider/bookings" className="text-[13px] font-bold text-[#16a34a]">
+          <Link href="/provider/bookings" className="text-[13px] font-bold text-[#8E5EB5]">
             All bookings
           </Link>
         </div>
@@ -1890,7 +1927,7 @@ export function TasksScreen() {
             ongoing.map((booking) => (
               <div
                 key={booking.id}
-                className="rounded-[20px] border border-[#e7eee8] bg-[#fbfffc] p-4"
+                className="rounded-[20px] border border-[#eee5f7] bg-[#fcfaff] p-4"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div>
@@ -1901,11 +1938,11 @@ export function TasksScreen() {
                 </div>
                 <div className="mt-3 space-y-2 text-[13px] text-[#475569]">
                   <div className="flex items-center gap-2">
-                    <CalendarDays className="h-4 w-4 text-[#16a34a]" />
+                    <CalendarDays className="h-4 w-4 text-[#8E5EB5]" />
                     <span>{booking.schedule}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4 text-[#16a34a]" />
+                    <MapPin className="h-4 w-4 text-[#8E5EB5]" />
                     <span>{booking.location}</span>
                   </div>
                 </div>
@@ -2390,12 +2427,12 @@ export function ReviewsScreen() {
   );
 
   return (
-    <PageShell title="Reviews" subtitle="Provider rating overview and recent completed job feedback area.">
-      <section className="rounded-[26px] bg-white p-5 text-center shadow-[0_18px_44px_rgba(15,23,42,0.08)] ring-1 ring-[#e6eee8]">
+    <PageShell title="Reviews" subtitle="Customer ratings, review feed, and overall provider score.">
+      <section className="rounded-[26px] border border-[#eee5f7] bg-white p-5 text-center shadow-[0_18px_44px_rgba(86,38,135,0.08)]">
         <p className="text-[2.5rem] font-black tracking-[-0.06em] text-[#0f172a]">
           {data.averageRating > 0 ? data.averageRating.toFixed(1) : "0.0"}
         </p>
-        <div className="mt-2 flex items-center justify-center gap-1 text-[#f5b301]">
+        <div className="mt-2 flex items-center justify-center gap-1 text-[#8E5EB5]">
           {Array.from({ length: 5 }).map((_, index) => (
             <Star key={index} className="h-5 w-5 fill-current" />
           ))}
@@ -2407,7 +2444,7 @@ export function ReviewsScreen() {
         </div>
       </section>
 
-      <section className="rounded-[26px] bg-white p-5 shadow-[0_18px_44px_rgba(15,23,42,0.08)] ring-1 ring-[#e6eee8]">
+      <section className="rounded-[26px] border border-[#eee5f7] bg-white p-5 shadow-[0_18px_44px_rgba(86,38,135,0.08)]">
         <h2 className="text-[17px] font-black text-[#0f172a]">Review Feed</h2>
         <p className="mt-1 text-[13px] text-[#64748b]">
           Live customer feedback from your Supabase review records.
@@ -2424,14 +2461,14 @@ export function ReviewsScreen() {
               {state.reviews.map((review) => (
                 <div
                   key={review.id}
-                  className="rounded-[20px] border border-[#e7eee8] bg-[#fbfffc] p-4"
+                  className="rounded-[20px] border border-[#eee5f7] bg-[#fcfaff] p-4"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="text-[14px] font-black text-[#0f172a]">{review.customerName}</p>
                       <p className="mt-1 text-[12px] text-[#64748b]">{review.createdLabel}</p>
                     </div>
-                    <div className="flex items-center gap-1 text-[#f5b301]">
+                    <div className="flex items-center gap-1 text-[#8E5EB5]">
                       {Array.from({ length: review.rating }).map((_, index) => (
                         <Star key={`${review.id}-${index}`} className="h-4 w-4 fill-current" />
                       ))}

@@ -14,6 +14,8 @@ type ReviewPayload = {
   rating?: number;
   comment?: string;
   photos?: string[];
+  tags?: string[];
+  recommend?: boolean;
 };
 
 type ProfileRow = {
@@ -120,6 +122,14 @@ function isMissingReviewedAtColumnError(message?: string | null) {
   return normalized.includes("column") && normalized.includes("reviewed_at");
 }
 
+function isMissingReviewMetadataColumnError(message?: string | null) {
+  const normalized = message?.trim().toLowerCase() ?? "";
+  return normalized.includes("column") && (
+    normalized.includes("tags") ||
+    normalized.includes("recommend")
+  );
+}
+
 export async function POST(
   request: Request,
   context: { params: Promise<{ id: string }> },
@@ -134,6 +144,8 @@ export async function POST(
   const payload = (await request.json()) as ReviewPayload;
   const rating = Math.max(1, Math.min(5, Math.round(Number(payload.rating ?? 0))));
   const comment = payload.comment?.trim() ?? "";
+  const tags = (payload.tags ?? []).map((tag) => tag.trim()).filter(Boolean);
+  const recommend = payload.recommend !== false;
 
   if (!rating || !Number.isFinite(rating)) {
     return NextResponse.json(
@@ -183,13 +195,30 @@ export async function POST(
     customer_id: verified.profile.id,
     rating,
     comment,
+    tags,
+    recommend,
   };
 
   if (existingReview?.id) {
-    const { error: updateReviewError } = await verified.adminClient
+    let { error: updateReviewError } = await verified.adminClient
       .from("reviews")
       .update(reviewPayload)
       .eq("id", existingReview.id);
+
+    if (updateReviewError && isMissingReviewMetadataColumnError(updateReviewError.message)) {
+      const fallbackWrite = await verified.adminClient
+        .from("reviews")
+        .update({
+          booking_id: bookingRow.id,
+          provider_id: bookingRow.provider_id,
+          customer_id: verified.profile.id,
+          rating,
+          comment,
+        })
+        .eq("id", existingReview.id);
+
+      updateReviewError = fallbackWrite.error;
+    }
 
     if (updateReviewError) {
       return NextResponse.json(
@@ -198,9 +227,23 @@ export async function POST(
       );
     }
   } else {
-    const { error: insertReviewError } = await verified.adminClient
+    let { error: insertReviewError } = await verified.adminClient
       .from("reviews")
       .insert(reviewPayload);
+
+    if (insertReviewError && isMissingReviewMetadataColumnError(insertReviewError.message)) {
+      const fallbackWrite = await verified.adminClient
+        .from("reviews")
+        .insert({
+          booking_id: bookingRow.id,
+          provider_id: bookingRow.provider_id,
+          customer_id: verified.profile.id,
+          rating,
+          comment,
+        });
+
+      insertReviewError = fallbackWrite.error;
+    }
 
     if (insertReviewError) {
       return NextResponse.json(

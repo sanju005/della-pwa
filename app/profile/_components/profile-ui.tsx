@@ -736,16 +736,38 @@ export function BookingsScreen({ bookings, initialTab = "pending" }: BookingsPro
 
   return (
     <ProfileShell title="My Bookings" showBack backHref="/profile">
-      <div className="mb-4 flex items-center justify-between border-b border-[#edf1ef] px-2 text-[14px] font-semibold text-[#6b7280]">
+      <section className="rounded-[24px] border border-[#eee5f7] bg-white p-4 shadow-[0_18px_40px_rgba(86,38,135,0.08)]">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-[12px] font-extrabold uppercase tracking-[0.14em] text-[#8E5EB5]">
+              Booking Details
+            </p>
+            <h2 className="mt-2 text-[1.2rem] font-black tracking-[-0.05em] text-[#1f1630]">
+              My Bookings
+            </h2>
+            <p className="mt-1 text-[13px] leading-6 text-[#7b728a]">
+              Track live provider progress, payment state, and review status.
+            </p>
+          </div>
+          <div className="rounded-[16px] bg-[#f7f1fc] px-3 py-2 text-right">
+            <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#8E5EB5]">
+              Live
+            </p>
+            <p className="mt-1 text-[18px] font-black text-[#1f1630]">{filtered.length}</p>
+          </div>
+        </div>
+      </section>
+
+      <div className="mt-4 flex items-center justify-between rounded-[18px] bg-[#f7f1fc] p-1.5 text-[13px] font-semibold text-[#7b728a]">
         {(["pending", "ongoing", "completed", "cancelled"] as BookingStatus[]).map((tab) => (
           <button
             key={tab}
             type="button"
             onClick={() => setActiveTab(tab)}
-            className={`border-b-2 px-2 pb-3 pt-1 capitalize ${
+            className={`flex-1 rounded-[14px] px-2 py-2.5 ${
               activeTab === tab
-                ? "border-[#8E5EB5] text-[#8E5EB5]"
-                : "border-transparent"
+                ? "bg-white text-[#8E5EB5] shadow-[0_8px_18px_rgba(142,94,181,0.16)]"
+                : "text-[#7b728a]"
             }`}
           >
             {tabLabels[tab]}
@@ -753,7 +775,7 @@ export function BookingsScreen({ bookings, initialTab = "pending" }: BookingsPro
         ))}
       </div>
 
-      <div className="space-y-4">
+      <div className="mt-4 space-y-4">
         {filtered.length === 0 ? (
           <SharedEmptyState
             title={`No ${tabLabels[activeTab]} bookings yet`}
@@ -762,59 +784,79 @@ export function BookingsScreen({ bookings, initialTab = "pending" }: BookingsPro
           />
         ) : null}
         {filtered.map((booking) => (
-          <SharedBookingCard
+          <div
             key={booking.id}
-            title={booking.service}
-            provider={booking.provider}
-            schedule={booking.schedule}
-            location={booking.location}
-            statusLabel={booking.statusLabel}
-            statusTone={bookingTone(booking)}
-            image={<BookingThumb kind={booking.thumbnail} imageSrc={booking.imageSrc} service={booking.service} />}
-            notes={
-              <>
-                {booking.activitySteps?.length ? (
-                  <CompactTaskPath steps={booking.activitySteps} />
-                ) : null}
-                {booking.status === "cancelled" ? (
-                  <div className="space-y-1.5 rounded-[14px] bg-[#f8fafc] px-3 py-2.5 text-[12px] leading-5 text-[#475569]">
-                    <p>
-                      <span className="font-extrabold text-[#111827]">Cancelled by:</span>{" "}
-                      {booking.cancelledBy ?? "Not specified"}
-                    </p>
-                    <p>
-                      <span className="font-extrabold text-[#111827]">Reason:</span>{" "}
-                      {booking.cancellationReason ?? "No reason shared."}
-                    </p>
+            className="rounded-[24px] border border-[#eee5f7] bg-white p-4 shadow-[0_18px_40px_rgba(86,38,135,0.08)]"
+          >
+            <div className="flex gap-3">
+              <BookingThumb kind={booking.thumbnail} imageSrc={booking.imageSrc} service={booking.service} />
+              <div className="min-w-0 flex-1">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-[16px] font-black text-[#1f1630]">{booking.provider}</p>
+                    <p className="mt-1 text-[13px] font-semibold text-[#7b728a]">{booking.service}</p>
                   </div>
-                ) : null}
-              </>
-            }
-            secondaryAction={
-              booking.status === "ongoing" ? (
-                <AppButton href="/profile/messages" tone="secondary" className="flex-1">
-                  Message
-                </AppButton>
-              ) : undefined
-            }
-            primaryAction={
-              booking.status === "pending" || booking.status === "ongoing" ? (
-                <AppButton href={`/profile/bookings/${booking.id}`} className="flex-1">
-                  See Details
-                </AppButton>
-              ) : booking.status === "completed" ? (
-                <AppButton href={`/profile/bookings/${booking.id}/review`}>
-                  Review
-                </AppButton>
-              ) : undefined
-            }
-          />
+                  <SharedStatusBadge label={booking.statusLabel} tone={bookingTone(booking)} />
+                </div>
+                <div className="mt-3 space-y-2 text-[13px] text-[#544b66]">
+                  <div className="flex items-start gap-2">
+                    <CalendarIcon className="mt-0.5 h-4 w-4 text-[#8E5EB5]" />
+                    <span>{booking.schedule}</span>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <PinIcon className="mt-0.5 h-4 w-4 text-[#8E5EB5]" />
+                    <span>{booking.location}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <WalletIcon className="h-4 w-4 text-[#8E5EB5]" />
+                    <span className="font-bold text-[#1f1630]">RM{booking.paymentAmount ?? 0}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4 rounded-[18px] border border-[#f0e8f8] bg-[#fcfaff] px-4 py-3">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-[12px] font-extrabold uppercase tracking-[0.12em] text-[#8E5EB5]">
+                  Booking ID
+                </p>
+                <p className="text-[12px] font-semibold text-[#6d6480]">{booking.id}</p>
+              </div>
+              {booking.activitySteps?.length ? (
+                <div className="mt-3">
+                  <CompactTaskPath steps={booking.activitySteps} />
+                </div>
+              ) : null}
+              {booking.status === "cancelled" ? (
+                <div className="mt-3 space-y-1.5 rounded-[14px] bg-white px-3 py-2.5 text-[12px] leading-5 text-[#544b66] ring-1 ring-[#f0e8f8]">
+                  <p>
+                    <span className="font-extrabold text-[#1f1630]">Cancelled by:</span>{" "}
+                    {booking.cancelledBy ?? "Not specified"}
+                  </p>
+                  <p>
+                    <span className="font-extrabold text-[#1f1630]">Reason:</span>{" "}
+                    {booking.cancellationReason ?? "No reason shared."}
+                  </p>
+                </div>
+              ) : null}
+            </div>
+
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              <AppButton href={`/profile/bookings/${booking.id}`} tone="secondary" className="w-full">
+                Track Task
+              </AppButton>
+              <AppButton href="/profile/messages" className="w-full">
+                {booking.status === "completed" ? "See Details" : "Message"}
+              </AppButton>
+            </div>
+            <div className="mt-3">
+              <AppButton href={`/profile/bookings/${booking.id}`} tone="ghost" className="w-full">
+                {booking.status === "completed" ? "See Details" : "Open Booking"}
+              </AppButton>
+            </div>
+          </div>
         ))}
       </div>
-
-      <AppButton href="/profile/bookings" className="mt-5 w-full">
-        View All Bookings
-      </AppButton>
     </ProfileShell>
   );
 }
@@ -825,7 +867,7 @@ function CompactTaskPath({
   steps: Array<{ label: string; status: "done" | "current" | "pending" }>;
 }) {
   return (
-    <div className="rounded-[14px] bg-[#f8fafc] px-3 py-3">
+    <div className="rounded-[14px] bg-transparent">
       <p className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-[#8E5EB5]">
         Task Path
       </p>
@@ -835,10 +877,10 @@ function CompactTaskPath({
             <span
               className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold ${
                 step.status === "done"
-                  ? "bg-[#dcfce7] text-[#15803d]"
+                  ? "bg-[#eadcf7] text-[#7f47a7]"
                   : step.status === "current"
                     ? "bg-[#f3ebfc] text-[#8E5EB5]"
-                    : "bg-white text-[#94a3b8] ring-1 ring-[#e5e7eb]"
+                    : "bg-white text-[#94a3b8] ring-1 ring-[#ebe3f5]"
               }`}
             >
               {step.label}
@@ -932,30 +974,36 @@ export function SettingsScreen({ groups }: SettingsProps) {
 export function BookingDetailScreen({ booking }: BookingDetailProps) {
   return (
     <ProfileShell title="Booking Details" showBack backHref="/profile/bookings">
-      <div className="rounded-[18px] border border-[#e4ece7] bg-white p-4 shadow-[0_10px_26px_rgba(15,23,42,0.04)]">
+      <div className="rounded-[24px] border border-[#eee5f7] bg-white p-4 shadow-[0_18px_40px_rgba(86,38,135,0.08)]">
         <div className="flex gap-4">
           <BookingThumb kind={booking.thumbnail} imageSrc={booking.imageSrc} service={booking.service} />
           <div className="min-w-0 flex-1">
             <h2 className="text-[18px] font-extrabold text-[#111827]">
-              {booking.service}
+              {booking.provider}
             </h2>
-            <p className="mt-1 text-[14px] text-[#4b5563]">{booking.provider}</p>
+            <p className="mt-1 text-[14px] text-[#6d6480]">{booking.service}</p>
             <span className={`mt-3 inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold ${badgeToneClass(booking.badgeTone)}`}>
               {booking.statusLabel}
             </span>
+            <p className="mt-3 text-[12px] font-semibold text-[#8E5EB5]">Booking ID {booking.id}</p>
           </div>
         </div>
       </div>
 
-      <SectionCard title="Schedule">
+      <SectionCard title="Booking Summary">
         <ProfileInfoRow
           icon={<CalendarIcon className="h-4 w-4" />}
           label="Date & Time"
           value={booking.schedule}
         />
+        <ProfileInfoRow
+          icon={<PinIcon className="h-4 w-4" />}
+          label="Location"
+          value={booking.location}
+        />
       </SectionCard>
 
-      <SectionCard title="Booking Activity">
+      <SectionCard title="Task Progress">
         <div className="space-y-4">
           {(booking.activitySteps ?? []).map((step, index, steps) => (
             <div key={step.label} className="flex gap-3">
@@ -963,9 +1011,9 @@ export function BookingDetailScreen({ booking }: BookingDetailProps) {
                 <span
                   className={`inline-flex h-6 w-6 items-center justify-center rounded-full border-2 ${
                     step.status === "done"
-                      ? "border-[#16a34a] bg-[#16a34a] text-white"
+                      ? "border-[#8E5EB5] bg-[#8E5EB5] text-white"
                       : step.status === "current"
-                        ? "border-[#16a34a] bg-white text-[#16a34a]"
+                        ? "border-[#8E5EB5] bg-white text-[#8E5EB5]"
                         : "border-[#d9e2dd] bg-white text-[#98a2b3]"
                   }`}
                 >
@@ -978,7 +1026,7 @@ export function BookingDetailScreen({ booking }: BookingDetailProps) {
                 {index < steps.length - 1 ? (
                   <span
                     className={`mt-1 h-8 w-[2px] ${
-                      step.status === "done" ? "bg-[#16a34a]" : "bg-[#e5e7eb]"
+                      step.status === "done" ? "bg-[#8E5EB5]" : "bg-[#e5e7eb]"
                     }`}
                   />
                 ) : null}
@@ -1004,17 +1052,17 @@ export function BookingDetailScreen({ booking }: BookingDetailProps) {
         </div>
       </SectionCard>
 
-      <SectionCard title="Payment">
+      <SectionCard title="Payment Summary">
         <ProfileInfoRow
           icon={<WalletIcon className="h-4 w-4" />}
           label="Final Amount"
           value={`RM${booking.paymentAmount ?? 0}`}
-          valueTone="green"
+          valueTone="purple"
         />
         {typeof booking.baseAmount === "number" ? (
           <ProfileInfoRow
             icon={<WalletIcon className="h-4 w-4" />}
-            label="Base Amount"
+            label="Service Amount"
             value={`RM${booking.baseAmount}`}
           />
         ) : null}
@@ -1078,7 +1126,7 @@ export function BookingDetailScreen({ booking }: BookingDetailProps) {
         <StickyActionBar>
           <Link
             href={`/profile/bookings/${booking.id}/review`}
-            className="inline-flex h-11 w-full items-center justify-center rounded-[12px] bg-[#16a34a] text-[15px] font-extrabold text-white shadow-[0_16px_30px_rgba(22,163,74,0.22)]"
+            className="inline-flex h-11 w-full items-center justify-center rounded-[12px] bg-[#8E5EB5] text-[15px] font-extrabold text-white shadow-[0_16px_30px_rgba(142,94,181,0.24)]"
           >
             Review This Service
           </Link>
@@ -1095,7 +1143,10 @@ export function BookingReviewScreen({ booking }: BookingReviewProps) {
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [recommend, setRecommend] = useState(true);
   const router = useRouter();
+  const reviewTags = ["Punctual", "Professional", "Friendly", "Quality", "Clean & Tidy"];
 
   async function submitReview() {
     const client = getSupabaseClient();
@@ -1132,6 +1183,8 @@ export function BookingReviewScreen({ booking }: BookingReviewProps) {
         rating,
         comment,
         photos,
+        tags: selectedTags,
+        recommend,
       }),
     }).catch(() => null);
 
@@ -1161,44 +1214,73 @@ export function BookingReviewScreen({ booking }: BookingReviewProps) {
   }
 
   return (
-    <ProfileShell title="Write Review" showBack backHref={`/profile/bookings/${booking.id}`}>
-      <div className="rounded-[18px] border border-[#e4ece7] bg-white p-4 shadow-[0_10px_26px_rgba(15,23,42,0.04)]">
+    <ProfileShell title="Review" showBack backHref={`/profile/bookings/${booking.id}`}>
+      <div className="rounded-[24px] border border-[#eee5f7] bg-white p-4 text-center shadow-[0_18px_40px_rgba(86,38,135,0.08)]">
         <div className="flex gap-4">
           <BookingThumb kind={booking.thumbnail} imageSrc={booking.imageSrc} service={booking.service} />
           <div className="min-w-0 flex-1">
             <h2 className="text-[17px] font-extrabold text-[#111827]">
               {booking.provider}
             </h2>
-            <p className="mt-1 text-[14px] text-[#16a34a]">{booking.service}</p>
+            <p className="mt-1 text-[14px] text-[#8E5EB5]">{booking.service}</p>
+            <p className="mt-3 text-[13px] leading-6 text-[#6d6480]">
+              How was your experience with {booking.provider}?
+            </p>
           </div>
         </div>
       </div>
 
       <SectionCard title="Rate Provider">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center justify-center gap-2">
           {[1, 2, 3, 4, 5].map((value) => (
             <button
               key={value}
               type="button"
               onClick={() => setRating(value)}
-              className="text-[#f59e0b]"
+              className="text-[#8E5EB5]"
               aria-label={`Rate ${value} stars`}
             >
               <StarIcon
                 className={`h-8 w-8 ${
-                  value <= rating ? "fill-current text-[#f59e0b]" : "text-[#d0d5dd]"
+                  value <= rating ? "fill-current text-[#8E5EB5]" : "text-[#d0d5dd]"
                 }`}
               />
             </button>
           ))}
         </div>
-        <p className="mt-3 text-[13px] text-[#6b7280]">
+        <p className="mt-3 text-center text-[13px] text-[#6b7280]">
           {rating > 0 ? `You selected ${rating} star${rating > 1 ? "s" : ""}.` : "Tap a star to rate this service."}
         </p>
       </SectionCard>
 
+      <SectionCard title="What did you like?">
+        <div className="flex flex-wrap gap-2">
+          {reviewTags.map((tag) => {
+            const active = selectedTags.includes(tag);
+            return (
+              <button
+                key={tag}
+                type="button"
+                onClick={() =>
+                  setSelectedTags((current) =>
+                    active ? current.filter((item) => item !== tag) : [...current, tag],
+                  )
+                }
+                className={`rounded-full px-3 py-2 text-[12px] font-bold ${
+                  active
+                    ? "bg-[#8E5EB5] text-white"
+                    : "bg-[#f7f1fc] text-[#8E5EB5] ring-1 ring-[#e8daf7]"
+                }`}
+              >
+                {tag}
+              </button>
+            );
+          })}
+        </div>
+      </SectionCard>
+
       <SectionCard title="Add Photos">
-        <label className="inline-flex h-11 w-full cursor-pointer items-center justify-center rounded-[12px] border border-dashed border-[#16a34a] bg-[#fbfffc] text-[14px] font-extrabold text-[#16a34a]">
+        <label className="inline-flex h-11 w-full cursor-pointer items-center justify-center rounded-[12px] border border-dashed border-[#8E5EB5] bg-[#fcfaff] text-[14px] font-extrabold text-[#8E5EB5]">
           Upload Review Photos
           <input
             type="file"
@@ -1215,7 +1297,7 @@ export function BookingReviewScreen({ booking }: BookingReviewProps) {
           {(photos.length > 0 ? photos : ["Food setup", "Work result", "Provider arrival"]).map((photo, index) => (
             <div
               key={`${photo}-${index}`}
-              className="flex aspect-square items-center justify-center rounded-[14px] border border-[#e4ece7] bg-[#f8fcf9] px-2 text-center text-[12px] font-semibold text-[#4b5563]"
+              className="flex aspect-square items-center justify-center rounded-[14px] border border-[#eee5f7] bg-[#fcfaff] px-2 text-center text-[12px] font-semibold text-[#6d6480]"
             >
               {photo}
             </div>
@@ -1230,6 +1312,26 @@ export function BookingReviewScreen({ booking }: BookingReviewProps) {
           placeholder="Share your experience with this service provider"
           className="min-h-[8rem] w-full rounded-[14px] border border-[#d9e2dd] px-4 py-3 text-[14px] text-[#111827] outline-none"
         />
+      </SectionCard>
+
+      <SectionCard title="Recommend Provider">
+        <div className="flex items-center justify-between gap-3 rounded-[16px] border border-[#eee5f7] bg-[#fcfaff] px-4 py-3">
+          <div>
+            <p className="text-[14px] font-bold text-[#1f1630]">Recommend this service</p>
+            <p className="mt-1 text-[12px] text-[#7b728a]">Help other users choose with confidence.</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setRecommend((current) => !current)}
+            className={`relative h-8 w-14 rounded-full ${recommend ? "bg-[#8E5EB5]" : "bg-[#d7d0e3]"}`}
+          >
+            <span
+              className={`absolute top-1 h-6 w-6 rounded-full bg-white transition ${
+                recommend ? "left-7" : "left-1"
+              }`}
+            />
+          </button>
+        </div>
       </SectionCard>
 
       {submitted ? (
@@ -1248,7 +1350,7 @@ export function BookingReviewScreen({ booking }: BookingReviewProps) {
         type="button"
         onClick={() => void submitReview()}
         disabled={submitting}
-        className="mt-5 inline-flex h-11 w-full items-center justify-center rounded-[12px] bg-[#16a34a] text-[15px] font-extrabold text-white shadow-[0_16px_30px_rgba(22,163,74,0.22)] disabled:opacity-60"
+        className="mt-5 inline-flex h-11 w-full items-center justify-center rounded-[12px] bg-[#8E5EB5] text-[15px] font-extrabold text-white shadow-[0_16px_30px_rgba(142,94,181,0.24)] disabled:opacity-60"
       >
         {submitting ? "Submitting..." : "Submit Review"}
       </button>
@@ -1282,21 +1384,21 @@ export function PaymentsScreen({ payments }: PaymentsProps) {
   const totalPaid = filteredPayments.reduce((sum, payment) => sum + payment.amount, 0);
 
   return (
-    <ProfileShell title="Payment History" showBack backHref="/profile">
-      <div className="rounded-[18px] border border-[#e4ece7] bg-white p-4 shadow-[0_10px_26px_rgba(15,23,42,0.04)]">
+    <ProfileShell title="Payment" showBack backHref="/profile">
+      <div className="rounded-[24px] border border-[#eee5f7] bg-white p-4 shadow-[0_18px_40px_rgba(86,38,135,0.08)]">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-[13px] text-[#6b7280]">Total paid</p>
-            <p className="mt-1 text-[24px] font-extrabold text-[#16a34a]">
+            <p className="text-[12px] font-extrabold uppercase tracking-[0.14em] text-[#8E5EB5]">Payment Summary</p>
+            <p className="mt-2 text-[24px] font-extrabold text-[#1f1630]">
               RM{totalPaid}
             </p>
           </div>
-          <div className="rounded-[14px] bg-[#eff9f0] px-3 py-2 text-right">
-            <p className="text-[12px] font-bold text-[#16a34a]">
+          <div className="rounded-[16px] bg-[#f7f1fc] px-3 py-2 text-right">
+            <p className="text-[12px] font-bold text-[#8E5EB5]">
               {filteredPayments.length} payments
             </p>
-            <p className="mt-1 text-[11px] text-[#4b5563]">
-              Category, date, and time
+            <p className="mt-1 text-[11px] text-[#6d6480]">
+              Live backend records
             </p>
           </div>
         </div>
@@ -1309,7 +1411,7 @@ export function PaymentsScreen({ payments }: PaymentsProps) {
             onClick={() => setFilterMode("month")}
             className={`inline-flex h-10 flex-1 items-center justify-center rounded-[12px] border text-[13px] font-bold ${
               filterMode === "month"
-                ? "border-[#16a34a] bg-[#eff9f0] text-[#16a34a]"
+                ? "border-[#8E5EB5] bg-[#f7f1fc] text-[#8E5EB5]"
                 : "border-[#d9e2dd] bg-white text-[#111827]"
             }`}
           >
@@ -1320,7 +1422,7 @@ export function PaymentsScreen({ payments }: PaymentsProps) {
             onClick={() => setFilterMode("custom")}
             className={`inline-flex h-10 flex-1 items-center justify-center rounded-[12px] border text-[13px] font-bold ${
               filterMode === "custom"
-                ? "border-[#16a34a] bg-[#eff9f0] text-[#16a34a]"
+                ? "border-[#8E5EB5] bg-[#f7f1fc] text-[#8E5EB5]"
                 : "border-[#d9e2dd] bg-white text-[#111827]"
             }`}
           >
@@ -1366,7 +1468,7 @@ export function PaymentsScreen({ payments }: PaymentsProps) {
         )}
       </SectionCard>
 
-      <SectionCard title="Payment History">
+      <SectionCard title="Transaction History">
         <div className="space-y-4">
           {filteredPayments.map((payment) => {
             const paidAt = new Date(payment.paidAt);
@@ -1380,7 +1482,7 @@ export function PaymentsScreen({ payments }: PaymentsProps) {
                     <p className="text-[15px] font-extrabold text-[#111827]">
                       {payment.serviceTitle}
                     </p>
-                    <p className="mt-1 text-[13px] font-semibold text-[#16a34a]">
+                    <p className="mt-1 text-[13px] font-semibold text-[#8E5EB5]">
                       {payment.serviceCategory}
                     </p>
                     <p className="mt-1 text-[13px] text-[#4b5563]">
@@ -1391,7 +1493,7 @@ export function PaymentsScreen({ payments }: PaymentsProps) {
                     <p className="text-[18px] font-extrabold text-[#111827]">
                       RM{payment.amount}
                     </p>
-                    <span className="mt-1 inline-flex rounded-full bg-[#eff9f0] px-2 py-1 text-[11px] font-bold text-[#16a34a]">
+                    <span className="mt-1 inline-flex rounded-full bg-[#f7f1fc] px-2 py-1 text-[11px] font-bold text-[#8E5EB5]">
                       {payment.status === "paid" ? "Paid" : "Refunded"}
                     </span>
                   </div>
@@ -2047,7 +2149,7 @@ function ProfileInfoRow({
   icon: React.ReactNode;
   label: string;
   value: string;
-  valueTone?: "default" | "green";
+  valueTone?: "default" | "green" | "purple";
   href?: string;
 }) {
   const content = (
@@ -2058,7 +2160,7 @@ function ProfileInfoRow({
       </div>
       <span
         className={`text-[13px] ${
-          valueTone === "green"
+          valueTone === "green" || valueTone === "purple"
             ? "font-bold text-[#8E5EB5]"
             : "text-[#374151]"
         }`}
