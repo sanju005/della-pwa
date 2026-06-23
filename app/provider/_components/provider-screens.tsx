@@ -127,16 +127,16 @@ function PageShell({
   return (
     <MobilePage className="pb-28">
       <section className="space-y-4">
-        <header className="rounded-[26px] bg-white p-5 shadow-[0_18px_44px_rgba(15,23,42,0.08)] ring-1 ring-[#e6eee8]">
+        <header className="rounded-[26px] bg-white p-5 shadow-[0_18px_44px_rgba(86,38,135,0.08)] ring-1 ring-[#eee5f7]">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-[#16a34a]">
+              <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-[#8E5EB5]">
                 Provider App
               </p>
-              <h1 className="mt-2 text-[1.9rem] font-black tracking-[-0.06em] text-[#0f172a]">
+              <h1 className="mt-2 text-[1.9rem] font-black tracking-[-0.06em] text-[#1f1630]">
                 {title}
               </h1>
-              <p className="mt-1 text-[13px] leading-6 text-[#64748b]">{subtitle}</p>
+              <p className="mt-1 text-[13px] leading-6 text-[#7b728a]">{subtitle}</p>
             </div>
             {action}
           </div>
@@ -152,7 +152,7 @@ function MetricCard({
   label,
   value,
   meta,
-  accent = "text-[#16a34a]",
+  accent = "text-[#8E5EB5]",
 }: {
   label: string;
   value: string;
@@ -160,10 +160,10 @@ function MetricCard({
   accent?: string;
 }) {
   return (
-    <div className="rounded-[20px] border border-[#e7eee8] bg-[#fbfffc] p-4">
+    <div className="rounded-[20px] border border-[#eee5f7] bg-[#fcfaff] p-4 shadow-[0_10px_20px_rgba(86,38,135,0.05)]">
       <p className={`text-[1.2rem] font-black tracking-[-0.05em] ${accent}`}>{value}</p>
-      <p className="mt-1 text-[12px] font-semibold text-[#475569]">{label}</p>
-      <p className="mt-1 text-[11px] text-[#94a3b8]">{meta}</p>
+      <p className="mt-1 text-[12px] font-semibold text-[#544b66]">{label}</p>
+      <p className="mt-1 text-[11px] text-[#9a90ac]">{meta}</p>
     </div>
   );
 }
@@ -178,12 +178,12 @@ function DetailMetric({
   value: string;
 }) {
   return (
-    <div className="rounded-[18px] border border-[#e7eee8] bg-white p-4">
+    <div className="rounded-[18px] border border-[#eee5f7] bg-white p-4 shadow-[0_8px_18px_rgba(86,38,135,0.04)]">
       <div className="text-[#8E5EB5]">{icon}</div>
-      <p className="mt-2 text-[11px] font-bold uppercase tracking-[0.12em] text-[#94a3b8]">
+      <p className="mt-2 text-[11px] font-bold uppercase tracking-[0.12em] text-[#9a90ac]">
         {label}
       </p>
-      <p className="mt-1 text-[13px] font-semibold text-[#0f172a]">{value}</p>
+      <p className="mt-1 text-[13px] font-semibold text-[#1f1630]">{value}</p>
     </div>
   );
 }
@@ -198,14 +198,14 @@ function DetailRow({
   value: string;
 }) {
   return (
-    <div className="rounded-[18px] border border-[#e7eee8] bg-white px-4 py-3">
+    <div className="rounded-[18px] border border-[#eee5f7] bg-white px-4 py-3 shadow-[0_8px_18px_rgba(86,38,135,0.04)]">
       <div className="flex items-start gap-3">
         <span className="mt-0.5 shrink-0">{icon}</span>
         <div>
-          <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#94a3b8]">
+          <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#9a90ac]">
             {label}
           </p>
-          <p className="mt-1 text-[13px] leading-6 text-[#0f172a]">{value}</p>
+          <p className="mt-1 text-[13px] leading-6 text-[#1f1630]">{value}</p>
         </div>
       </div>
     </div>
@@ -218,51 +218,56 @@ function TaskPath({
   steps: Array<{ label: string; status: "done" | "current" | "pending" }>;
 }) {
   return (
-    <div className="space-y-4">
-      {steps.map((step, index, stepsList) => (
-        <div key={step.label} className="flex gap-3">
-          <div className="flex flex-col items-center">
-            <span
-              className={`inline-flex h-6 w-6 items-center justify-center rounded-full border-2 ${
-                step.status === "done"
-                  ? "border-[#8E5EB5] bg-[#8E5EB5] text-white"
-                  : step.status === "current"
-                    ? "border-[#8E5EB5] bg-white text-[#8E5EB5]"
-                    : "border-[#d9e2dd] bg-white text-[#98a2b3]"
-              }`}
-            >
-              {step.status === "done" ? (
-                <span className="text-[10px] font-bold">OK</span>
-              ) : (
-                <span className="h-2 w-2 rounded-full bg-current" />
-              )}
-            </span>
-            {index < stepsList.length - 1 ? (
+    <div className="rounded-[16px] border border-[#f0e6fb] bg-white px-3 py-3">
+      <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#8E5EB5]">
+        Task Path
+      </p>
+      <div className="mt-3 space-y-4">
+        {steps.map((step, index, stepsList) => (
+          <div key={step.label} className="flex gap-3">
+            <div className="flex flex-col items-center">
               <span
-                className={`mt-1 h-8 w-[2px] ${
-                  step.status === "done" ? "bg-[#8E5EB5]" : "bg-[#e5e7eb]"
+                className={`inline-flex h-6 w-6 items-center justify-center rounded-full border-2 ${
+                  step.status === "done"
+                    ? "border-[#8E5EB5] bg-[#8E5EB5] text-white"
+                    : step.status === "current"
+                      ? "border-[#8E5EB5] bg-white text-[#8E5EB5]"
+                      : "border-[#d9e2dd] bg-white text-[#98a2b3]"
                 }`}
-              />
-            ) : null}
+              >
+                {step.status === "done" ? (
+                  <span className="text-[11px] font-bold">✓</span>
+                ) : (
+                  <span className="h-2 w-2 rounded-full bg-current" />
+                )}
+              </span>
+              {index < stepsList.length - 1 ? (
+                <span
+                  className={`mt-1 h-8 w-[2px] ${
+                    step.status === "done" ? "bg-[#8E5EB5]" : "bg-[#e5e7eb]"
+                  }`}
+                />
+              ) : null}
+            </div>
+            <div className="pt-0.5">
+              <p
+                className={`text-[14px] font-semibold ${
+                  step.status === "pending" ? "text-[#98a2b3]" : "text-[#1f1630]"
+                }`}
+              >
+                {step.label}
+              </p>
+              <p className="mt-1 text-[12px] text-[#7b728a]">
+                {step.status === "done"
+                  ? "Finished"
+                  : step.status === "current"
+                    ? "Current step"
+                    : "Waiting"}
+              </p>
+            </div>
           </div>
-          <div className="pt-0.5">
-            <p
-              className={`text-[14px] font-semibold ${
-                step.status === "pending" ? "text-[#98a2b3]" : "text-[#111827]"
-              }`}
-            >
-              {step.label}
-            </p>
-            <p className="mt-1 text-[12px] text-[#6b7280]">
-              {step.status === "done"
-                ? "Finished"
-                : step.status === "current"
-                  ? "Current step"
-                  : "Waiting"}
-            </p>
-          </div>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 }
@@ -961,21 +966,21 @@ export function BookingsScreen({
       title="Bookings"
       subtitle="Manage incoming requests, task progress, and completed provider work."
     >
-      <section className="rounded-[26px] border border-[#eee5f7] bg-white p-5 shadow-[0_18px_44px_rgba(86,38,135,0.08)]">
+      <section className="rounded-[24px] border border-[#eee5f7] bg-white p-5 shadow-[0_14px_32px_rgba(86,38,135,0.08)]">
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="text-[12px] font-extrabold uppercase tracking-[0.14em] text-[#8E5EB5]">
-              Provider App
+              Provider Flow
             </p>
             <h2 className="mt-2 text-[1.35rem] font-black tracking-[-0.05em] text-[#1f1630]">
-              Booking Journey
+              Incoming Requests
             </h2>
             <p className="mt-1 text-[13px] leading-6 text-[#7b728a]">
-              Accept bookings, view progress, and keep customer updates live.
+              View booking requests, accept jobs, and keep customer updates live.
             </p>
           </div>
           <div className="rounded-[18px] bg-[#f7f1fc] px-4 py-3 text-center">
-            <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#8E5EB5]">Requests</p>
+            <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#8E5EB5]">New Request</p>
             <p className="mt-1 text-[1.5rem] font-black text-[#1f1630]">
               {state.bookings.filter((booking) => booking.bookingStatus === "pending").length}
             </p>
@@ -996,7 +1001,7 @@ export function BookingsScreen({
       ) : null}
 
       {selectedBooking ? (
-        <section className="rounded-[26px] border border-[#eee5f7] bg-white p-5 shadow-[0_18px_44px_rgba(86,38,135,0.08)]">
+        <section className="rounded-[24px] border border-[#eee5f7] bg-white p-5 shadow-[0_14px_32px_rgba(86,38,135,0.08)]">
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-[#8E5EB5]">
@@ -1045,7 +1050,7 @@ export function BookingsScreen({
                 icon={<Clock3 className="h-4 w-4 text-[#8E5EB5]" />}
               />
               <DetailMetric
-                label="Booking Type"
+                label="Service"
                 value={selectedBooking.bookingMode === "daily" ? "Daily" : "Hourly"}
                 icon={<BriefcaseBusiness className="h-4 w-4 text-[#8E5EB5]" />}
               />
@@ -1061,11 +1066,6 @@ export function BookingsScreen({
                 icon={<MapPin className="h-4 w-4 text-[#8E5EB5]" />}
                 label="Location"
                 value={selectedBooking.location}
-              />
-              <DetailRow
-                icon={<Calendar className="h-4 w-4 text-[#8E5EB5]" />}
-                label="Schedule"
-                value={selectedBooking.schedule}
               />
               <DetailRow
                 icon={<MessageCircleMore className="h-4 w-4 text-[#8E5EB5]" />}
@@ -1089,7 +1089,7 @@ export function BookingsScreen({
             {selectedBooking.bookingStatus !== "declined" &&
             selectedBooking.bookingStatus !== "cancelled" ? (
               <div className="mt-4 rounded-[18px] border border-[#ebe3f5] bg-white px-4 py-4">
-                <p className="text-[14px] font-extrabold text-[#0f172a]">Task Path</p>
+                <p className="text-[14px] font-extrabold text-[#0f172a]">Task Progress</p>
                 <div className="mt-4">
                   <TaskPath steps={getProviderTaskSteps(selectedBooking.bookingStatus)} />
                 </div>
@@ -1215,21 +1215,21 @@ export function BookingsScreen({
         </section>
       ) : null}
 
-      <section className="rounded-[26px] border border-[#eee5f7] bg-white p-5 shadow-[0_18px_44px_rgba(86,38,135,0.08)]">
+      <section className="rounded-[24px] border border-[#eee5f7] bg-white p-5 shadow-[0_14px_32px_rgba(86,38,135,0.08)]">
         <div className="flex flex-wrap gap-2">
           {[
-            ["ongoing", "Ongoing"],
-            ["upcoming", "Upcoming"],
             ["pending", "Pending"],
+            ["ongoing", "On Going"],
+            ["upcoming", "Upcoming"],
             ["canceled", "Canceled"],
-            ["completes", "Completes"],
+            ["completes", "Completed"],
           ].map(([value, label]) => (
             <button
               key={value}
               type="button"
               onClick={() => setTab(value as typeof tab)}
-              className={`rounded-full px-4 py-2 text-[12px] font-bold ${
-                tab === value ? "bg-[#8E5EB5] text-white" : "bg-[#f7f1fc] text-[#7b728a]"
+              className={`rounded-[12px] px-4 py-2 text-[12px] font-bold ${
+                tab === value ? "border border-[#eadcf7] bg-white text-[#8E5EB5] shadow-[0_8px_18px_rgba(142,94,181,0.14)]" : "bg-[#f7f1fc] text-[#7b728a]"
               }`}
             >
               {label}
@@ -1248,7 +1248,7 @@ export function BookingsScreen({
             items.map((booking) => (
               <div
                 key={booking.id}
-                className="rounded-[22px] border border-[#eee5f7] bg-[#fcfaff] p-4"
+                className="rounded-[22px] border border-[#eee5f7] bg-[#fcfaff] p-4 shadow-[0_10px_24px_rgba(86,38,135,0.05)]"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div>
@@ -1284,7 +1284,7 @@ export function BookingsScreen({
                 </div>
                 {tab === "ongoing" ? (
                   <div className="mt-4 rounded-[18px] border border-[#ebe3f5] bg-white px-4 py-4">
-                    <p className="text-[14px] font-extrabold text-[#0f172a]">Task Path</p>
+                    <p className="text-[14px] font-extrabold text-[#0f172a]">Task Progress</p>
                     <div className="mt-4 space-y-4">
                       {getProviderTaskSteps(booking.bookingStatus).map((step, index, steps) => (
                         <div key={step.label} className="flex gap-3">
@@ -1340,7 +1340,7 @@ export function BookingsScreen({
                       tone="secondary"
                       onClick={() => openBooking(booking.id)}
                     >
-                      View Details
+                      View Booking
                     </AppButton>
                     <AppButton
                       className="flex-1"
@@ -1377,7 +1377,7 @@ export function BookingsScreen({
                           )
                         }
                       >
-                        Start Task
+                        Mark On the Way
                       </AppButton>
                     ) : null}
                     {booking.bookingStatus === "on_the_way" ? (
@@ -1407,7 +1407,7 @@ export function BookingsScreen({
                           )
                         }
                       >
-                        Task Finished
+                        Complete Task
                       </AppButton>
                     ) : null}
                     <AppButton
@@ -1792,79 +1792,88 @@ export function EarningsScreen() {
       );
     })
     .reduce((sum, booking) => sum + booking.quotedAmount, 0);
+  const leadCompleted = completed[0] ?? null;
 
   return (
     <PageShell title="Payment / Earnings" subtitle="Live provider earnings breakdown and payment release summary.">
-      <section className="rounded-[26px] bg-[linear-gradient(135deg,#8E5EB5_0%,#6F3EA1_100%)] p-5 text-white shadow-[0_22px_52px_rgba(142,94,181,0.28)]">
-        <p className="text-[12px] font-semibold uppercase tracking-[0.14em] text-white/80">
-          You Will Receive
-        </p>
-        <p className="mt-2 text-[2rem] font-black tracking-[-0.06em]">{formatCurrency(total)}</p>
-        <div className="mt-4">
-          <AppButton
-            tone="secondary"
-            className="w-full bg-white text-[#0f172a]"
-            onClick={() =>
-              state.setNotice("Withdrawals are routed through admin during testing. Your earnings total is live.")
-            }
-          >
-            Withdraw
-          </AppButton>
+      <section className="rounded-[24px] border border-[#eee5f7] bg-white p-5 shadow-[0_14px_32px_rgba(86,38,135,0.08)]">
+        <div className="flex items-start gap-3">
+          <div className="flex h-[4.5rem] w-[4.5rem] items-center justify-center rounded-[16px] bg-[linear-gradient(180deg,#8E5EB5_0%,#6F3EA1_100%)] text-white shadow-[0_10px_20px_rgba(142,94,181,0.24)]">
+            <Wallet className="h-6 w-6" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-[15px] font-black text-[#1f1630]">
+              {leadCompleted?.customerName ?? "Customer Payment"}
+            </p>
+            <p className="mt-1 text-[12px] font-semibold text-[#7b728a]">
+              {leadCompleted?.serviceLabel ?? "Completed booking"}
+            </p>
+            <p className="mt-1 text-[11px] text-[#8f86a2]">
+              {leadCompleted ? leadCompleted.schedule : "No released payments yet"}
+            </p>
+          </div>
+          {leadCompleted ? (
+            <span className="rounded-full bg-[#eef8ef] px-3 py-1 text-[11px] font-bold text-[#3fa55b]">
+              Completed
+            </span>
+          ) : null}
+        </div>
+      </section>
+
+      <section className="rounded-[24px] border border-[#eee5f7] bg-white p-5 shadow-[0_14px_32px_rgba(86,38,135,0.08)]">
+        <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-[#8E5EB5]">Earnings Breakdown</p>
+        <div className="mt-4 space-y-3 text-[13px] text-[#544b66]">
+          <SummaryLine label="Service Amount" value={formatCurrency(leadCompleted?.baseAmount || leadCompleted?.quotedAmount || total)} />
+          <SummaryLine label="Platform Fee" value="RM0.00" />
+          <SummaryLine label="Tax (5%)" value="RM0.00" />
+          <div className="border-t border-[#f0e8f8] pt-3">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-[15px] font-black text-[#1f1630]">You Will Receive</p>
+              <p className="text-[22px] font-black text-[#6F3EA1]">{formatCurrency(leadCompleted?.quotedAmount || total)}</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="rounded-[20px] border border-[#d7efdb] bg-[#effbf1] px-4 py-3">
+        <div className="flex items-center gap-3">
+          <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#22c55e] text-white">
+            <Wallet className="h-4 w-4" />
+          </span>
+          <div>
+            <p className="text-[13px] font-bold text-[#1f4d2b]">Payment Released</p>
+            <p className="text-[11px] text-[#5f7d67]">
+              {leadCompleted ? `Released on ${formatDateLabel(leadCompleted.scheduledDate)}` : "Waiting for released earnings"}
+            </p>
+          </div>
         </div>
       </section>
 
       <section className="grid grid-cols-2 gap-3">
-        <MetricCard label="This Week" value={formatCurrency(thisWeek)} meta="Recent completed jobs" accent="text-[#0f172a]" />
-        <MetricCard label="This Month" value={formatCurrency(thisMonth)} meta="Current month" accent="text-[#0f172a]" />
+        <MetricCard label="This Week" value={formatCurrency(thisWeek)} meta="Recent completed jobs" accent="text-[#1f1630]" />
+        <MetricCard label="This Month" value={formatCurrency(thisMonth)} meta="Current month" accent="text-[#1f1630]" />
       </section>
 
-      <section className="rounded-[26px] border border-[#eee5f7] bg-white p-5 shadow-[0_18px_44px_rgba(86,38,135,0.08)]">
+      <section className="rounded-[24px] border border-[#eee5f7] bg-white p-5 shadow-[0_14px_32px_rgba(86,38,135,0.08)]">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <h2 className="text-[17px] font-black text-[#0f172a]">Earnings Breakdown</h2>
-            <p className="mt-1 text-[13px] text-[#64748b]">Derived from completed and paid bookings.</p>
+            <h2 className="text-[17px] font-black text-[#0f172a]">Payout Method</h2>
+            <p className="mt-1 text-[13px] text-[#64748b]">Testing payout route for provider earnings.</p>
           </div>
         </div>
-        <div className="mt-4 space-y-3">
-          {completed.length === 0 ? (
-            <EmptyState
-              title="No earnings yet"
-              description="Completed provider jobs will automatically appear here."
-              icon={<Wallet className="h-6 w-6" />}
-            />
-          ) : (
-            completed.slice(0, 8).map((booking) => (
-              <div
-                key={booking.id}
-                className="rounded-[20px] border border-[#eee5f7] bg-[#fcfaff] px-4 py-4"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-[14px] font-black text-[#0f172a]">{booking.serviceLabel}</p>
-                    <p className="mt-1 text-[12px] text-[#64748b]">{formatDateLabel(booking.scheduledDate)}</p>
-                  </div>
-                  <span className="rounded-full bg-[#eadcf7] px-3 py-1 text-[11px] font-bold text-[#8E5EB5]">
-                    {booking.statusLabel}
-                  </span>
-                </div>
-                <div className="mt-4 grid grid-cols-2 gap-3 text-[12px] text-[#544b66]">
-                  <div className="rounded-[14px] bg-white px-3 py-3 ring-1 ring-[#f0e8f8]">
-                    <p className="font-bold text-[#7b728a]">Service Amount</p>
-                    <p className="mt-1 text-[14px] font-black text-[#1f1630]">{formatCurrency(booking.baseAmount || booking.quotedAmount)}</p>
-                  </div>
-                  <div className="rounded-[14px] bg-white px-3 py-3 ring-1 ring-[#f0e8f8]">
-                    <p className="font-bold text-[#7b728a]">Additional Charge</p>
-                    <p className="mt-1 text-[14px] font-black text-[#1f1630]">{formatCurrency(booking.additionalCharge || 0)}</p>
-                  </div>
-                </div>
-                <div className="mt-4 rounded-[16px] bg-[#f7f1fc] px-4 py-3">
-                  <p className="text-[12px] font-bold uppercase tracking-[0.12em] text-[#8E5EB5]">Net Amount</p>
-                  <p className="mt-1 text-[18px] font-black text-[#6F3EA1]">{formatCurrency(booking.quotedAmount)}</p>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
+        <button
+          type="button"
+          onClick={() =>
+            state.setNotice("Withdrawals are routed through admin during testing. Your earnings total is live.")
+          }
+          className="mt-4 flex w-full items-center justify-between rounded-[16px] border border-[#e7dcf7] bg-white px-4 py-3 text-left shadow-[0_10px_20px_rgba(142,94,181,0.05)]"
+        >
+          <div>
+            <p className="text-[13px] font-bold text-[#24193a]">Bank Transfer</p>
+            <p className="text-[11px] text-[#8f86a2]">Primary payout account</p>
+          </div>
+          <ChevronRight className="h-4 w-4 text-[#8E5EB5]" />
+        </button>
       </section>
     </PageShell>
   );
@@ -1927,7 +1936,7 @@ export function TasksScreen() {
             ongoing.map((booking) => (
               <div
                 key={booking.id}
-                className="rounded-[20px] border border-[#eee5f7] bg-[#fcfaff] p-4"
+                className="rounded-[22px] border border-[#eee5f7] bg-[#fcfaff] p-4 shadow-[0_10px_24px_rgba(86,38,135,0.05)]"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div>
@@ -1946,6 +1955,12 @@ export function TasksScreen() {
                     <span>{booking.location}</span>
                   </div>
                 </div>
+                <div className="mt-4 rounded-[18px] border border-[#ebe3f5] bg-white px-4 py-4">
+                  <p className="text-[14px] font-extrabold text-[#0f172a]">Task Progress</p>
+                  <div className="mt-4">
+                    <TaskPath steps={getProviderTaskSteps(booking.bookingStatus)} />
+                  </div>
+                </div>
                 <div className="mt-4 flex gap-3">
                   {booking.bookingStatus === "accepted" ? (
                     <AppButton
@@ -1959,7 +1974,7 @@ export function TasksScreen() {
                         )
                       }
                     >
-                      Start Task
+                      Mark On the Way
                     </AppButton>
                   ) : null}
                   {booking.bookingStatus === "on_the_way" ? (
@@ -2413,6 +2428,21 @@ export function AvailabilityScreen() {
   );
 }
 
+function SummaryLine({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <p>{label}</p>
+      <p className="font-semibold text-[#24193a]">{value}</p>
+    </div>
+  );
+}
+
 export function ReviewsScreen() {
   const state = useProviderAppData();
   const fallback = LoadingOrError(state);
@@ -2428,7 +2458,7 @@ export function ReviewsScreen() {
 
   return (
     <PageShell title="Reviews" subtitle="Customer ratings, review feed, and overall provider score.">
-      <section className="rounded-[26px] border border-[#eee5f7] bg-white p-5 text-center shadow-[0_18px_44px_rgba(86,38,135,0.08)]">
+      <section className="rounded-[24px] border border-[#eee5f7] bg-white p-5 text-center shadow-[0_14px_32px_rgba(86,38,135,0.08)]">
         <p className="text-[2.5rem] font-black tracking-[-0.06em] text-[#0f172a]">
           {data.averageRating > 0 ? data.averageRating.toFixed(1) : "0.0"}
         </p>
@@ -2440,12 +2470,12 @@ export function ReviewsScreen() {
         <p className="mt-2 text-[13px] text-[#64748b]">({data.totalReviews} reviews)</p>
         <div className="mt-5 grid grid-cols-2 gap-3 text-left">
           <MetricCard label="Completed Jobs" value={String(completedJobs.length)} meta="Provider history" accent="text-[#0f172a]" />
-          <MetricCard label="Visible Rating" value={data.approvalStatus} meta="Current listing state" accent="text-[#0f172a]" />
+          <MetricCard label="Profile Status" value={data.approvalStatus} meta="Current listing state" accent="text-[#0f172a]" />
         </div>
       </section>
 
-      <section className="rounded-[26px] border border-[#eee5f7] bg-white p-5 shadow-[0_18px_44px_rgba(86,38,135,0.08)]">
-        <h2 className="text-[17px] font-black text-[#0f172a]">Review Feed</h2>
+      <section className="rounded-[24px] border border-[#eee5f7] bg-white p-5 shadow-[0_14px_32px_rgba(86,38,135,0.08)]">
+        <h2 className="text-[17px] font-black text-[#0f172a]">Customer Reviews</h2>
         <p className="mt-1 text-[13px] text-[#64748b]">
           Live customer feedback from your Supabase review records.
         </p>
@@ -2475,6 +2505,15 @@ export function ReviewsScreen() {
                     </div>
                   </div>
                   <p className="mt-3 text-[13px] leading-6 text-[#475569]">{review.comment}</p>
+                  <div className="mt-4 flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => state.setNotice("Provider replies to reviews are not wired yet, but the review feed is live.")}
+                      className="rounded-[10px] border border-[#e5d5fa] bg-white px-3 py-1.5 text-[12px] font-bold text-[#8E5EB5]"
+                    >
+                      Reply
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>

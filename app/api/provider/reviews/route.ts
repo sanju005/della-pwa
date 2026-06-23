@@ -99,6 +99,15 @@ function formatDateLabel(value: string) {
   }).format(new Date(value));
 }
 
+function isMissingReviewsTableError(message?: string | null) {
+  const normalized = message?.trim().toLowerCase() ?? "";
+  return (
+    normalized.includes("could not find the table") && normalized.includes("reviews")
+  ) || (
+    normalized.includes("relation") && normalized.includes("reviews") && normalized.includes("does not exist")
+  );
+}
+
 export async function GET(request: Request) {
   const verified = await verifyProviderRequest(request);
 
@@ -115,7 +124,11 @@ export async function GET(request: Request) {
 
   if (error) {
     return NextResponse.json(
-      { error: error.message || "Unable to load provider reviews." },
+      {
+        error: isMissingReviewsTableError(error.message)
+          ? "The reviews table is missing in Supabase. Run the latest database migration, then try again."
+          : error.message || "Unable to load provider reviews.",
+      },
       { status: 500 },
     );
   }

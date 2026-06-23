@@ -130,6 +130,15 @@ function isMissingReviewMetadataColumnError(message?: string | null) {
   );
 }
 
+function isMissingReviewsTableError(message?: string | null) {
+  const normalized = message?.trim().toLowerCase() ?? "";
+  return (
+    normalized.includes("could not find the table") && normalized.includes("reviews")
+  ) || (
+    normalized.includes("relation") && normalized.includes("reviews") && normalized.includes("does not exist")
+  );
+}
+
 export async function POST(
   request: Request,
   context: { params: Promise<{ id: string }> },
@@ -182,12 +191,23 @@ export async function POST(
     );
   }
 
-  const { data: existingReview } = await verified.adminClient
+  const { data: existingReview, error: existingReviewError } = await verified.adminClient
     .from("reviews")
     .select("id")
     .eq("booking_id", bookingRow.id)
     .eq("customer_id", verified.profile.id)
     .maybeSingle();
+
+  if (existingReviewError) {
+    return NextResponse.json(
+      {
+        error: isMissingReviewsTableError(existingReviewError.message)
+          ? "The reviews table is missing in Supabase. Run the latest database migration, then try again."
+          : existingReviewError.message || "Unable to load existing review.",
+      },
+      { status: 500 },
+    );
+  }
 
   const reviewPayload = {
     booking_id: bookingRow.id,
@@ -222,7 +242,11 @@ export async function POST(
 
     if (updateReviewError) {
       return NextResponse.json(
-        { error: updateReviewError.message || "Unable to update review." },
+        {
+          error: isMissingReviewsTableError(updateReviewError.message)
+            ? "The reviews table is missing in Supabase. Run the latest database migration, then try again."
+            : updateReviewError.message || "Unable to update review.",
+        },
         { status: 500 },
       );
     }
@@ -247,7 +271,11 @@ export async function POST(
 
     if (insertReviewError) {
       return NextResponse.json(
-        { error: insertReviewError.message || "Unable to submit review." },
+        {
+          error: isMissingReviewsTableError(insertReviewError.message)
+            ? "The reviews table is missing in Supabase. Run the latest database migration, then try again."
+            : insertReviewError.message || "Unable to submit review.",
+        },
         { status: 500 },
       );
     }

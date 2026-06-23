@@ -102,14 +102,14 @@ export function ProfileShell({
     <main className="min-h-[100dvh] overflow-x-hidden bg-[#faf7fd]">
       <div className="mx-auto flex min-h-[100dvh] w-full max-w-[430px] flex-col bg-white px-5 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
         <div className="relative min-h-[100dvh] overflow-hidden bg-white">
-          <div className="bg-[#8E5EB5] px-5 pb-4 pt-5 text-white">
+          <div className="bg-[linear-gradient(180deg,#8E5EB5_0%,#7A49A7_100%)] px-5 pb-4 pt-5 text-white shadow-[0_12px_28px_rgba(122,73,167,0.22)]">
             <div className="mt-4 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 {showBack ? (
                   <Link
                     href={backHref}
                     aria-label="Back"
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-full text-white/95"
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white/95 ring-1 ring-white/15"
                   >
                     <ArrowLeftIcon className="h-5 w-5" />
                   </Link>
@@ -120,7 +120,7 @@ export function ProfileShell({
                 <Link
                   href="/profile/notifications"
                   aria-label="Notifications"
-                  className="inline-flex h-8 w-8 items-center justify-center rounded-full text-white/95"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white/95 ring-1 ring-white/15"
                 >
                   <BellIcon className="h-5 w-5" />
                 </Link>
@@ -145,7 +145,7 @@ function StickyActionBar({
   children: React.ReactNode;
 }) {
   return (
-    <div className="sticky bottom-[5.5rem] z-20 mt-5 rounded-[18px] border border-[#e4ece7] bg-white/95 p-3 shadow-[0_18px_44px_rgba(15,23,42,0.12)] backdrop-blur">
+    <div className="sticky bottom-[5.5rem] z-20 mt-5 rounded-[20px] border border-[#ebe3f5] bg-white/95 p-3 shadow-[0_18px_44px_rgba(86,38,135,0.12)] backdrop-blur">
       {children}
     </div>
   );
@@ -736,29 +736,7 @@ export function BookingsScreen({ bookings, initialTab = "pending" }: BookingsPro
 
   return (
     <ProfileShell title="My Bookings" showBack backHref="/profile">
-      <section className="rounded-[24px] border border-[#eee5f7] bg-white p-4 shadow-[0_18px_40px_rgba(86,38,135,0.08)]">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="text-[12px] font-extrabold uppercase tracking-[0.14em] text-[#8E5EB5]">
-              Booking Details
-            </p>
-            <h2 className="mt-2 text-[1.2rem] font-black tracking-[-0.05em] text-[#1f1630]">
-              My Bookings
-            </h2>
-            <p className="mt-1 text-[13px] leading-6 text-[#7b728a]">
-              Track live provider progress, payment state, and review status.
-            </p>
-          </div>
-          <div className="rounded-[16px] bg-[#f7f1fc] px-3 py-2 text-right">
-            <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#8E5EB5]">
-              Live
-            </p>
-            <p className="mt-1 text-[18px] font-black text-[#1f1630]">{filtered.length}</p>
-          </div>
-        </div>
-      </section>
-
-      <div className="mt-4 flex items-center justify-between rounded-[18px] bg-[#f7f1fc] p-1.5 text-[13px] font-semibold text-[#7b728a]">
+      <div className="rounded-[18px] border border-[#efe6fb] bg-white p-1.5 text-[13px] font-semibold text-[#8d84a0] shadow-[0_10px_24px_rgba(142,94,181,0.06)]">
         {(["pending", "ongoing", "completed", "cancelled"] as BookingStatus[]).map((tab) => (
           <button
             key={tab}
@@ -766,8 +744,8 @@ export function BookingsScreen({ bookings, initialTab = "pending" }: BookingsPro
             onClick={() => setActiveTab(tab)}
             className={`flex-1 rounded-[14px] px-2 py-2.5 ${
               activeTab === tab
-                ? "bg-white text-[#8E5EB5] shadow-[0_8px_18px_rgba(142,94,181,0.16)]"
-                : "text-[#7b728a]"
+                ? "border border-[#ede1fa] bg-white text-[#8E5EB5] shadow-[0_10px_20px_rgba(142,94,181,0.18)]"
+                : "text-[#8d84a0]"
             }`}
           >
             {tabLabels[tab]}
@@ -786,19 +764,21 @@ export function BookingsScreen({ bookings, initialTab = "pending" }: BookingsPro
         {filtered.map((booking) => (
           <div
             key={booking.id}
-            className="rounded-[24px] border border-[#eee5f7] bg-white p-4 shadow-[0_18px_40px_rgba(86,38,135,0.08)]"
+            className="rounded-[24px] border border-[#eee6f9] bg-white p-4 shadow-[0_14px_30px_rgba(106,69,160,0.08)]"
           >
             <div className="flex gap-3">
-              <BookingThumb kind={booking.thumbnail} imageSrc={booking.imageSrc} service={booking.service} />
+              <div className="rounded-[18px] border border-[#f1e7fb] bg-[#fffdfd] p-1 shadow-[0_8px_18px_rgba(106,69,160,0.06)]">
+                <BookingThumb kind={booking.thumbnail} imageSrc={booking.imageSrc} service={booking.service} />
+              </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="truncate text-[16px] font-black text-[#1f1630]">{booking.provider}</p>
-                    <p className="mt-1 text-[13px] font-semibold text-[#7b728a]">{booking.service}</p>
+                    <p className="mt-1 text-[12px] font-semibold text-[#7b728a]">{booking.service}</p>
                   </div>
                   <SharedStatusBadge label={booking.statusLabel} tone={bookingTone(booking)} />
                 </div>
-                <div className="mt-3 space-y-2 text-[13px] text-[#544b66]">
+                <div className="mt-3 space-y-2 text-[12px] text-[#544b66]">
                   <div className="flex items-start gap-2">
                     <CalendarIcon className="mt-0.5 h-4 w-4 text-[#8E5EB5]" />
                     <span>{booking.schedule}</span>
@@ -815,42 +795,43 @@ export function BookingsScreen({ bookings, initialTab = "pending" }: BookingsPro
               </div>
             </div>
 
-            <div className="mt-4 rounded-[18px] border border-[#f0e8f8] bg-[#fcfaff] px-4 py-3">
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-[12px] font-extrabold uppercase tracking-[0.12em] text-[#8E5EB5]">
-                  Booking ID
-                </p>
-                <p className="text-[12px] font-semibold text-[#6d6480]">{booking.id}</p>
+            <Link
+              href={`/profile/bookings/${booking.id}`}
+              className="mt-4 flex h-11 w-full items-center justify-between rounded-[14px] border border-[#f0e2ff] bg-[#fbf7ff] px-4 text-[13px] font-extrabold text-[#8E5EB5]"
+            >
+              <span>Track Task</span>
+              <ChevronRightIcon className="h-4 w-4" />
+            </Link>
+
+            {booking.activitySteps?.length ? (
+              <div className="mt-4">
+                <CompactTaskPath steps={booking.activitySteps} />
               </div>
-              {booking.activitySteps?.length ? (
-                <div className="mt-3">
-                  <CompactTaskPath steps={booking.activitySteps} />
-                </div>
-              ) : null}
-              {booking.status === "cancelled" ? (
-                <div className="mt-3 space-y-1.5 rounded-[14px] bg-white px-3 py-2.5 text-[12px] leading-5 text-[#544b66] ring-1 ring-[#f0e8f8]">
-                  <p>
-                    <span className="font-extrabold text-[#1f1630]">Cancelled by:</span>{" "}
-                    {booking.cancelledBy ?? "Not specified"}
-                  </p>
-                  <p>
-                    <span className="font-extrabold text-[#1f1630]">Reason:</span>{" "}
-                    {booking.cancellationReason ?? "No reason shared."}
-                  </p>
-                </div>
-              ) : null}
+            ) : null}
+
+            <div className="mt-4 text-[11px] text-[#8e84a0]">
+              <p className="font-semibold">Booking ID</p>
+              <p className="mt-1 font-bold text-[#6d6480]">{booking.id}</p>
             </div>
 
+            {booking.status === "cancelled" ? (
+              <div className="mt-3 space-y-1.5 rounded-[14px] border border-[#f0e8f8] bg-[#fcfaff] px-3 py-2.5 text-[12px] leading-5 text-[#544b66]">
+                <p>
+                  <span className="font-extrabold text-[#1f1630]">Cancelled by:</span>{" "}
+                  {booking.cancelledBy ?? "Not specified"}
+                </p>
+                <p>
+                  <span className="font-extrabold text-[#1f1630]">Reason:</span>{" "}
+                  {booking.cancellationReason ?? "No reason shared."}
+                </p>
+              </div>
+            ) : null}
+
             <div className="mt-4 grid grid-cols-2 gap-3">
-              <AppButton href={`/profile/bookings/${booking.id}`} tone="secondary" className="w-full">
-                Track Task
+              <AppButton href="/profile/messages" tone="secondary" className="w-full !rounded-[14px] !border-[#d9c5f1] !bg-white !text-[#8E5EB5] !shadow-none">
+                Message
               </AppButton>
-              <AppButton href="/profile/messages" className="w-full">
-                {booking.status === "completed" ? "See Details" : "Message"}
-              </AppButton>
-            </div>
-            <div className="mt-3">
-              <AppButton href={`/profile/bookings/${booking.id}`} tone="ghost" className="w-full">
+              <AppButton href={`/profile/bookings/${booking.id}`} className="w-full !rounded-[14px] !bg-[#8E5EB5] !shadow-[0_12px_24px_rgba(142,94,181,0.22)]">
                 {booking.status === "completed" ? "See Details" : "Open Booking"}
               </AppButton>
             </div>
@@ -867,8 +848,8 @@ function CompactTaskPath({
   steps: Array<{ label: string; status: "done" | "current" | "pending" }>;
 }) {
   return (
-    <div className="rounded-[14px] bg-transparent">
-      <p className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-[#8E5EB5]">
+    <div className="rounded-[16px] border border-[#f0e6fb] bg-white px-3 py-3">
+      <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#8E5EB5]">
         Task Path
       </p>
       <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -879,7 +860,7 @@ function CompactTaskPath({
                 step.status === "done"
                   ? "bg-[#eadcf7] text-[#7f47a7]"
                   : step.status === "current"
-                    ? "bg-[#f3ebfc] text-[#8E5EB5]"
+                    ? "bg-[#8E5EB5] text-white"
                     : "bg-white text-[#94a3b8] ring-1 ring-[#ebe3f5]"
               }`}
             >
@@ -972,40 +953,40 @@ export function SettingsScreen({ groups }: SettingsProps) {
 }
 
 export function BookingDetailScreen({ booking }: BookingDetailProps) {
+  const progressSteps = booking.activitySteps ?? [];
+  const paidDateLabel =
+    booking.status === "completed"
+      ? "Payment Completed"
+      : booking.status === "ongoing"
+        ? "Payment Pending"
+        : "Awaiting Payment";
+
   return (
-    <ProfileShell title="Booking Details" showBack backHref="/profile/bookings">
-      <div className="rounded-[24px] border border-[#eee5f7] bg-white p-4 shadow-[0_18px_40px_rgba(86,38,135,0.08)]">
+    <ProfileShell title="Task Progress" showBack backHref="/profile/bookings">
+      <div className="rounded-[24px] border border-[#ebe2f8] bg-white p-4 shadow-[0_16px_34px_rgba(106,69,160,0.08)]">
         <div className="flex gap-4">
-          <BookingThumb kind={booking.thumbnail} imageSrc={booking.imageSrc} service={booking.service} />
+          <div className="rounded-[18px] border border-[#f1e7fb] bg-[#fffdfd] p-1">
+            <BookingThumb kind={booking.thumbnail} imageSrc={booking.imageSrc} service={booking.service} />
+          </div>
           <div className="min-w-0 flex-1">
-            <h2 className="text-[18px] font-extrabold text-[#111827]">
+            <h2 className="text-[16px] font-black text-[#1f1630]">
               {booking.provider}
             </h2>
-            <p className="mt-1 text-[14px] text-[#6d6480]">{booking.service}</p>
-            <span className={`mt-3 inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold ${badgeToneClass(booking.badgeTone)}`}>
+            <p className="mt-1 text-[12px] font-semibold text-[#6d6480]">{booking.service}</p>
+            <p className="mt-1 text-[11px] text-[#8f86a2]">{booking.schedule}</p>
+            <span className={`mt-3 inline-flex rounded-full px-3 py-1 text-[11px] font-bold ${badgeToneClass(booking.badgeTone)}`}>
               {booking.statusLabel}
             </span>
-            <p className="mt-3 text-[12px] font-semibold text-[#8E5EB5]">Booking ID {booking.id}</p>
           </div>
         </div>
       </div>
 
-      <SectionCard title="Booking Summary">
-        <ProfileInfoRow
-          icon={<CalendarIcon className="h-4 w-4" />}
-          label="Date & Time"
-          value={booking.schedule}
-        />
-        <ProfileInfoRow
-          icon={<PinIcon className="h-4 w-4" />}
-          label="Location"
-          value={booking.location}
-        />
-      </SectionCard>
-
-      <SectionCard title="Task Progress">
-        <div className="space-y-4">
-          {(booking.activitySteps ?? []).map((step, index, steps) => (
+      <section className="mt-4 rounded-[24px] border border-[#ebe2f8] bg-white p-4 shadow-[0_14px_30px_rgba(106,69,160,0.07)]">
+        <p className="text-[12px] font-extrabold uppercase tracking-[0.14em] text-[#8E5EB5]">
+          Task Path
+        </p>
+        <div className="mt-4 space-y-4">
+          {progressSteps.map((step, index, steps) => (
             <div key={step.label} className="flex gap-3">
               <div className="flex flex-col items-center">
                 <span
@@ -1014,7 +995,7 @@ export function BookingDetailScreen({ booking }: BookingDetailProps) {
                       ? "border-[#8E5EB5] bg-[#8E5EB5] text-white"
                       : step.status === "current"
                         ? "border-[#8E5EB5] bg-white text-[#8E5EB5]"
-                        : "border-[#d9e2dd] bg-white text-[#98a2b3]"
+                        : "border-[#ddd4ea] bg-white text-[#98a2b3]"
                   }`}
                 >
                   {step.status === "done" ? (
@@ -1034,52 +1015,52 @@ export function BookingDetailScreen({ booking }: BookingDetailProps) {
               <div className="pt-0.5">
                 <p
                   className={`text-[14px] font-semibold ${
-                    step.status === "pending" ? "text-[#98a2b3]" : "text-[#111827]"
+                    step.status === "pending" ? "text-[#98a2b3]" : "text-[#261a3d]"
                   }`}
                 >
                   {step.label}
                 </p>
-                <p className="mt-1 text-[12px] text-[#6b7280]">
+                <p className="mt-1 text-[12px] text-[#7f7692]">
                   {step.status === "done"
                     ? "Completed"
                     : step.status === "current"
-                      ? "Current step"
+                      ? booking.schedule
                       : "Waiting"}
                 </p>
               </div>
             </div>
           ))}
         </div>
-      </SectionCard>
+      </section>
 
-      <SectionCard title="Payment Summary">
-        <ProfileInfoRow
-          icon={<WalletIcon className="h-4 w-4" />}
-          label="Final Amount"
-          value={`RM${booking.paymentAmount ?? 0}`}
-          valueTone="purple"
-        />
-        {typeof booking.baseAmount === "number" ? (
-          <ProfileInfoRow
-            icon={<WalletIcon className="h-4 w-4" />}
-            label="Service Amount"
-            value={`RM${booking.baseAmount}`}
-          />
-        ) : null}
-        {typeof booking.additionalCharge === "number" && booking.additionalCharge > 0 ? (
-          <ProfileInfoRow
-            icon={<WalletIcon className="h-4 w-4" />}
-            label="Additional Charge"
-            value={`RM${booking.additionalCharge}`}
-          />
-        ) : null}
-        <ProfileInfoRow
-          icon={<WalletIcon className="h-4 w-4" />}
-          label="Payment Method"
-          value={booking.paymentMethod ?? "Not available"}
-        />
+      <section className="mt-4 rounded-[24px] border border-[#ebe2f8] bg-white p-4 shadow-[0_14px_30px_rgba(106,69,160,0.07)]">
+        <p className="text-[12px] font-extrabold uppercase tracking-[0.14em] text-[#8E5EB5]">
+          Payment Summary
+        </p>
+        <div className="mt-4 space-y-3 text-[13px] text-[#4f4663]">
+          <SummaryRow label="Service Charges" value={`RM${booking.baseAmount ?? booking.paymentAmount ?? 0}`} />
+          <SummaryRow label="Service Fee" value={typeof booking.additionalCharge === "number" ? `RM${booking.additionalCharge}` : "RM0"} />
+          <SummaryRow label="Payment Method" value={booking.paymentMethod ?? "Not available"} />
+          <div className="border-t border-[#efe6fb] pt-3">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-[15px] font-black text-[#24193a]">Total Paid</p>
+              <p className="text-[22px] font-black text-[#8E5EB5]">RM{booking.paymentAmount ?? 0}</p>
+            </div>
+          </div>
+        </div>
+        <div className="mt-4 rounded-[16px] border border-[#d7efdb] bg-[#effbf1] px-4 py-3">
+          <div className="flex items-center gap-3">
+            <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#22c55e] text-white">
+              <CheckCircleIcon className="h-4 w-4" />
+            </span>
+            <div>
+              <p className="text-[13px] font-bold text-[#1f4d2b]">{paidDateLabel}</p>
+              <p className="text-[11px] text-[#5f7d67]">{booking.schedule}</p>
+            </div>
+          </div>
+        </div>
         {booking.additionalChargeDescription ? (
-          <div className="border-t border-[#edf1ef] pt-3">
+          <div className="mt-4 border-t border-[#efe6fb] pt-3">
             <p className="text-[13px] font-semibold text-[#111827]">
               Additional Charge Description
             </p>
@@ -1089,7 +1070,7 @@ export function BookingDetailScreen({ booking }: BookingDetailProps) {
           </div>
         ) : null}
         {booking.paymentNote ? (
-          <div className="border-t border-[#edf1ef] pt-3">
+          <div className="mt-4 border-t border-[#efe6fb] pt-3">
             <p className="text-[13px] font-semibold text-[#111827]">
               Provider Payment Note
             </p>
@@ -1098,7 +1079,7 @@ export function BookingDetailScreen({ booking }: BookingDetailProps) {
             </p>
           </div>
         ) : null}
-      </SectionCard>
+      </section>
 
       {booking.status === "cancelled" ? (
         <SectionCard title="Cancellation Details">
@@ -1115,6 +1096,24 @@ export function BookingDetailScreen({ booking }: BookingDetailProps) {
           </div>
         </SectionCard>
       ) : null}
+
+      <SectionCard title="Booking Details">
+        <ProfileInfoRow
+          icon={<CalendarIcon className="h-4 w-4" />}
+          label="Date & Time"
+          value={booking.schedule}
+        />
+        <ProfileInfoRow
+          icon={<PinIcon className="h-4 w-4" />}
+          label="Location"
+          value={booking.location}
+        />
+        <ProfileInfoRow
+          icon={<WalletIcon className="h-4 w-4" />}
+          label="Booking ID"
+          value={booking.id}
+        />
+      </SectionCard>
 
       <SectionCard title="Notes">
         <p className="text-[14px] leading-6 text-[#374151]">
@@ -1215,22 +1214,22 @@ export function BookingReviewScreen({ booking }: BookingReviewProps) {
 
   return (
     <ProfileShell title="Review" showBack backHref={`/profile/bookings/${booking.id}`}>
-      <div className="rounded-[24px] border border-[#eee5f7] bg-white p-4 text-center shadow-[0_18px_40px_rgba(86,38,135,0.08)]">
-        <div className="flex gap-4">
-          <BookingThumb kind={booking.thumbnail} imageSrc={booking.imageSrc} service={booking.service} />
-          <div className="min-w-0 flex-1">
-            <h2 className="text-[17px] font-extrabold text-[#111827]">
-              {booking.provider}
-            </h2>
-            <p className="mt-1 text-[14px] text-[#8E5EB5]">{booking.service}</p>
-            <p className="mt-3 text-[13px] leading-6 text-[#6d6480]">
-              How was your experience with {booking.provider}?
-            </p>
+      <div className="rounded-[24px] border border-[#ebe2f8] bg-white p-5 text-center shadow-[0_16px_34px_rgba(106,69,160,0.08)]">
+        <div className="mx-auto flex w-fit flex-col items-center">
+          <div className="rounded-[20px] border border-[#f1e7fb] bg-[#fffdfd] p-1">
+            <BookingThumb kind={booking.thumbnail} imageSrc={booking.imageSrc} service={booking.service} />
           </div>
+          <p className="mt-4 text-[14px] font-bold text-[#1f1630]">
+            How was your experience with
+          </p>
+          <h2 className="mt-1 text-[20px] font-black text-[#1f1630]">
+            {booking.provider}?
+          </h2>
+          <p className="mt-1 text-[13px] text-[#7f7692]">{booking.service}</p>
         </div>
       </div>
 
-      <SectionCard title="Rate Provider">
+      <SectionCard title="Rate your experience">
         <div className="flex items-center justify-center gap-2">
           {[1, 2, 3, 4, 5].map((value) => (
             <button
@@ -1249,12 +1248,13 @@ export function BookingReviewScreen({ booking }: BookingReviewProps) {
           ))}
         </div>
         <p className="mt-3 text-center text-[13px] text-[#6b7280]">
-          {rating > 0 ? `You selected ${rating} star${rating > 1 ? "s" : ""}.` : "Tap a star to rate this service."}
+          {rating > 0 ? "Excellent" : "Tap a star to rate this service."}
         </p>
       </SectionCard>
 
       <SectionCard title="What did you like?">
-        <div className="flex flex-wrap gap-2">
+        <p className="mb-3 text-[12px] text-[#7f7692]">Select all that apply</p>
+        <div className="grid grid-cols-2 gap-2">
           {reviewTags.map((tag) => {
             const active = selectedTags.includes(tag);
             return (
@@ -1266,10 +1266,10 @@ export function BookingReviewScreen({ booking }: BookingReviewProps) {
                     active ? current.filter((item) => item !== tag) : [...current, tag],
                   )
                 }
-                className={`rounded-full px-3 py-2 text-[12px] font-bold ${
+                className={`rounded-[10px] px-3 py-2 text-[12px] font-bold ${
                   active
                     ? "bg-[#8E5EB5] text-white"
-                    : "bg-[#f7f1fc] text-[#8E5EB5] ring-1 ring-[#e8daf7]"
+                    : "bg-white text-[#8E5EB5] ring-1 ring-[#e8daf7]"
                 }`}
               >
                 {tag}
@@ -1279,8 +1279,22 @@ export function BookingReviewScreen({ booking }: BookingReviewProps) {
         </div>
       </SectionCard>
 
-      <SectionCard title="Add Photos">
-        <label className="inline-flex h-11 w-full cursor-pointer items-center justify-center rounded-[12px] border border-dashed border-[#8E5EB5] bg-[#fcfaff] text-[14px] font-extrabold text-[#8E5EB5]">
+      <SectionCard title="Write your review (optional)">
+        <textarea
+          value={comment}
+          onChange={(event) => setComment(event.target.value)}
+          placeholder="Great service! Very professional and the food was amazing."
+          maxLength={200}
+          className="min-h-[8rem] w-full rounded-[16px] border border-[#e7dcf7] px-4 py-3 text-[14px] text-[#111827] outline-none"
+        />
+        <div className="mt-2 flex items-center justify-between text-[11px] text-[#9a90ac]">
+          <span>Share your experience</span>
+          <span>{comment.length}/200</span>
+        </div>
+      </SectionCard>
+
+      <SectionCard title="Add Photos (Optional)">
+        <label className="inline-flex h-14 w-full cursor-pointer items-center justify-center rounded-[16px] border border-dashed border-[#cdb3eb] bg-[#fcfaff] text-[14px] font-extrabold text-[#8E5EB5]">
           Upload Review Photos
           <input
             type="file"
@@ -1293,25 +1307,16 @@ export function BookingReviewScreen({ booking }: BookingReviewProps) {
             }}
           />
         </label>
-        <div className="mt-3 grid grid-cols-3 gap-3">
-          {(photos.length > 0 ? photos : ["Food setup", "Work result", "Provider arrival"]).map((photo, index) => (
+        <div className="mt-3 grid grid-cols-4 gap-3">
+          {(photos.length > 0 ? photos : ["+", "+", "+", "+"]).map((photo, index) => (
             <div
               key={`${photo}-${index}`}
-              className="flex aspect-square items-center justify-center rounded-[14px] border border-[#eee5f7] bg-[#fcfaff] px-2 text-center text-[12px] font-semibold text-[#6d6480]"
+              className="flex aspect-square items-center justify-center rounded-[12px] border border-[#e7dcf7] bg-white px-2 text-center text-[20px] font-semibold text-[#8E5EB5]"
             >
               {photo}
             </div>
           ))}
         </div>
-      </SectionCard>
-
-      <SectionCard title="Comment">
-        <textarea
-          value={comment}
-          onChange={(event) => setComment(event.target.value)}
-          placeholder="Share your experience with this service provider"
-          className="min-h-[8rem] w-full rounded-[14px] border border-[#d9e2dd] px-4 py-3 text-[14px] text-[#111827] outline-none"
-        />
       </SectionCard>
 
       <SectionCard title="Recommend Provider">
@@ -1382,27 +1387,98 @@ export function PaymentsScreen({ payments }: PaymentsProps) {
   }, [dateFrom, dateTo, filterMode, payments, selectedMonth]);
 
   const totalPaid = filteredPayments.reduce((sum, payment) => sum + payment.amount, 0);
+  const leadPayment = filteredPayments[0];
 
   return (
     <ProfileShell title="Payment" showBack backHref="/profile">
-      <div className="rounded-[24px] border border-[#eee5f7] bg-white p-4 shadow-[0_18px_40px_rgba(86,38,135,0.08)]">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <p className="text-[12px] font-extrabold uppercase tracking-[0.14em] text-[#8E5EB5]">Payment Summary</p>
-            <p className="mt-2 text-[24px] font-extrabold text-[#1f1630]">
-              RM{totalPaid}
-            </p>
+      <div className="rounded-[24px] border border-[#ebe2f8] bg-white p-4 shadow-[0_16px_34px_rgba(106,69,160,0.08)]">
+        <div className="flex items-start gap-3">
+          <div className="rounded-[18px] border border-[#f1e7fb] bg-[#fffdfd] p-1">
+            <div className="flex h-[4.5rem] w-[4.5rem] items-center justify-center rounded-[14px] bg-[linear-gradient(180deg,#2d233d_0%,#181022_100%)] text-white shadow-[0_10px_20px_rgba(34,19,49,0.24)]">
+              <WalletIcon className="h-6 w-6" />
+            </div>
           </div>
-          <div className="rounded-[16px] bg-[#f7f1fc] px-3 py-2 text-right">
-            <p className="text-[12px] font-bold text-[#8E5EB5]">
-              {filteredPayments.length} payments
+          <div className="min-w-0 flex-1">
+            <p className="text-[16px] font-black text-[#1f1630]">
+              {leadPayment?.provider ?? "Service Payment"}
             </p>
-            <p className="mt-1 text-[11px] text-[#6d6480]">
-              Live backend records
+            <p className="mt-1 text-[12px] font-semibold text-[#6d6480]">
+              {leadPayment?.serviceTitle ?? "Customer booking payment"}
+            </p>
+            <p className="mt-1 text-[11px] text-[#8f86a2]">
+              {leadPayment
+                ? new Intl.DateTimeFormat("en-MY", {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                    hour: "numeric",
+                    minute: "2-digit",
+                  }).format(new Date(leadPayment.paidAt))
+                : "No payments available"}
             </p>
           </div>
         </div>
       </div>
+
+      <section className="mt-4 rounded-[24px] border border-[#ebe2f8] bg-white p-4 shadow-[0_14px_30px_rgba(106,69,160,0.07)]">
+        <p className="text-[12px] font-extrabold uppercase tracking-[0.14em] text-[#8E5EB5]">
+          Payment Summary
+        </p>
+        <div className="mt-4 space-y-3">
+          <SummaryRow label="Service Charges" value={`RM${leadPayment?.amount.toFixed(2) ?? totalPaid.toFixed(2)}`} />
+          <SummaryRow label="Service Fee" value="RM0.00" />
+          <SummaryRow label="Platform Fee" value="RM0.00" />
+          <div className="border-t border-[#efe6fb] pt-3">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-[15px] font-black text-[#24193a]">Total Paid</p>
+              <p className="text-[22px] font-black text-[#8E5EB5]">RM{leadPayment?.amount.toFixed(2) ?? totalPaid.toFixed(2)}</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <SectionCard title="Payment Method">
+        <div className="rounded-[16px] border border-[#e7dcf7] bg-white px-4 py-3 shadow-[0_10px_20px_rgba(142,94,181,0.05)]">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <span className="inline-flex h-9 w-9 items-center justify-center rounded-[12px] bg-[#f6effd] text-[#8E5EB5]">
+                <WalletIcon className="h-4 w-4" />
+              </span>
+              <div>
+                <p className="text-[13px] font-bold text-[#24193a]">
+                  {leadPayment?.paymentMethod ?? "Payment method unavailable"}
+                </p>
+                <p className="text-[11px] text-[#8f86a2]">Saved payment source</p>
+              </div>
+            </div>
+            <span className="text-[#8E5EB5]">
+              <ChevronRightIcon className="h-4 w-4" />
+            </span>
+          </div>
+        </div>
+      </SectionCard>
+
+      <section className="mt-4 rounded-[18px] border border-[#d7efdb] bg-[#effbf1] px-4 py-3">
+        <div className="flex items-center gap-3">
+          <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#22c55e] text-white">
+            <CheckCircleIcon className="h-4 w-4" />
+          </span>
+          <div>
+            <p className="text-[13px] font-bold text-[#1f4d2b]">Payment Completed</p>
+            <p className="text-[11px] text-[#5f7d67]">
+              {leadPayment
+                ? `Paid on ${new Intl.DateTimeFormat("en-MY", {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                    hour: "numeric",
+                    minute: "2-digit",
+                  }).format(new Date(leadPayment.paidAt))}`
+                : "Waiting for payment record"}
+            </p>
+          </div>
+        </div>
+      </section>
 
       <SectionCard title="Filter">
         <div className="flex gap-3">
@@ -1465,7 +1541,13 @@ export function PaymentsScreen({ payments }: PaymentsProps) {
               />
             </div>
           </div>
-        )}
+          )}
+      </SectionCard>
+
+      <SectionCard title="Transaction ID">
+        <p className="text-[14px] font-semibold text-[#24193a]">
+          {leadPayment?.id ?? "No transaction available"}
+        </p>
       </SectionCard>
 
       <SectionCard title="Transaction History">
@@ -1537,6 +1619,21 @@ export function PaymentsScreen({ payments }: PaymentsProps) {
         </div>
       </SectionCard>
     </ProfileShell>
+  );
+}
+
+function SummaryRow({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3 text-[13px] text-[#4f4663]">
+      <p>{label}</p>
+      <p className="font-semibold text-[#24193a]">{value}</p>
+    </div>
   );
 }
 
