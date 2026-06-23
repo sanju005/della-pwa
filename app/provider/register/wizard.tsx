@@ -9,6 +9,7 @@ import {
   availabilityDays,
   createDefaultProviderRegistration,
   documentTypes,
+  malaysianStates,
   sexOptions,
   serviceIcons,
   serviceSpecialties,
@@ -50,6 +51,117 @@ const DynamicLocationPickerMap = dynamic(
 );
 
 const TODAY_ISO = new Date().toISOString().split("T")[0];
+const IMAGE_UPLOAD_MAX_BYTES = 2 * 1024 * 1024;
+const CERTIFICATE_UPLOAD_MAX_BYTES = 5 * 1024 * 1024;
+const PROFILE_AND_MEDIA_ACCEPT = "image/jpeg,image/jpg,image/png,image/gif";
+const CERTIFICATE_ACCEPT = "image/jpeg,image/jpg,image/png,image/gif,application/pdf";
+const AVAILABILITY_TIME_OPTIONS = [
+  "12:00 AM",
+  "01:00 AM",
+  "02:00 AM",
+  "03:00 AM",
+  "04:00 AM",
+  "05:00 AM",
+  "06:00 AM",
+  "07:00 AM",
+  "08:00 AM",
+  "09:00 AM",
+  "10:00 AM",
+  "11:00 AM",
+  "12:00 PM",
+  "01:00 PM",
+  "02:00 PM",
+  "03:00 PM",
+  "04:00 PM",
+  "05:00 PM",
+  "06:00 PM",
+  "07:00 PM",
+  "08:00 PM",
+  "09:00 PM",
+  "10:00 PM",
+  "11:00 PM",
+];
+
+async function readFileAsDataUrl(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(typeof reader.result === "string" ? reader.result : "");
+    reader.onerror = () => reject(new Error("Unable to read the selected file."));
+    reader.readAsDataURL(file);
+  });
+}
+
+async function cropImageToSquareDataUrl(file: File) {
+  const sourceDataUrl = await readFileAsDataUrl(file);
+
+  return new Promise<string>((resolve, reject) => {
+    const image = new window.Image();
+    image.onload = () => {
+      const size = Math.min(image.width, image.height);
+      const offsetX = Math.max(0, (image.width - size) / 2);
+      const offsetY = Math.max(0, (image.height - size) / 2);
+      const canvas = document.createElement("canvas");
+      canvas.width = size;
+      canvas.height = size;
+      const context = canvas.getContext("2d");
+
+      if (!context) {
+        reject(new Error("Unable to process this image."));
+        return;
+      }
+
+      context.drawImage(image, offsetX, offsetY, size, size, 0, 0, size, size);
+      resolve(canvas.toDataURL("image/jpeg", 0.9));
+    };
+    image.onerror = () => reject(new Error("Unable to process this image."));
+    image.src = sourceDataUrl;
+  });
+}
+
+async function prepareImageUpload(file: File) {
+  if (!["image/jpeg", "image/jpg", "image/png", "image/gif"].includes(file.type)) {
+    throw new Error("Only JPG, JPEG, PNG, or GIF images are allowed.");
+  }
+
+  if (file.size > IMAGE_UPLOAD_MAX_BYTES) {
+    throw new Error("Image must be smaller than 2MB.");
+  }
+
+  const dataUrl = await cropImageToSquareDataUrl(file);
+  return {
+    displayName: file.name,
+    dataUrl,
+  };
+}
+
+async function prepareCertificateUpload(file: File) {
+  if (!["image/jpeg", "image/jpg", "image/png", "image/gif", "application/pdf"].includes(file.type)) {
+    throw new Error("Certificates must be JPG, JPEG, PNG, GIF, or PDF.");
+  }
+
+  if (file.size > CERTIFICATE_UPLOAD_MAX_BYTES) {
+    throw new Error("Certificate file must be smaller than 5MB.");
+  }
+
+  return {
+    displayName: file.name,
+    dataUrl: await readFileAsDataUrl(file),
+  };
+}
+
+function combineResidentialAddress(data: ProviderRegistrationData["basicProfile"]) {
+  return [
+    data.unitNumber,
+    data.addressLine1,
+    data.addressLine2,
+    data.postcode,
+    data.city,
+    data.state,
+  ]
+    .map((value) => value.trim())
+    .filter(Boolean)
+    .join(", ");
+}
 
 type FlowStep =
   | { type: "basic"; label: string }
@@ -152,7 +264,10 @@ export function ProviderRegistrationWizard() {
         !data.basicProfile.lastName.trim() ? "lastName" : null,
         !data.basicProfile.sex ? "sex" : null,
         !data.basicProfile.dateOfBirth.trim() ? "dateOfBirth" : null,
-        !data.basicProfile.residentialAddress.trim() ? "residentialAddress" : null,
+        !data.basicProfile.addressLine1.trim() ? "addressLine1" : null,
+        !data.basicProfile.postcode.trim() ? "postcode" : null,
+        !data.basicProfile.city.trim() ? "city" : null,
+        !data.basicProfile.state.trim() ? "state" : null,
         !data.account.email.trim() ? "email" : null,
         !data.account.phoneNumber.trim() ? "phoneNumber" : null,
         !data.account.password ? "password" : null,
@@ -316,26 +431,6 @@ export function ProviderRegistrationWizard() {
     }));
   };
 
-  const toggleSpecialty = (service: ProviderService, specialty: string) => {
-    setData((current) => {
-      const currentList = current.serviceDetails[service].specialties;
-      const nextList = currentList.includes(specialty)
-        ? currentList.filter((item) => item !== specialty)
-        : [...currentList, specialty];
-
-      return {
-        ...current,
-        serviceDetails: {
-          ...current.serviceDetails,
-          [service]: {
-            ...current.serviceDetails[service],
-            specialties: nextList,
-          },
-        },
-      };
-    });
-  };
-
   const toggleAvailabilityDay = (day: string) => {
     setData((current) => {
       const days = current.availability.days.includes(day)
@@ -428,7 +523,6 @@ export function ProviderRegistrationWizard() {
                 service={activeStep.service}
                 details={data.serviceDetails[activeStep.service]}
                 onUpdate={updateServiceDetail}
-                onToggleSpecialty={toggleSpecialty}
                 setSubmitError={setSubmitError}
               />
             ) : null}
@@ -532,27 +626,19 @@ function BasicProfileStep({
       return;
     }
 
-    if (!file.type.startsWith("image/")) {
-      setSubmitError("Please choose a JPG or PNG image for the profile photo.");
-      return;
-    }
-
-    if (file.size > 2 * 1024 * 1024) {
-      setSubmitError("Profile photo must be 2MB or smaller.");
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      setSubmitError("");
-      clearInvalidField("profileImage");
-      updateBasic("profileImageName", file.name);
-      updateBasic(
-        "avatarDataUrl",
-        typeof reader.result === "string" ? reader.result : "",
-      );
-    };
-    reader.readAsDataURL(file);
+    void (async () => {
+      try {
+        const prepared = await prepareImageUpload(file);
+        setSubmitError("");
+        clearInvalidField("profileImage");
+        updateBasic("profileImageName", prepared.displayName);
+        updateBasic("avatarDataUrl", prepared.dataUrl);
+      } catch (error) {
+        setSubmitError(
+          error instanceof Error ? error.message : "Unable to process the profile photo."
+        );
+      }
+    })();
   };
 
   return (
@@ -581,12 +667,12 @@ function BasicProfileStep({
                 Add a profile photo
               </p>
               <p className="mt-1 text-[12px] text-[#6b7280]">
-                JPG or PNG, up to 2MB.
+                JPG, JPEG, PNG, or GIF. Max 2MB. Auto-cropped to square before upload.
               </p>
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/png,image/jpeg,image/jpg"
+                accept={PROFILE_AND_MEDIA_ACCEPT}
                 onChange={handleAvatarChange}
                 className="mt-3 block w-full text-[13px] text-[#4b5563] file:mr-3 file:rounded-[10px] file:border-0 file:bg-[#8E5EB5] file:px-3 file:py-2 file:font-bold file:text-white"
               />
@@ -622,7 +708,6 @@ function BasicProfileStep({
           updateBasic("sex", value);
         }}
         options={sexOptions}
-        placeholder="Select sex"
       />
       <InputField label="Marketing Name" hint="e.g. Della Home Chef" value={data.basicProfile.marketingName} onChange={(value) => updateBasic("marketingName", value)} />
       <DateInputField
@@ -634,15 +719,60 @@ function BasicProfileStep({
           updateBasic("dateOfBirth", value);
         }}
       />
-      <TextAreaField
-        label="Residential Address"
-        value={data.basicProfile.residentialAddress}
-        invalid={invalidFields.includes("residentialAddress")}
+      <InputField
+        label="Unit No"
+        value={data.basicProfile.unitNumber}
         onChange={(value) => {
-          clearInvalidField("residentialAddress");
-          updateBasic("residentialAddress", value);
+          clearInvalidField("unitNumber");
+          updateBasic("unitNumber", value);
         }}
-        rows={3}
+      />
+      <InputField
+        label="Address Line 1"
+        value={data.basicProfile.addressLine1}
+        invalid={invalidFields.includes("addressLine1")}
+        onChange={(value) => {
+          clearInvalidField("addressLine1");
+          updateBasic("addressLine1", value);
+        }}
+      />
+      <InputField
+        label="Address Line 2"
+        value={data.basicProfile.addressLine2}
+        onChange={(value) => {
+          clearInvalidField("addressLine2");
+          updateBasic("addressLine2", value);
+        }}
+      />
+      <div className="grid grid-cols-2 gap-3">
+        <InputField
+          label="Postcode"
+          value={data.basicProfile.postcode}
+          invalid={invalidFields.includes("postcode")}
+          onChange={(value) => {
+            clearInvalidField("postcode");
+            updateBasic("postcode", value);
+          }}
+        />
+        <InputField
+          label="City"
+          value={data.basicProfile.city}
+          invalid={invalidFields.includes("city")}
+          onChange={(value) => {
+            clearInvalidField("city");
+            updateBasic("city", value);
+          }}
+        />
+      </div>
+      <SelectField
+        label="State"
+        value={data.basicProfile.state}
+        invalid={invalidFields.includes("state")}
+        onChange={(value) => {
+          clearInvalidField("state");
+          updateBasic("state", value);
+        }}
+        options={malaysianStates}
       />
 
       <InputField
@@ -738,7 +868,6 @@ function ServiceDetailsStep({
   service,
   details,
   onUpdate,
-  onToggleSpecialty,
   setSubmitError,
 }: {
   service: ProviderService;
@@ -748,52 +877,46 @@ function ServiceDetailsStep({
     field: keyof ProviderRegistrationData["serviceDetails"][ProviderService],
     value: string | string[]
   ) => void;
-  onToggleSpecialty: (service: ProviderService, specialty: string) => void;
   setSubmitError: (value: string) => void;
 }) {
-  const specialties = serviceSpecialties[service];
+  const specialtyExamples = serviceSpecialties[service];
 
   return (
     <div className="space-y-4">
       <SelectField label="Years of Experience" value={details.yearsExperience} onChange={(value) => onUpdate(service, "yearsExperience", value)} options={["1 Year", "2 Years", "3 Years", "4 Years", "5 Years", "6 Years", "7 Years", "8+ Years"]} />
 
-      <div>
-        <p className="mb-2 text-[13px] font-semibold text-[#111827]">{service} Specialties</p>
-        <div className="flex flex-wrap gap-2">
-          {specialties.map((specialty) => {
-            const active = details.specialties.includes(specialty);
-            return (
-              <button
-                key={specialty}
-                type="button"
-                onClick={() => onToggleSpecialty(service, specialty)}
-                className={`inline-flex items-center gap-2 rounded-[10px] border px-3 py-2 text-[12px] font-semibold ${active ? "border-[#8E5EB5] bg-[#f5f1fa] text-[#8E5EB5]" : "border-[#d8e4dc] bg-white text-[#6b7280]"}`}
-              >
-                <span className={`inline-flex h-3.5 w-3.5 items-center justify-center rounded-[4px] ${active ? "bg-[#8E5EB5] text-white" : "border border-[#d8e4dc] bg-white text-transparent"}`}>
-                  <CheckIcon className="h-3 w-3" />
-                </span>
-                {specialty}
-              </button>
-            );
-          })}
-        </div>
-      </div>
+      <InputField
+        label={`${service} Service Types / Specialties`}
+        hint={`Type your own options. Examples: ${specialtyExamples.join(", ")}`}
+        value={details.specialties.join(", ")}
+        onChange={(value) =>
+          onUpdate(
+            service,
+            "specialties",
+            value
+              .split(",")
+              .map((item) => item.trim())
+              .filter(Boolean),
+          )
+        }
+      />
 
       <AssetStrip
         label="Service Images"
         captions={details.imageCaptions}
         previews={details.imageDataUrls}
         tone="media"
-        onSelect={(index, fileName, dataUrl) => {
-          const nextNames = [...details.imageCaptions];
+        onSelect={(index, dataUrl) => {
           const nextDataUrls = [...details.imageDataUrls];
-
-          nextNames[index] = fileName;
           nextDataUrls[index] = dataUrl;
 
           setSubmitError("");
-          onUpdate(service, "imageCaptions", nextNames);
           onUpdate(service, "imageDataUrls", nextDataUrls);
+        }}
+        onCaptionChange={(index, caption) => {
+          const nextCaptions = [...details.imageCaptions];
+          nextCaptions[index] = caption;
+          onUpdate(service, "imageCaptions", nextCaptions);
         }}
         setSubmitError={setSubmitError}
       />
@@ -802,16 +925,17 @@ function ServiceDetailsStep({
         captions={details.certificateCaptions}
         previews={details.certificateDataUrls}
         tone="certificate"
-        onSelect={(index, fileName, dataUrl) => {
-          const nextNames = [...details.certificateCaptions];
+        onSelect={(index, dataUrl) => {
           const nextDataUrls = [...details.certificateDataUrls];
-
-          nextNames[index] = fileName;
           nextDataUrls[index] = dataUrl;
 
           setSubmitError("");
-          onUpdate(service, "certificateCaptions", nextNames);
           onUpdate(service, "certificateDataUrls", nextDataUrls);
+        }}
+        onCaptionChange={(index, caption) => {
+          const nextCaptions = [...details.certificateCaptions];
+          nextCaptions[index] = caption;
+          onUpdate(service, "certificateCaptions", nextCaptions);
         }}
         setSubmitError={setSubmitError}
       />
@@ -896,10 +1020,12 @@ function AvailabilityStep({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <InputField compact label="Start Time" value={data.availability.startTime} onChange={(value) => onUpdate("startTime", value)} />
-        <InputField compact label="End Time" value={data.availability.endTime} onChange={(value) => onUpdate("endTime", value)} />
-      </div>
+      {data.availability.timePreset === "Custom Time" ? (
+        <div className="grid grid-cols-2 gap-3">
+          <SelectField compact label="Start Time" value={data.availability.startTime} onChange={(value) => onUpdate("startTime", value)} options={AVAILABILITY_TIME_OPTIONS} />
+          <SelectField compact label="End Time" value={data.availability.endTime} onChange={(value) => onUpdate("endTime", value)} options={AVAILABILITY_TIME_OPTIONS} />
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -918,33 +1044,6 @@ function ProviderLocationStep({
 }) {
   const [isResolvingAddress, setIsResolvingAddress] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
-  const [isSearchingAddress, setIsSearchingAddress] = useState(false);
-  const lastSearchedQueryRef = useRef("");
-
-  const addressQuery = useMemo(
-    () =>
-      [
-        data.providerLocation.houseNumber,
-        data.providerLocation.road,
-        data.providerLocation.suburb,
-        data.providerLocation.postcode,
-        data.providerLocation.city,
-        data.providerLocation.state,
-        data.providerLocation.country || "Malaysia",
-      ]
-        .map((value) => value.trim())
-        .filter(Boolean)
-        .join(", "),
-    [
-      data.providerLocation.houseNumber,
-      data.providerLocation.road,
-      data.providerLocation.suburb,
-      data.providerLocation.postcode,
-      data.providerLocation.city,
-      data.providerLocation.state,
-      data.providerLocation.country,
-    ],
-  );
 
   const updateMapLocation = async (latitude: number, longitude: number) => {
     setIsResolvingAddress(true);
@@ -1015,59 +1114,13 @@ function ProviderLocationStep({
     }
   }, [data.providerLocation.areaLabel]);
 
-  useEffect(() => {
-    const trimmedQuery = addressQuery.trim();
-
-    if (trimmedQuery.length < 8 || trimmedQuery === lastSearchedQueryRef.current) {
-      return;
-    }
-
-    const timer = setTimeout(() => {
-      void (async () => {
-        setIsSearchingAddress(true);
-
-        try {
-          const response = await fetch(
-            `/api/location/search?q=${encodeURIComponent(trimmedQuery)}`,
-            { cache: "no-store" },
-          );
-
-          const result = (await response.json()) as {
-            results?: Array<{
-              id: number;
-              label: string;
-              latitude: number;
-              longitude: number;
-            }>;
-          };
-
-          const match = result.results?.[0];
-
-          if (!response.ok || !match) {
-            return;
-          }
-
-          lastSearchedQueryRef.current = trimmedQuery;
-          setSubmitError("");
-          await updateMapLocation(match.latitude, match.longitude);
-        } catch {
-          // Ignore background address-search failures and keep manual controls usable.
-        } finally {
-          setIsSearchingAddress(false);
-        }
-      })();
-    }, 650);
-
-    return () => clearTimeout(timer);
-  }, [addressQuery, setSubmitError]);
-
   return (
     <div className="space-y-4">
       <div className="rounded-[14px] border border-[#dfe8e2] bg-[#f6fbf7] p-4">
         <div className="space-y-3">
           <div className="min-w-0">
             <p className="text-[13px] font-semibold leading-6 text-[#111827] break-words">
-              {isResolvingAddress || isSearchingAddress
+              {isResolvingAddress
                 ? "Updating address..."
                 : data.providerLocation.areaLabel || "Current location not loaded yet."}
             </p>
@@ -1086,57 +1139,6 @@ function ProviderLocationStep({
         </div>
       </div>
 
-      <div className="rounded-[18px] border border-[#dfe8e2] bg-white p-4 shadow-[0_8px_20px_rgba(15,23,42,0.03)]">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <InputField
-            compact
-            label="Unit No"
-            value={data.providerLocation.houseNumber}
-            onChange={(value) => onUpdate("houseNumber", value)}
-          />
-          <InputField
-            compact
-            label="Postcode"
-            value={data.providerLocation.postcode}
-            onChange={(value) => onUpdate("postcode", value)}
-          />
-        </div>
-
-        <div className="mt-3 space-y-3">
-          <InputField
-            compact
-            label="Address Line 1"
-            value={data.providerLocation.road}
-            onChange={(value) => onUpdate("road", value)}
-          />
-          <InputField
-            compact
-            label="Address Line 2"
-            value={data.providerLocation.suburb}
-            onChange={(value) => onUpdate("suburb", value)}
-          />
-        </div>
-
-        <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <InputField
-            compact
-            label="City"
-            value={data.providerLocation.city}
-            onChange={(value) => onUpdate("city", value)}
-          />
-          <InputField
-            compact
-            label="State"
-            value={data.providerLocation.state}
-            onChange={(value) => onUpdate("state", value)}
-          />
-        </div>
-
-        <p className="mt-3 text-[12px] text-[#6b7280]">
-          As you type the address, we&apos;ll search and move the map pin automatically.
-        </p>
-      </div>
-
       <div className="overflow-hidden rounded-[18px] border border-[#dfe8e2] bg-[linear-gradient(180deg,#f7fbf7_0%,#eff7ef_100%)]">
         <div className="relative h-[18rem] overflow-hidden">
           <DynamicLocationPickerMap
@@ -1151,7 +1153,7 @@ function ProviderLocationStep({
             {data.providerLocation.radius} KM
           </span>
           <span className="absolute bottom-4 left-4 right-4 rounded-[12px] bg-white/92 px-3 py-2 text-[13px] font-medium text-[#111827] shadow-[0_8px_18px_rgba(15,23,42,0.08)]">
-            {isResolvingAddress || isSearchingAddress
+            {isResolvingAddress
               ? "Updating address..."
               : data.providerLocation.areaLabel || "Current location not loaded yet."}
           </span>
@@ -1174,11 +1176,25 @@ function ReviewStep({ data }: { data: ProviderRegistrationData }) {
   return (
     <div className="space-y-5">
       <ReviewCard title="Profile">
+        {data.basicProfile.avatarDataUrl ? (
+          <div className="mb-4 flex justify-center">
+            <div className="relative h-24 w-24 overflow-hidden rounded-full border border-[#e5d9f3]">
+              <Image
+                src={data.basicProfile.avatarDataUrl}
+                alt="Profile preview"
+                fill
+                unoptimized
+                className="object-cover"
+              />
+            </div>
+          </div>
+        ) : null}
         <ReviewLine icon={<UserIcon className="h-4 w-4" />} text={`${getProviderFullName(data)} (${data.basicProfile.marketingName})`} />
         <ReviewLine icon={<UserIcon className="h-4 w-4" />} text={`Sex: ${data.basicProfile.sex || "Not selected"}`} />
         <ReviewLine icon={<PhoneIcon className="h-4 w-4" />} text={`${data.account.phoneCountryCode} ${data.account.phoneNumber}`} />
         <ReviewLine icon={<PinIcon className="h-4 w-4" />} text={data.basicProfile.serviceLocation} />
         <ReviewLine icon={<RangeIcon className="h-4 w-4" />} text={`${data.providerLocation.radius} KM`} />
+        <ReviewLine icon={<PinIcon className="h-4 w-4" />} text={combineResidentialAddress(data.basicProfile) || "No residential address provided"} />
       </ReviewCard>
 
       <ReviewCard title="Services">
@@ -1192,6 +1208,39 @@ function ReviewStep({ data }: { data: ProviderRegistrationData }) {
                   RM{details.hourlyRate}/hr - RM{details.dailyRate}/day
                 </p>
                 <p className="mt-1 text-[13px] text-[#4b5563]">{details.yearsExperience} Exp</p>
+                {details.specialties.length > 0 ? (
+                  <p className="mt-1 text-[13px] text-[#4b5563]">
+                    {details.specialties.join(", ")}
+                  </p>
+                ) : null}
+                {details.imageDataUrls.some(Boolean) ? (
+                  <div className="mt-3 grid grid-cols-3 gap-2">
+                    {details.imageDataUrls.map((image, index) =>
+                      image ? (
+                        <div key={`${service}-image-${index}`} className="space-y-1">
+                          <div className="relative aspect-square overflow-hidden rounded-[12px] border border-[#e5d9f3]">
+                            <Image src={image} alt={details.imageCaptions[index] || `${service} work ${index + 1}`} fill unoptimized className="object-cover" />
+                          </div>
+                          <p className="text-[11px] text-[#6b7280]">
+                            {details.imageCaptions[index] || `Work ${index + 1}`}
+                          </p>
+                        </div>
+                      ) : null,
+                    )}
+                  </div>
+                ) : null}
+                {details.certificateDataUrls.some(Boolean) ? (
+                  <div className="mt-3 space-y-1">
+                    <p className="text-[12px] font-semibold text-[#111827]">Certificates</p>
+                    {details.certificateDataUrls.map((file, index) =>
+                      file ? (
+                        <p key={`${service}-cert-${index}`} className="text-[12px] text-[#6b7280]">
+                          {details.certificateCaptions[index] || `Certificate ${index + 1}`}
+                        </p>
+                      ) : null,
+                    )}
+                  </div>
+                ) : null}
               </div>
             );
           })}
@@ -1291,6 +1340,17 @@ function SuccessStep({
   return (
     <div className="space-y-6">
       <div className="rounded-[20px] border border-[#e4ece7] bg-white p-5 text-center shadow-[0_10px_26px_rgba(15,23,42,0.04)]">
+        {data.basicProfile.avatarDataUrl ? (
+          <div className="mx-auto mb-4 relative h-24 w-24 overflow-hidden rounded-full border border-[#e5d9f3]">
+            <Image
+              src={data.basicProfile.avatarDataUrl}
+              alt="Profile preview"
+              fill
+              unoptimized
+              className="object-cover"
+            />
+          </div>
+        ) : null}
         <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-[#8E5EB5] text-white shadow-[0_18px_30px_rgba(142,94,181,0.22)]">
           <CheckIcon className="h-10 w-10" />
         </div>
@@ -1349,6 +1409,43 @@ function SuccessStep({
               );
             })}
           </div>
+          {data.selectedServices.map((service) => {
+            const details = data.serviceDetails[service];
+            if (!details.imageDataUrls.some(Boolean) && !details.certificateDataUrls.some(Boolean)) {
+              return null;
+            }
+
+            return (
+              <div key={`${service}-assets`} className="mt-4 border-t border-[#ecf1ed] pt-4">
+                <h5 className="text-[13px] font-bold text-[#111827]">{service} uploads</h5>
+                {details.imageDataUrls.some(Boolean) ? (
+                  <div className="mt-3 grid grid-cols-3 gap-2">
+                    {details.imageDataUrls.map((image, index) =>
+                      image ? (
+                        <div key={`${service}-success-image-${index}`} className="space-y-1">
+                          <div className="relative aspect-square overflow-hidden rounded-[10px] border border-[#e5d9f3]">
+                            <Image src={image} alt={details.imageCaptions[index] || `Work ${index + 1}`} fill unoptimized className="object-cover" />
+                          </div>
+                          <p className="text-[11px] text-[#6b7280]">{details.imageCaptions[index] || `Work ${index + 1}`}</p>
+                        </div>
+                      ) : null,
+                    )}
+                  </div>
+                ) : null}
+                {details.certificateDataUrls.some(Boolean) ? (
+                  <div className="mt-3 space-y-1">
+                    {details.certificateDataUrls.map((file, index) =>
+                      file ? (
+                        <p key={`${service}-success-cert-${index}`} className="text-[12px] text-[#6b7280]">
+                          Certificate: {details.certificateCaptions[index] || `Certificate ${index + 1}`}
+                        </p>
+                      ) : null,
+                    )}
+                  </div>
+                ) : null}
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -1577,6 +1674,7 @@ function SelectField({
   options,
   placeholder,
   invalid = false,
+  compact = false,
 }: {
   label: string;
   value: string;
@@ -1584,6 +1682,7 @@ function SelectField({
   options: string[];
   placeholder?: string;
   invalid?: boolean;
+  compact?: boolean;
 }) {
   return (
     <label className="block">
@@ -1592,7 +1691,7 @@ function SelectField({
         <select
           value={value}
           onChange={(event) => onChange(event.target.value)}
-          className="h-11 w-full appearance-none border-0 bg-transparent text-[14px] text-[#111827] outline-none"
+          className={`${compact ? "h-10" : "h-11"} w-full appearance-none border-0 bg-transparent text-[14px] text-[#111827] outline-none`}
         >
           {placeholder ? (
             <option value="">{placeholder}</option>
@@ -1654,27 +1753,35 @@ function AssetStrip({
   previews,
   tone,
   onSelect,
+  onCaptionChange,
   setSubmitError,
 }: {
   label: string;
   captions: string[];
   previews: string[];
   tone: "media" | "certificate";
-  onSelect: (index: number, fileName: string, dataUrl: string) => void;
+  onSelect: (index: number, dataUrl: string) => void;
+  onCaptionChange: (index: number, caption: string) => void;
   setSubmitError: (value: string) => void;
 }) {
   return (
     <div>
       <p className="mb-2 text-[13px] font-semibold text-[#111827]">{label}</p>
+      <p className="mb-3 text-[12px] text-[#6b7280]">
+        {tone === "media"
+          ? "Square images only. JPG, JPEG, PNG, or GIF under 2MB. Images are auto-cropped to square."
+          : "Certificates can be JPG, JPEG, PNG, GIF, or PDF up to 5MB."}
+      </p>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         {captions.map((caption, index) => (
           <AssetUploadSlot
             key={`${label}-${index}`}
             index={index}
-            fileName={caption}
+            caption={caption}
             preview={previews[index] ?? ""}
             tone={tone}
             onSelect={onSelect}
+            onCaptionChange={onCaptionChange}
             setSubmitError={setSubmitError}
           />
         ))}
@@ -1685,17 +1792,19 @@ function AssetStrip({
 
 function AssetUploadSlot({
   index,
-  fileName,
+  caption,
   preview,
   tone,
   onSelect,
+  onCaptionChange,
   setSubmitError,
 }: {
   index: number;
-  fileName: string;
+  caption: string;
   preview: string;
   tone: "media" | "certificate";
-  onSelect: (index: number, fileName: string, dataUrl: string) => void;
+  onSelect: (index: number, dataUrl: string) => void;
+  onCaptionChange: (index: number, caption: string) => void;
   setSubmitError: (value: string) => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -1707,21 +1816,22 @@ function AssetUploadSlot({
       return;
     }
 
-    if (!file.type.startsWith("image/")) {
-      setSubmitError("Please choose a JPG or PNG image.");
-      return;
+    try {
+      const prepared =
+        tone === "media"
+          ? await prepareImageUpload(file)
+          : await prepareCertificateUpload(file);
+      setSubmitError("");
+      onSelect(index, prepared.dataUrl);
+      if (!caption.trim()) {
+        onCaptionChange(
+          index,
+          tone === "media" ? `Work ${index + 1}` : prepared.displayName,
+        );
+      }
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : "Unable to process the selected file.");
     }
-
-    if (file.size > 5 * 1024 * 1024) {
-      setSubmitError("Each upload must be 5MB or smaller.");
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      onSelect(index, file.name, typeof reader.result === "string" ? reader.result : "");
-    };
-    reader.readAsDataURL(file);
   };
 
   return (
@@ -1729,7 +1839,7 @@ function AssetUploadSlot({
       <input
         ref={inputRef}
         type="file"
-        accept="image/png,image/jpeg,image/jpg"
+        accept={tone === "media" ? PROFILE_AND_MEDIA_ACCEPT : CERTIFICATE_ACCEPT}
         onChange={handleChange}
         className="hidden"
       />
@@ -1739,26 +1849,34 @@ function AssetUploadSlot({
         className="w-full text-left"
       >
         <div
-          className={`relative flex h-24 items-center justify-center overflow-hidden rounded-[12px] border border-[#e1e9e4] ${
+          className={`relative flex ${tone === "media" ? "aspect-square h-auto" : "h-24"} items-center justify-center overflow-hidden rounded-[12px] border border-[#e1e9e4] ${
             preview ? "bg-white" : "bg-[#f8fbf8]"
           }`}
         >
-          {preview ? (
+          {preview && !preview.startsWith("data:application/pdf") ? (
             <Image
               src={preview}
-              alt={fileName || `Upload ${index + 1}`}
+              alt={caption || `Upload ${index + 1}`}
               fill
               unoptimized
               className="object-cover"
             />
+          ) : preview ? (
+            <div className="flex flex-col items-center justify-center text-center text-[#8E5EB5]">
+              <UploadIcon className="h-6 w-6" />
+              <span className="mt-2 text-[11px] font-semibold">PDF Ready</span>
+            </div>
           ) : (
             <PlusIcon className="h-6 w-6 text-[#8E5EB5]" />
           )}
         </div>
-        <p className="mt-2 truncate text-[12px] font-semibold text-[#111827]">
-          {fileName || `Upload ${tone === "media" ? "image" : "certificate"} ${index + 1}`}
-        </p>
       </button>
+      <input
+        value={caption}
+        onChange={(event) => onCaptionChange(index, event.target.value)}
+        placeholder={tone === "media" ? "Add image caption" : "Add certificate caption"}
+        className="mt-2 h-10 w-full rounded-[10px] border border-[#dfe8e2] px-3 text-[12px] text-[#111827] outline-none"
+      />
     </div>
   );
 }

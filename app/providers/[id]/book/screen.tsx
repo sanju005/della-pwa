@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -36,6 +36,36 @@ const startTimeOptions = [
   "03:00 PM",
   "04:00 PM",
 ];
+
+function toIsoDateFromBookingLabel(value: string) {
+  const parts = value.split(",").map((part) => part.trim());
+  const datePart = parts.length >= 2 ? parts.slice(1).join(", ") : value.trim();
+  const parsed = new Date(datePart);
+
+  if (Number.isNaN(parsed.getTime())) {
+    return null;
+  }
+
+  return `${parsed.getFullYear()}-${String(parsed.getMonth() + 1).padStart(2, "0")}-${String(parsed.getDate()).padStart(2, "0")}`;
+}
+
+function getCurrentKualaLumpurNow() {
+  const formatter = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Kuala_Lumpur",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+  const parts = formatter.formatToParts(new Date());
+  const getValue = (type: string) => parts.find((part) => part.type === type)?.value ?? "";
+  return {
+    date: `${getValue("year")}-${getValue("month")}-${getValue("day")}`,
+    minutes: Number(getValue("hour")) * 60 + Number(getValue("minute")),
+  };
+}
 
 function timeToMinutes(label: string) {
   const [time, period] = label.split(" ");
@@ -101,13 +131,40 @@ export function BookingFormScreen({
   const [notes, setNotes] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const selectedDateIso = toIsoDateFromBookingLabel(selectedDate);
+  const nowInKl = getCurrentKualaLumpurNow();
+  const filteredStartTimeOptions = useMemo(() => {
+    if (selectedDateIso !== nowInKl.date) {
+      return startTimeOptions;
+    }
+
+    return startTimeOptions.filter((option) => timeToMinutes(option) > nowInKl.minutes);
+  }, [nowInKl.date, nowInKl.minutes, selectedDateIso]);
 
   const endTimeOptions = useMemo(() => {
     const startMinutes = timeToMinutes(startTime);
-    return startTimeOptions
+    return filteredStartTimeOptions
       .map((option) => ({ label: option, minutes: timeToMinutes(option) }))
       .filter((option) => option.minutes > startMinutes);
-  }, [startTime]);
+  }, [filteredStartTimeOptions, startTime]);
+
+  useEffect(() => {
+    if (!filteredStartTimeOptions.includes(startTime)) {
+      const nextStart = filteredStartTimeOptions[0];
+      if (nextStart) {
+        setStartTime(nextStart);
+      }
+    }
+  }, [filteredStartTimeOptions, startTime]);
+
+  useEffect(() => {
+    if (bookingMode === "hourly") {
+      const nextValidEnd = endTimeOptions[0]?.label;
+      if (nextValidEnd && !endTimeOptions.some((option) => option.label === endTime)) {
+        setEndTime(nextValidEnd);
+      }
+    }
+  }, [bookingMode, endTime, endTimeOptions]);
 
   const computedEndTime = bookingMode === "daily" ? addHours(startTime, 9) : endTime;
   const durationHours =
@@ -409,7 +466,7 @@ export function BookingFormScreen({
                     }}
                     className="h-12 w-full appearance-none rounded-[14px] border border-[#E5ECE7] bg-white px-4 pr-10 text-[14px] font-semibold text-[#0F172A] outline-none"
                   >
-                    {startTimeOptions.map((time) => (
+                    {filteredStartTimeOptions.map((time) => (
                       <option key={time} value={time}>
                         {time}
                       </option>
@@ -456,6 +513,11 @@ export function BookingFormScreen({
                 </p>
               </div>
             </div>
+            {filteredStartTimeOptions.length === 0 ? (
+              <p className="mt-3 text-[13px] font-semibold text-[#B42318]">
+                No future time slots are available for today. Please choose another date.
+              </p>
+            ) : null}
           </section>
 
           <section className="mt-5 rounded-[20px] border border-[#E7ECE8] bg-white p-4 shadow-[0_10px_24px_rgba(15,23,42,0.04)]">
@@ -525,7 +587,7 @@ export function BookingFormScreen({
             <button
               type="button"
               onClick={handleBooking}
-              disabled={pending}
+              disabled={pending || filteredStartTimeOptions.length === 0}
               className="inline-flex h-12 min-w-[11.5rem] items-center justify-center gap-2 rounded-[14px] bg-[#8E5EB5] px-5 text-[16px] font-extrabold text-white disabled:opacity-70"
             >
               {pending ? "Booking..." : "Schedule Booking"}

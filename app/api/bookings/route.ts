@@ -257,6 +257,27 @@ function startOfDay(value: Date) {
   return new Date(value.getFullYear(), value.getMonth(), value.getDate());
 }
 
+function getCurrentKualaLumpurDateTime() {
+  const formatter = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Kuala_Lumpur",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  });
+
+  const parts = formatter.formatToParts(new Date());
+  const getValue = (type: string) => parts.find((part) => part.type === type)?.value ?? "";
+
+  return {
+    date: `${getValue("year")}-${getValue("month")}-${getValue("day")}`,
+    time: `${getValue("hour")}:${getValue("minute")}:${getValue("second")}`,
+  };
+}
+
 function formatDateTimeLabel(date: string, startTime: string, endTime: string) {
   const start = new Date(`${date}T${startTime}`);
   const end = new Date(`${date}T${endTime}`);
@@ -545,10 +566,18 @@ export async function POST(request: Request) {
     );
   }
 
+  if (scheduledEndTime <= scheduledStartTime) {
+    return NextResponse.json(
+      { error: "End time must be later than start time." },
+      { status: 400 }
+    );
+  }
+
   const scheduledDay = startOfDay(new Date(`${scheduledDate}T00:00:00`));
   const today = startOfDay(new Date());
   const maxAdvanceDay = startOfDay(new Date());
   maxAdvanceDay.setDate(maxAdvanceDay.getDate() + 30);
+  const nowInKl = getCurrentKualaLumpurDateTime();
 
   if (scheduledDay.getTime() < today.getTime()) {
     return NextResponse.json(
@@ -560,6 +589,13 @@ export async function POST(request: Request) {
   if (scheduledDay.getTime() > maxAdvanceDay.getTime()) {
     return NextResponse.json(
       { error: "Bookings can only be made up to 30 days in advance." },
+      { status: 400 }
+    );
+  }
+
+  if (scheduledDate === nowInKl.date && scheduledStartTime <= nowInKl.time) {
+    return NextResponse.json(
+      { error: "This time has already passed. Please choose a future time today." },
       { status: 400 }
     );
   }

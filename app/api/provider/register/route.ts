@@ -86,6 +86,20 @@ function buildProviderBio(payload: ProviderRegistrationData) {
   return `Provider for ${services} in ${payload.basicProfile.serviceLocation}.${specialtyLabel}`;
 }
 
+function buildResidentialAddress(payload: ProviderRegistrationData) {
+  return [
+    payload.basicProfile.unitNumber,
+    payload.basicProfile.addressLine1,
+    payload.basicProfile.addressLine2,
+    payload.basicProfile.postcode,
+    payload.basicProfile.city,
+    payload.basicProfile.state,
+  ]
+    .map((value) => value.trim())
+    .filter(Boolean)
+    .join(", ");
+}
+
 function isMissingColumnError(message?: string) {
   const normalized = message?.trim().toLowerCase() ?? "";
 
@@ -297,7 +311,7 @@ export async function POST(request: Request) {
       marketing_name: payload.basicProfile.marketingName.trim(),
       sex: sex || null,
       date_of_birth: payload.basicProfile.dateOfBirth.trim() || null,
-      residential_address: payload.basicProfile.residentialAddress.trim() || null,
+      residential_address: buildResidentialAddress(payload) || null,
       service_location:
         payload.providerLocation.areaLabel.trim() ||
         payload.providerLocation.formattedAddress.trim() ||

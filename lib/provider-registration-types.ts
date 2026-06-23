@@ -32,7 +32,12 @@ export type ProviderRegistrationData = {
     avatarDataUrl: string;
     marketingName: string;
     dateOfBirth: string;
-    residentialAddress: string;
+    unitNumber: string;
+    addressLine1: string;
+    addressLine2: string;
+    postcode: string;
+    city: string;
+    state: string;
     serviceLocation: string;
     serviceRadius: number;
   };

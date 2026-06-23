@@ -4,7 +4,7 @@ export const serviceSpecialties: Record<ProviderService, string[]> = {
   Chef: ["Arabic", "Malay", "Indian", "Western", "Vegetarian"],
   Maid: ["Cleaning", "Vacuum", "Ironing", "Laundry", "Deep cleaning"],
   Tutor: ["Mathematics", "English", "Science", "BM", "Tamil"],
-  Driver: ["Personal driver", "Airport pickup", "Delivery", "Outstation", "Hourly driver"],
+  Driver: ["Airport pickup", "Personal driver", "Hourly driver", "Outstation", "Delivery"],
   Cleaner: ["Cleaning", "Vacuum", "Ironing", "Laundry", "Deep cleaning"],
   Babysitter: ["Newborn care", "Toddler care", "Feeding", "Homework support", "Night care"],
   Plumber: ["Pipe repair", "Toilet repair", "Water leak", "Installation", "Emergency repair"],
@@ -35,10 +35,8 @@ export const availabilityDays = [
 ];
 
 export const timePresets = [
-  "Any time",
-  "9 AM - 5 PM",
-  "8 AM - 8 PM",
-  "10 AM - 10 PM",
+  "24 Hours",
+  "9 AM - 9 PM",
   "Custom Time",
 ];
 
@@ -50,6 +48,25 @@ export const documentTypes = [
 ];
 
 export const sexOptions = ["Male", "Female"];
+
+export const malaysianStates = [
+  "Johor",
+  "Kedah",
+  "Kelantan",
+  "Kuala Lumpur",
+  "Labuan",
+  "Melaka",
+  "Negeri Sembilan",
+  "Pahang",
+  "Penang",
+  "Perak",
+  "Perlis",
+  "Putrajaya",
+  "Sabah",
+  "Sarawak",
+  "Selangor",
+  "Terengganu",
+];
 
 export function createEmptyServiceDetails(): ProviderRegistrationData["serviceDetails"] {
   return {
@@ -156,7 +173,12 @@ export function createDefaultProviderRegistration(): ProviderRegistrationData {
       avatarDataUrl: "",
       marketingName: "",
       dateOfBirth: "",
-      residentialAddress: "",
+      unitNumber: "",
+      addressLine1: "",
+      addressLine2: "",
+      postcode: "",
+      city: "",
+      state: "",
       serviceLocation: "",
       serviceRadius: 15,
     },
@@ -171,9 +193,9 @@ export function createDefaultProviderRegistration(): ProviderRegistrationData {
     serviceDetails: createEmptyServiceDetails(),
     availability: {
       days: [],
-      timePreset: "",
-      startTime: "",
-      endTime: "",
+      timePreset: "9 AM - 9 PM",
+      startTime: "09:00 AM",
+      endTime: "09:00 PM",
     },
     providerLocation: {
       radius: 15,
