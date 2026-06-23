@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Bell,
   BriefcaseBusiness,
@@ -165,6 +166,133 @@ function MetricCard({
       <p className="mt-1 text-[11px] text-[#94a3b8]">{meta}</p>
     </div>
   );
+}
+
+function DetailMetric({
+  icon,
+  label,
+  value,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="rounded-[18px] border border-[#e7eee8] bg-white p-4">
+      <div className="text-[#8E5EB5]">{icon}</div>
+      <p className="mt-2 text-[11px] font-bold uppercase tracking-[0.12em] text-[#94a3b8]">
+        {label}
+      </p>
+      <p className="mt-1 text-[13px] font-semibold text-[#0f172a]">{value}</p>
+    </div>
+  );
+}
+
+function DetailRow({
+  icon,
+  label,
+  value,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="rounded-[18px] border border-[#e7eee8] bg-white px-4 py-3">
+      <div className="flex items-start gap-3">
+        <span className="mt-0.5 shrink-0">{icon}</span>
+        <div>
+          <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#94a3b8]">
+            {label}
+          </p>
+          <p className="mt-1 text-[13px] leading-6 text-[#0f172a]">{value}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TaskPath({
+  steps,
+}: {
+  steps: Array<{ label: string; status: "done" | "current" | "pending" }>;
+}) {
+  return (
+    <div className="space-y-4">
+      {steps.map((step, index, stepsList) => (
+        <div key={step.label} className="flex gap-3">
+          <div className="flex flex-col items-center">
+            <span
+              className={`inline-flex h-6 w-6 items-center justify-center rounded-full border-2 ${
+                step.status === "done"
+                  ? "border-[#8E5EB5] bg-[#8E5EB5] text-white"
+                  : step.status === "current"
+                    ? "border-[#8E5EB5] bg-white text-[#8E5EB5]"
+                    : "border-[#d9e2dd] bg-white text-[#98a2b3]"
+              }`}
+            >
+              {step.status === "done" ? (
+                <span className="text-[10px] font-bold">OK</span>
+              ) : (
+                <span className="h-2 w-2 rounded-full bg-current" />
+              )}
+            </span>
+            {index < stepsList.length - 1 ? (
+              <span
+                className={`mt-1 h-8 w-[2px] ${
+                  step.status === "done" ? "bg-[#8E5EB5]" : "bg-[#e5e7eb]"
+                }`}
+              />
+            ) : null}
+          </div>
+          <div className="pt-0.5">
+            <p
+              className={`text-[14px] font-semibold ${
+                step.status === "pending" ? "text-[#98a2b3]" : "text-[#111827]"
+              }`}
+            >
+              {step.label}
+            </p>
+            <p className="mt-1 text-[12px] text-[#6b7280]">
+              {step.status === "done"
+                ? "Finished"
+                : step.status === "current"
+                  ? "Current step"
+                  : "Waiting"}
+            </p>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function getBookingTab(
+  booking: ProviderBookingItem,
+): "ongoing" | "upcoming" | "pending" | "canceled" | "completes" {
+  const todayKey = getTodayKey();
+
+  if (booking.bucket === "requests" || booking.bookingStatus === "pending") {
+    return "pending";
+  }
+
+  if (booking.bookingStatus === "declined" || booking.bookingStatus === "cancelled") {
+    return "canceled";
+  }
+
+  if (["completed", "paid", "review_requested", "reviewed"].includes(booking.bookingStatus)) {
+    return "completes";
+  }
+
+  if (
+    booking.bookingStatus === "on_the_way" ||
+    booking.bookingStatus === "arrived" ||
+    (booking.bookingStatus === "accepted" && booking.scheduledDate <= todayKey)
+  ) {
+    return "ongoing";
+  }
+
+  return "upcoming";
 }
 
 function InfoRow({
@@ -705,13 +833,45 @@ export function DashboardScreen() {
   );
 }
 
-export function BookingsScreen() {
+export function BookingsScreen({
+  initialBookingId = "",
+}: {
+  initialBookingId?: string;
+}) {
+  const router = useRouter();
   const state = useProviderAppData();
   const [tab, setTab] = useState<"ongoing" | "upcoming" | "pending" | "canceled" | "completes">("pending");
+  const [selectedBookingId, setSelectedBookingId] = useState(initialBookingId);
+
+  useEffect(() => {
+    setSelectedBookingId(initialBookingId);
+  }, [initialBookingId]);
+
+  const selectedBooking =
+    state.bookings.find((booking) => booking.id === selectedBookingId) ?? null;
+
+  useEffect(() => {
+    if (!selectedBooking) {
+      return;
+    }
+
+    setTab(getBookingTab(selectedBooking));
+  }, [selectedBooking]);
+
   const fallback = LoadingOrError(state);
 
   if (fallback) {
     return fallback;
+  }
+
+  function openBooking(bookingId: string) {
+    setSelectedBookingId(bookingId);
+    router.push(`/provider/bookings/${bookingId}`, { scroll: false });
+  }
+
+  function closeBookingDetails() {
+    setSelectedBookingId("");
+    router.push("/provider/bookings", { scroll: false });
   }
 
   async function handleFinalizePayment(booking: ProviderBookingItem) {
@@ -789,6 +949,142 @@ export function BookingsScreen() {
       title="Bookings"
       subtitle="Manage pending requests, active jobs, and completed provider work."
     >
+      {selectedBooking ? (
+        <section className="rounded-[26px] bg-white p-5 shadow-[0_18px_44px_rgba(15,23,42,0.08)] ring-1 ring-[#e6eee8]">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-[#16a34a]">
+                Booking Request
+              </p>
+              <h2 className="mt-2 text-[1.45rem] font-black tracking-[-0.05em] text-[#0f172a]">
+                {selectedBooking.serviceLabel}
+              </h2>
+              <p className="mt-1 text-[13px] text-[#64748b]">
+                Review the full request before you accept or decline it.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={closeBookingDetails}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#f5f7f6] text-[#64748b]"
+              aria-label="Close booking details"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </button>
+          </div>
+
+          <div className="mt-4 rounded-[20px] border border-[#e7eee8] bg-[#fbfffc] p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-[15px] font-black text-[#0f172a]">{selectedBooking.customerName}</p>
+                <p className="mt-1 text-[12px] text-[#64748b]">
+                  Booking ID: {selectedBooking.id}
+                </p>
+              </div>
+              <StatusBadge
+                label={selectedBooking.statusLabel}
+                tone={providerStatusTone(selectedBooking.bookingStatus)}
+              />
+            </div>
+
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              <DetailMetric
+                label="Date"
+                value={formatDateLabel(selectedBooking.scheduledDate)}
+                icon={<CalendarDays className="h-4 w-4 text-[#8E5EB5]" />}
+              />
+              <DetailMetric
+                label="Time"
+                value={`${formatTimeLabel(selectedBooking.scheduledDate, selectedBooking.scheduledStartTime)} - ${formatTimeLabel(selectedBooking.scheduledDate, selectedBooking.scheduledEndTime)}`}
+                icon={<Clock3 className="h-4 w-4 text-[#8E5EB5]" />}
+              />
+              <DetailMetric
+                label="Booking Type"
+                value={selectedBooking.bookingMode === "daily" ? "Daily" : "Hourly"}
+                icon={<BriefcaseBusiness className="h-4 w-4 text-[#8E5EB5]" />}
+              />
+              <DetailMetric
+                label="Rate"
+                value={formatCurrency(selectedBooking.quotedAmount)}
+                icon={<Wallet className="h-4 w-4 text-[#8E5EB5]" />}
+              />
+            </div>
+
+            <div className="mt-3 space-y-3">
+              <DetailRow
+                icon={<MapPin className="h-4 w-4 text-[#8E5EB5]" />}
+                label="Location"
+                value={selectedBooking.location}
+              />
+              <DetailRow
+                icon={<Calendar className="h-4 w-4 text-[#8E5EB5]" />}
+                label="Schedule"
+                value={selectedBooking.schedule}
+              />
+              <DetailRow
+                icon={<MessageCircleMore className="h-4 w-4 text-[#8E5EB5]" />}
+                label="Customer Details"
+                value={selectedBooking.customerNote || "No extra details from the customer."}
+              />
+            </div>
+
+            {selectedBooking.declineReason ? (
+              <p className="mt-4 rounded-[16px] border border-[#fecdd3] bg-[#fff1f2] px-4 py-3 text-[13px] font-semibold text-[#be123c]">
+                Decline reason: {selectedBooking.declineReason}
+              </p>
+            ) : null}
+
+            {selectedBooking.providerResponseNote ? (
+              <p className="mt-4 rounded-[16px] border border-[#dbeee2] bg-[#f6fff8] px-4 py-3 text-[13px] font-semibold text-[#15803d]">
+                Provider note: {selectedBooking.providerResponseNote}
+              </p>
+            ) : null}
+
+            {selectedBooking.bookingStatus !== "declined" &&
+            selectedBooking.bookingStatus !== "cancelled" ? (
+              <div className="mt-4 rounded-[18px] border border-[#ebe3f5] bg-white px-4 py-4">
+                <p className="text-[14px] font-extrabold text-[#0f172a]">Task Path</p>
+                <div className="mt-4">
+                  <TaskPath steps={getProviderTaskSteps(selectedBooking.bookingStatus)} />
+                </div>
+              </div>
+            ) : null}
+
+            {selectedBooking.bookingStatus === "pending" ? (
+              <div className="mt-5 flex gap-3">
+                <AppButton
+                  className="flex-1"
+                  tone="danger"
+                  disabled={state.actionBookingId === selectedBooking.id}
+                  onClick={() =>
+                    state.handleBookingAction(
+                      selectedBooking.id,
+                      "declined",
+                      "Provider declined booking",
+                    )
+                  }
+                >
+                  Decline Request
+                </AppButton>
+                <AppButton
+                  className="flex-1"
+                  disabled={state.actionBookingId === selectedBooking.id}
+                  onClick={() =>
+                    state.handleBookingAction(
+                      selectedBooking.id,
+                      "accepted",
+                      "Provider accepted booking",
+                    )
+                  }
+                >
+                  Accept Request
+                </AppButton>
+              </div>
+            ) : null}
+          </div>
+        </section>
+      ) : null}
+
       <section className="rounded-[26px] bg-white p-5 shadow-[0_18px_44px_rgba(15,23,42,0.08)] ring-1 ring-[#e6eee8]">
         <div className="flex flex-wrap gap-2">
           {[
@@ -911,6 +1207,13 @@ export function BookingsScreen() {
                   <div className="mt-4 flex gap-3">
                     <AppButton
                       className="flex-1"
+                      tone="secondary"
+                      onClick={() => openBooking(booking.id)}
+                    >
+                      View Details
+                    </AppButton>
+                    <AppButton
+                      className="flex-1"
                       tone="danger"
                       disabled={state.actionBookingId === booking.id}
                       onClick={() =>
@@ -977,7 +1280,11 @@ export function BookingsScreen() {
                         Task Finished
                       </AppButton>
                     ) : null}
-                    <AppButton href={`/provider/bookings?booking=${booking.id}`} tone="secondary" className="flex-1">
+                    <AppButton
+                      tone="secondary"
+                      className="flex-1"
+                      onClick={() => openBooking(booking.id)}
+                    >
                       Open Booking
                     </AppButton>
                   </div>
@@ -992,9 +1299,9 @@ export function BookingsScreen() {
                       Finalize Payment
                     </AppButton>
                     <AppButton
-                      href={`/provider/bookings?booking=${booking.id}`}
                       tone="secondary"
                       className="flex-1"
+                      onClick={() => openBooking(booking.id)}
                     >
                       Open Booking
                     </AppButton>
@@ -1010,7 +1317,15 @@ export function BookingsScreen() {
 }
 
 function getProviderTaskSteps(status: "accepted" | "on_the_way" | "arrived" | "completed" | "paid" | "review_requested" | "reviewed" | "pending" | "declined" | "cancelled") {
-  const order = ["accepted", "on_the_way", "arrived", "completed"] as const;
+  const labels = [
+    "Booking accepted",
+    "On the way",
+    "Arrived at location",
+    "Task completed",
+    "Payment confirmed",
+    "Review",
+  ];
+
   const currentIndex =
     status === "accepted"
       ? 0
@@ -1018,23 +1333,24 @@ function getProviderTaskSteps(status: "accepted" | "on_the_way" | "arrived" | "c
         ? 1
         : status === "arrived"
           ? 2
-          : ["completed", "paid", "review_requested", "reviewed"].includes(status)
+          : status === "completed"
             ? 3
-            : -1;
-
-  const labels = [
-    "Booking accepted",
-    "Travel to customer",
-    "Arrived at location",
-    "Task completed",
-  ];
+            : status === "paid"
+              ? 4
+              : status === "review_requested" || status === "reviewed"
+                ? 5
+                : -1;
 
   return labels.map((label, index) => {
     if (currentIndex === -1) {
       return { label, status: "pending" as const };
     }
 
-    if (index < currentIndex || (index === currentIndex && currentIndex === 3)) {
+    if (
+      index < currentIndex ||
+      (index === currentIndex &&
+        (status === "completed" || status === "paid" || status === "reviewed"))
+    ) {
       return { label, status: "done" as const };
     }
 
@@ -1261,7 +1577,7 @@ export function MessagesScreen() {
                   </div>
                 </div>
                 <div className="mt-4">
-                  <AppButton href={`/provider/bookings?booking=${item.bookingId}`} className="w-full" tone="secondary">
+                  <AppButton href={`/provider/bookings/${item.bookingId}`} className="w-full" tone="secondary">
                     Open Booking
                   </AppButton>
                 </div>
@@ -1531,7 +1847,7 @@ export function TasksScreen() {
                       Complete Task
                     </AppButton>
                   ) : null}
-                  <AppButton href={`/provider/bookings?booking=${booking.id}`} tone="secondary" className="flex-1">
+                  <AppButton href={`/provider/bookings/${booking.id}`} tone="secondary" className="flex-1">
                     Open Booking
                   </AppButton>
                 </div>
