@@ -621,10 +621,136 @@ export function EditProfileScreen({ initialProfile }: EditProps) {
 }
 
 export function AddressesScreen({ addresses }: AddressesProps) {
+  const [items, setItems] = useState(addresses);
+  const [showForm, setShowForm] = useState(false);
+  const [saving, startSaving] = useTransition();
+  const [error, setError] = useState("");
+  const [form, setForm] = useState({
+    label: `Address ${Math.max(1, addresses.length + 1)}`,
+    unitNumber: "",
+    addressLine1: "",
+    addressLine2: "",
+    postcode: "",
+    city: "",
+    state: "",
+    country: "Malaysia",
+  });
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadLiveAddresses() {
+      const client = getSupabaseClient();
+
+      if (!client) {
+        return;
+      }
+
+      const {
+        data: { session },
+      } = await client.auth.getSession();
+
+      if (!active || !session) {
+        return;
+      }
+
+      const response = await fetch("/api/profile/addresses", {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+
+      const result = (await response.json()) as
+        | { addresses: Address[] }
+        | { error?: string };
+
+      if (!active || !response.ok || !("addresses" in result)) {
+        return;
+      }
+
+      setItems(result.addresses);
+      setForm((current) => ({
+        ...current,
+        label: `Address ${Math.max(1, result.addresses.length + 1)}`,
+      }));
+    }
+
+    void loadLiveAddresses();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const updateField =
+    (field: keyof typeof form) =>
+    (event: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+      setForm((current) => ({ ...current, [field]: event.target.value }));
+    };
+
+  const handleSave = () => {
+    startSaving(async () => {
+      setError("");
+      const client = getSupabaseClient();
+
+      if (!client) {
+        setError("Supabase is not configured yet.");
+        return;
+      }
+
+      const {
+        data: { session },
+      } = await client.auth.getSession();
+
+      if (!session) {
+        setError("Please log in again to save addresses.");
+        return;
+      }
+
+      const response = await fetch("/api/profile/addresses", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          ...form,
+          isDefault: items.length === 0,
+        }),
+      });
+
+      const result = (await response.json()) as
+        | { address: Address }
+        | { error?: string };
+
+      if (!response.ok || !("address" in result)) {
+        setError(
+          "error" in result && result.error
+            ? result.error
+            : "Unable to save address."
+        );
+        return;
+      }
+
+      setItems((current) => [...current, result.address]);
+      setShowForm(false);
+      setForm({
+        label: `Address ${items.length + 2}`,
+        unitNumber: "",
+        addressLine1: "",
+        addressLine2: "",
+        postcode: "",
+        city: "",
+        state: "",
+        country: "Malaysia",
+      });
+    });
+  };
+
   return (
     <ProfileShell title="Saved Addresses" showBack backHref="/profile">
       <div className="space-y-4">
-        {addresses.map((address) => (
+        {items.map((address) => (
           <div
             key={address.id}
             className="rounded-[18px] border border-[#e4ece7] bg-white p-4 shadow-[0_10px_26px_rgba(15,23,42,0.04)]"
@@ -665,15 +791,47 @@ export function AddressesScreen({ addresses }: AddressesProps) {
             </div>
           </div>
         ))}
+        {items.length === 0 ? (
+          <div className="rounded-[18px] border border-dashed border-[#d9e2dd] bg-white px-4 py-8 text-center text-[14px] text-[#6b7280]">
+            No saved addresses yet.
+          </div>
+        ) : null}
       </div>
 
       <button
         type="button"
+        onClick={() => setShowForm((current) => !current)}
         className="mt-5 inline-flex h-11 w-full items-center justify-center gap-2 rounded-[14px] border border-dashed border-[#3ec66d] bg-[#fbfffc] text-[15px] font-extrabold text-[#16a34a]"
       >
         <PlusIcon className="h-4 w-4" />
-        Add New Address
+        {showForm ? "Hide Address Form" : "Add New Address"}
       </button>
+
+      {showForm ? (
+        <div className="mt-4 rounded-[18px] border border-[#e4ece7] bg-white p-4 shadow-[0_10px_26px_rgba(15,23,42,0.04)]">
+          <div className="space-y-4">
+            <LabeledInput label="Address Name" value={form.label} onChange={updateField("label")} icon={<PinIcon className="h-5 w-5" />} />
+            <LabeledInput label="Unit Number" value={form.unitNumber} onChange={updateField("unitNumber")} icon={<PinIcon className="h-5 w-5" />} />
+            <LabeledInput label="Address Line 1" value={form.addressLine1} onChange={updateField("addressLine1")} icon={<PinIcon className="h-5 w-5" />} />
+            <LabeledInput label="Address Line 2" value={form.addressLine2} onChange={updateField("addressLine2")} icon={<PinIcon className="h-5 w-5" />} />
+            <LabeledInput label="Postcode" value={form.postcode} onChange={updateField("postcode")} icon={<PinIcon className="h-5 w-5" />} />
+            <LabeledInput label="City" value={form.city} onChange={updateField("city")} icon={<PinIcon className="h-5 w-5" />} />
+            <LabeledInput label="State" value={form.state} onChange={updateField("state")} icon={<PinIcon className="h-5 w-5" />} />
+            <LabeledInput label="Country" value={form.country} onChange={updateField("country")} icon={<PinIcon className="h-5 w-5" />} />
+          </div>
+          {error ? (
+            <p className="mt-3 text-[13px] font-semibold text-[#dc2626]">{error}</p>
+          ) : null}
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={saving}
+            className="mt-4 inline-flex h-11 w-full items-center justify-center rounded-[14px] bg-[#8E5EB5] px-4 text-[15px] font-extrabold text-white disabled:opacity-70"
+          >
+            {saving ? "Saving..." : "Save Address"}
+          </button>
+        </div>
+      ) : null}
     </ProfileShell>
   );
 }

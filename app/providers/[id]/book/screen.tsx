@@ -22,6 +22,12 @@ import {
 
 import { ProviderDistanceText } from "@/app/_components/provider-distance";
 import type { ProviderDetail } from "@/lib/provider-detail";
+import {
+  loadCurrentLiveLocation,
+  loadSavedPlaces,
+  resolveCurrentLiveLocation,
+  type StoredLiveLocation,
+} from "@/lib/live-location";
 import { getSupabaseClient } from "@/lib/supabase";
 
 type BookingMode = "hourly" | "daily";
@@ -128,6 +134,9 @@ export function BookingFormScreen({
   const [selectedDate, setSelectedDate] = useState(defaultDateLabel);
   const [startTime, setStartTime] = useState("10:00 AM");
   const [endTime, setEndTime] = useState("01:00 PM");
+  const [serviceAddress, setServiceAddress] = useState("");
+  const [locationNote, setLocationNote] = useState("");
+  const [savedPlaces, setSavedPlaces] = useState<StoredLiveLocation[]>([]);
   const [notes, setNotes] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -158,6 +167,19 @@ export function BookingFormScreen({
   }, [filteredStartTimeOptions, startTime]);
 
   useEffect(() => {
+    const currentLocation = loadCurrentLiveLocation();
+    const availablePlaces = loadSavedPlaces();
+    setSavedPlaces(availablePlaces);
+    setServiceAddress(
+      currentLocation?.formattedAddress ||
+        currentLocation?.label ||
+        availablePlaces[0]?.formattedAddress ||
+        availablePlaces[0]?.label ||
+        ""
+    );
+  }, []);
+
+  useEffect(() => {
     if (bookingMode === "hourly") {
       const nextValidEnd = endTimeOptions[0]?.label;
       if (nextValidEnd && !endTimeOptions.some((option) => option.label === endTime)) {
@@ -182,6 +204,11 @@ export function BookingFormScreen({
     try {
       setPending(true);
       setError(null);
+
+      if (!serviceAddress.trim()) {
+        throw new Error("Please choose or enter the service address.");
+      }
+
       const client = getSupabaseClient();
 
       if (!client) {
@@ -208,14 +235,14 @@ export function BookingFormScreen({
           providerName: detail.name,
           serviceKey: detail.serviceKey,
           serviceLabel: detail.serviceLabel,
-          location: "",
+          location: serviceAddress.trim(),
           bookingMode,
           dateLabel: bookingDateLabel,
           startTimeLabel: bookingStartLabel,
           endTimeLabel: bookingEndLabel,
           timeLabel: bookingTimeLabel,
           durationHours,
-          notes,
+          notes: [locationNote.trim(), notes.trim()].filter(Boolean).join("\n"),
           hourlyRate: detail.hourlyRate,
           dailyRate: detail.dailyRate,
           totalAmount,
@@ -522,12 +549,89 @@ export function BookingFormScreen({
 
           <section className="mt-5 rounded-[20px] border border-[#E7ECE8] bg-white p-4 shadow-[0_10px_24px_rgba(15,23,42,0.04)]">
             <h2 className="text-[15px] font-extrabold text-[#0F172A]">
-              3. Additional Notes (Optional)
+              3. Service Address
             </h2>
+            <div className="mt-3 space-y-3">
+              <label className="block">
+                <span className="mb-2 block text-[14px] font-semibold text-[#344054]">
+                  Service address
+                </span>
+                <textarea
+                  value={serviceAddress}
+                  onChange={(event) => setServiceAddress(event.target.value)}
+                  placeholder="Enter the service address"
+                  className="min-h-[6rem] w-full rounded-[16px] border border-[#E5ECE7] px-4 py-3.5 text-[14px] text-[#0F172A] outline-none placeholder:text-[#98A2B3]"
+                />
+              </label>
+              {savedPlaces.length > 0 ? (
+                <label className="block">
+                  <span className="mb-2 block text-[14px] font-semibold text-[#344054]">
+                    Saved address
+                  </span>
+                  <span className="relative block">
+                    <select
+                      value={serviceAddress}
+                      onChange={(event) => setServiceAddress(event.target.value)}
+                      className="h-12 w-full appearance-none rounded-[14px] border border-[#E5ECE7] bg-white px-4 pr-10 text-[14px] font-semibold text-[#0F172A] outline-none"
+                    >
+                      <option value={serviceAddress || ""}>Current / typed address</option>
+                      {savedPlaces.map((place) => {
+                        const value = place.formattedAddress || place.label;
+                        return (
+                          <option key={place.id ?? value} value={value}>
+                            {place.addressLabel || "Saved address"} - {value}
+                          </option>
+                        );
+                      })}
+                    </select>
+                    <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#667085]" />
+                  </span>
+                </label>
+              ) : null}
+              <button
+                type="button"
+                onClick={() =>
+                  void resolveCurrentLiveLocation("Current location", { persist: "current" })
+                    .then((location) => {
+                      if (!location) {
+                        setError("Location services are unavailable on this device.");
+                        return;
+                      }
+
+                      const nextAddress = location.formattedAddress || location.label;
+                      setServiceAddress(nextAddress);
+                      setSavedPlaces(loadSavedPlaces());
+                    })
+                    .catch(() => {
+                      setError("Unable to get your current location right now.");
+                    })
+                }
+                className="inline-flex h-11 items-center justify-center rounded-[14px] border border-[#DCC9EF] bg-[#F8F2FD] px-4 text-[14px] font-extrabold text-[#8E5EB5]"
+              >
+                Use Current Location
+              </button>
+            </div>
+          </section>
+
+          <section className="mt-5 rounded-[20px] border border-[#E7ECE8] bg-white p-4 shadow-[0_10px_24px_rgba(15,23,42,0.04)]">
+            <h2 className="text-[15px] font-extrabold text-[#0F172A]">
+              4. Notes
+            </h2>
+            <label className="mt-3 block">
+              <span className="mb-2 block text-[14px] font-semibold text-[#344054]">
+                Gate number / landmark / access note
+              </span>
+              <textarea
+                value={locationNote}
+                onChange={(event) => setLocationNote(event.target.value.slice(0, 160))}
+                placeholder="Example: Gate B, near the surau, call when you arrive"
+                className="min-h-[5.6rem] w-full rounded-[16px] border border-[#E5ECE7] px-4 py-3.5 text-[14px] text-[#0F172A] outline-none placeholder:text-[#98A2B3]"
+              />
+            </label>
             <textarea
               value={notes}
               onChange={(event) => setNotes(event.target.value.slice(0, 200))}
-              placeholder="Add any special instructions or notes..."
+              placeholder="Add any special service instructions..."
               className="mt-3 min-h-[7rem] w-full rounded-[16px] border border-[#E5ECE7] px-4 py-3.5 text-[14px] text-[#0F172A] outline-none placeholder:text-[#98A2B3]"
             />
             <p className="mt-2 text-right text-[13px] text-[#667085]">{notes.length}/200</p>

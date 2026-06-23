@@ -18,6 +18,14 @@ type CustomerSignupPayload = {
   phoneNumber?: string;
   password?: string;
   confirmPassword?: string;
+  addressLabel?: string;
+  unitNumber?: string;
+  addressLine1?: string;
+  addressLine2?: string;
+  postcode?: string;
+  city?: string;
+  state?: string;
+  country?: string;
 };
 
 function toSignupErrorMessage(errorMessage?: string) {
@@ -64,6 +72,10 @@ function normalizePhone(phoneNumber: string) {
   return `+60${digits}`;
 }
 
+function buildAddressLine1(unitNumber: string, addressLine1: string) {
+  return [unitNumber.trim(), addressLine1.trim()].filter(Boolean).join(", ");
+}
+
 export async function POST(request: Request) {
   const payload = (await request.json()) as CustomerSignupPayload;
 
@@ -77,8 +89,29 @@ export async function POST(request: Request) {
   const phoneNumber = payload.phoneNumber?.trim() ?? "";
   const password = payload.password ?? "";
   const confirmPassword = payload.confirmPassword ?? "";
+  const addressLabel = payload.addressLabel?.trim() || "Address 1";
+  const unitNumber = payload.unitNumber?.trim() ?? "";
+  const addressLine1 = payload.addressLine1?.trim() ?? "";
+  const addressLine2 = payload.addressLine2?.trim() ?? "";
+  const postcode = payload.postcode?.trim() ?? "";
+  const city = payload.city?.trim() ?? "";
+  const state = payload.state?.trim() ?? "";
+  const country = payload.country?.trim() || "Malaysia";
 
-  if (!firstName || !lastName || !dateOfBirth || !sex || !email || !phoneNumber || !password || !confirmPassword) {
+  if (
+    !firstName ||
+    !lastName ||
+    !dateOfBirth ||
+    !sex ||
+    !email ||
+    !phoneNumber ||
+    !password ||
+    !confirmPassword ||
+    !addressLine1 ||
+    !postcode ||
+    !city ||
+    !state
+  ) {
     return NextResponse.json(
       { error: "Please fill in all required fields." },
       { status: 400 }
@@ -181,7 +214,10 @@ export async function POST(request: Request) {
         last_name: lastName,
         date_of_birth: dateOfBirth,
         sex,
-        country: "Malaysia",
+        city,
+        region: state,
+        state,
+        country,
       },
       { onConflict: "id" }
     );
@@ -189,6 +225,25 @@ export async function POST(request: Request) {
   if (customerProfileError) {
     return NextResponse.json(
       { error: "Account created, but customer profile setup failed." },
+      { status: 500 }
+    );
+  }
+
+  const { error: addressError } = await adminClient.from("addresses").insert({
+    user_id: data.user.id,
+    label: addressLabel,
+    address_line_1: buildAddressLine1(unitNumber, addressLine1),
+    address_line_2: addressLine2 || null,
+    city,
+    state,
+    postcode,
+    country,
+    is_default: true,
+  });
+
+  if (addressError) {
+    return NextResponse.json(
+      { error: "Account created, but address setup failed." },
       { status: 500 }
     );
   }

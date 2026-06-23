@@ -6,7 +6,6 @@ import {
   getSupabaseServiceKey,
   getSupabaseUrl,
 } from "./supabase-env";
-import { getLatestCustomerBooking } from "./customer-booking-storage";
 import { getProviderCatalog, type ProviderCategoryKey } from "./provider-catalog";
 import { buildProviderPortraitSrc } from "./provider-catalog-shared";
 
@@ -199,7 +198,6 @@ export const getHomeFeedData = cache(async (): Promise<HomeFeedData> => {
     customerResult,
     providerResult,
     bookingResult,
-    latestStoredBooking,
     chefCatalog,
     electricianCatalog,
     maidCatalog,
@@ -260,11 +258,10 @@ export const getHomeFeedData = cache(async (): Promise<HomeFeedData> => {
           )
         `
       )
-      .in("booking_status", ["pending", "accepted", "scheduled", "in_progress"])
+      .in("booking_status", ["pending", "accepted", "on_the_way", "arrived"])
       .order("scheduled_date", { ascending: true })
       .limit(1)
       .maybeSingle(),
-    getLatestCustomerBooking(),
     getProviderCatalog("chef"),
     getProviderCatalog("electrician"),
     getProviderCatalog("maid"),
@@ -334,23 +331,12 @@ export const getHomeFeedData = cache(async (): Promise<HomeFeedData> => {
   );
   const popularMaidProviders = mapCatalogToHomeCards(maidCatalog.listings);
 
-  const latestBooking = latestStoredBooking
-    ? {
-        id: latestStoredBooking.id,
-        title: latestStoredBooking.serviceLabel,
-        provider: latestStoredBooking.providerName,
-        scheduleLabel: `${latestStoredBooking.dateLabel}, ${latestStoredBooking.timeLabel}`,
-        statusLabel:
-          latestStoredBooking.status === "pending" ? "Pending" : "Confirmed",
-      }
-    : null;
-
   return {
-    greetingName: customerRow?.full_name ?? "Rajeeethan",
+    greetingName: customerRow?.full_name ?? "Guest",
     locationLabel:
       [customerProfile?.city, customerProfile?.state]
         .filter(Boolean)
-        .join(", ") || "Setapak, Kuala Lumpur",
+        .join(", ") || "Kuala Lumpur",
     categories: serviceOrder.map((key) => ({
       key,
       label: humanizeService(key),
@@ -359,21 +345,25 @@ export const getHomeFeedData = cache(async (): Promise<HomeFeedData> => {
     popularChefProviders,
     popularElectricianProviders,
     popularMaidProviders,
-    upcomingBooking:
-      latestBooking ??
-      (bookingRow
-        ? {
-            id: bookingRow.id,
-            title: humanizeService(bookingService?.service_type ?? "other"),
-            provider: bookingProvider?.marketing_name ?? "DELLA Provider",
-            scheduleLabel: formatSchedule(
-              bookingRow.scheduled_date,
-              bookingRow.scheduled_start_time
-            ),
-            statusLabel:
-              bookingRow.booking_status === "pending" ? "Pending" : "Confirmed",
-          }
-        : null),
+    upcomingBooking: bookingRow
+      ? {
+          id: bookingRow.id,
+          title: humanizeService(bookingService?.service_type ?? "other"),
+          provider: bookingProvider?.marketing_name ?? "DELLA Provider",
+          scheduleLabel: formatSchedule(
+            bookingRow.scheduled_date,
+            bookingRow.scheduled_start_time
+          ),
+          statusLabel:
+            bookingRow.booking_status === "pending"
+              ? "Pending"
+              : bookingRow.booking_status === "accepted"
+                ? "Confirmed"
+                : bookingRow.booking_status === "on_the_way"
+                  ? "On the Way"
+                  : "Arrived",
+        }
+      : null,
     errorMessage:
       customerResult.error?.message ??
       providerResult.error?.message ??

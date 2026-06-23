@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 
 import {
   Icons,
@@ -12,6 +12,8 @@ import {
   RegisterShell,
   RegisterTitle,
 } from "../../register/_components/register-ui";
+import { getSupabaseClient } from "@/lib/supabase";
+import { malaysianStates } from "@/lib/provider-registration-config";
 
 const TODAY_ISO = new Date().toISOString().split("T")[0];
 
@@ -27,8 +29,57 @@ export default function SignupUserPage() {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [addressLabel, setAddressLabel] = useState("Address 1");
+  const [unitNumber, setUnitNumber] = useState("");
+  const [addressLine1, setAddressLine1] = useState("");
+  const [addressLine2, setAddressLine2] = useState("");
+  const [postcode, setPostcode] = useState("");
+  const [city, setCity] = useState("");
+  const [stateName, setStateName] = useState("");
+  const [country, setCountry] = useState("Malaysia");
+  const [addressSuggestions, setAddressSuggestions] = useState<
+    Array<{ id: number; label: string; latitude: number; longitude: number }>
+  >([]);
+  const [selectedAddressPreview, setSelectedAddressPreview] = useState("");
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    const query = [unitNumber, addressLine1, city].filter(Boolean).join(" ").trim();
+
+    if (query.length < 3) {
+      setAddressSuggestions([]);
+      return;
+    }
+
+    let active = true;
+    const timeoutId = window.setTimeout(async () => {
+      try {
+        const response = await fetch(`/api/location/search?q=${encodeURIComponent(query)}`, {
+          cache: "no-store",
+        });
+
+        const result = (await response.json()) as {
+          results?: Array<{ id: number; label: string; latitude: number; longitude: number }>;
+        };
+
+        if (!active) {
+          return;
+        }
+
+        setAddressSuggestions(Array.isArray(result.results) ? result.results : []);
+      } catch {
+        if (active) {
+          setAddressSuggestions([]);
+        }
+      }
+    }, 250);
+
+    return () => {
+      active = false;
+      window.clearTimeout(timeoutId);
+    };
+  }, [addressLine1, city, unitNumber]);
 
   const handleAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -55,8 +106,52 @@ export default function SignupUserPage() {
     reader.readAsDataURL(file);
   };
 
+  const applyAddressSuggestion = async (suggestion: {
+    id: number;
+    label: string;
+    latitude: number;
+    longitude: number;
+  }) => {
+    setSelectedAddressPreview(suggestion.label);
+    setAddressSuggestions([]);
+
+    try {
+      const response = await fetch(
+        `/api/location/reverse?lat=${suggestion.latitude}&lng=${suggestion.longitude}`,
+        { cache: "no-store" }
+      );
+
+      const result = (await response.json()) as {
+        city?: string;
+        state?: string;
+        postcode?: string;
+        country?: string;
+      };
+
+      setCity(result.city?.trim() || city);
+      setStateName(result.state?.trim() || stateName);
+      setPostcode(result.postcode?.trim() || postcode);
+      setCountry(result.country?.trim() || "Malaysia");
+    } catch {
+      // Keep the manual address fields if reverse lookup is unavailable.
+    }
+  };
+
   const handleSubmit = () => {
-    if (!firstName || !lastName || !dateOfBirth || !sex || !email || !phoneNumber || !password || !confirmPassword) {
+    if (
+      !firstName ||
+      !lastName ||
+      !dateOfBirth ||
+      !sex ||
+      !email ||
+      !phoneNumber ||
+      !password ||
+      !confirmPassword ||
+      !addressLine1 ||
+      !postcode ||
+      !city ||
+      !stateName
+    ) {
       setError("Please fill in all required fields.");
       return;
     }
@@ -84,6 +179,14 @@ export default function SignupUserPage() {
           phoneNumber,
           password,
           confirmPassword,
+          addressLabel,
+          unitNumber,
+          addressLine1,
+          addressLine2,
+          postcode,
+          city,
+          state: stateName,
+          country,
         }),
       });
 
@@ -105,7 +208,26 @@ export default function SignupUserPage() {
         return;
       }
 
-      router.push("/login");
+      const client = getSupabaseClient();
+
+      if (!client) {
+        setError("Account created, but automatic sign-in is unavailable right now.");
+        router.push("/login");
+        return;
+      }
+
+      const { data, error: signInError } = await client.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (signInError || !data.user) {
+        setError("Account created, but automatic sign-in failed. Please log in.");
+        router.push("/login");
+        return;
+      }
+
+      router.push("/signup/user/welcome");
     });
   };
 
@@ -134,11 +256,12 @@ export default function SignupUserPage() {
           icon={<Icons.User className="h-5 w-5" />}
         />
         <ControlledSelectField
-          label="Sex"
+          label="Gender"
           value={sex}
           onChange={(value) => setSex(value as "" | "Male" | "Female")}
           icon={<Icons.User className="h-5 w-5" />}
           options={["Male", "Female"]}
+          hidePlaceholder
         />
         <ControlledDateField
           label="Date of Birth"
@@ -179,6 +302,94 @@ export default function SignupUserPage() {
           rightIcon={<Icons.EyeOff className="h-5 w-5" />}
           type="password"
         />
+        <div className="rounded-[22px] border border-[#e7ece8] bg-white p-4 shadow-[0_8px_20px_rgba(15,23,42,0.03)]">
+          <h2 className="text-[15px] font-extrabold text-[#111827]">Saved Address</h2>
+          <p className="mt-1 text-[12px] leading-5 text-[#6b7280]">
+            Add your main address now. You can save more addresses later from your profile.
+          </p>
+          <div className="mt-4 space-y-4">
+            <ControlledField
+              label="Address Name"
+              placeholder="Address 1"
+              value={addressLabel}
+              onChange={setAddressLabel}
+              icon={<MapPinIcon className="h-5 w-5" />}
+            />
+            <ControlledField
+              label="Unit Number"
+              placeholder="Unit / House No"
+              value={unitNumber}
+              onChange={setUnitNumber}
+              icon={<MapPinIcon className="h-5 w-5" />}
+            />
+            <ControlledField
+              label="Address Line 1"
+              placeholder="Street name, building, area"
+              value={addressLine1}
+              onChange={setAddressLine1}
+              icon={<MapPinIcon className="h-5 w-5" />}
+            />
+            {addressSuggestions.length > 0 ? (
+              <div className="rounded-[16px] border border-[#e5e7eb] bg-[#fbfcff] p-2">
+                {addressSuggestions.map((suggestion) => (
+                  <button
+                    key={suggestion.id}
+                    type="button"
+                    onClick={() => void applyAddressSuggestion(suggestion)}
+                    className="flex w-full items-start gap-3 rounded-[12px] px-3 py-2 text-left hover:bg-white"
+                  >
+                    <span className="mt-0.5 text-[#8E5EB5]">
+                      <MapPinIcon className="h-4 w-4" />
+                    </span>
+                    <span className="text-[13px] leading-5 text-[#374151]">
+                      {suggestion.label}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            ) : null}
+            {selectedAddressPreview ? (
+              <div className="rounded-[14px] bg-[#f5f1fa] px-3 py-2 text-[12px] font-medium text-[#6b7280]">
+                Location preview: {selectedAddressPreview}
+              </div>
+            ) : null}
+            <ControlledField
+              label="Address Line 2"
+              placeholder="Apartment, floor, landmark"
+              value={addressLine2}
+              onChange={setAddressLine2}
+              icon={<MapPinIcon className="h-5 w-5" />}
+            />
+            <ControlledField
+              label="Postcode"
+              placeholder="Postcode"
+              value={postcode}
+              onChange={setPostcode}
+              icon={<MapPinIcon className="h-5 w-5" />}
+            />
+            <ControlledField
+              label="City"
+              placeholder="City"
+              value={city}
+              onChange={setCity}
+              icon={<MapPinIcon className="h-5 w-5" />}
+            />
+            <ControlledSelectField
+              label="State"
+              value={stateName}
+              onChange={setStateName}
+              icon={<MapPinIcon className="h-5 w-5" />}
+              options={malaysianStates}
+            />
+            <ControlledField
+              label="Country"
+              placeholder="Country"
+              value={country}
+              onChange={setCountry}
+              icon={<MapPinIcon className="h-5 w-5" />}
+            />
+          </div>
+        </div>
       </div>
 
       <label className="mt-5 flex items-start gap-3 text-[14px] leading-6 text-[#4b5563]">
@@ -325,12 +536,14 @@ function ControlledSelectField({
   onChange,
   icon,
   options,
+  hidePlaceholder = false,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   icon: ReactNode;
   options: string[];
+  hidePlaceholder?: boolean;
 }) {
   return (
     <label className="block">
@@ -344,7 +557,7 @@ function ControlledSelectField({
           onChange={(event) => onChange(event.target.value)}
           className="h-full flex-1 appearance-none border-0 bg-transparent text-[15px] text-[#111827] outline-none"
         >
-          <option value="">Select sex</option>
+          {!hidePlaceholder ? <option value="">Select</option> : null}
           {options.map((option) => (
             <option key={option} value={option}>
               {option}
@@ -494,6 +707,15 @@ function CalendarIcon({ className }: { className?: string }) {
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className}>
       <rect x="3" y="5" width="18" height="16" rx="2" />
       <path d="M16 3v4M8 3v4M3 10h18" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function MapPinIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className}>
+      <path d="M12 21s6-5.3 6-11a6 6 0 1 0-12 0c0 5.7 6 11 6 11Z" />
+      <circle cx="12" cy="10" r="2.5" />
     </svg>
   );
 }

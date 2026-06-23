@@ -15,7 +15,6 @@ import {
   House,
   MapPin,
   MessageCircleMore,
-  Search,
   Smartphone,
   Star,
   SprayCan,
@@ -151,15 +150,6 @@ export function MarketplaceScreen({
                 <Bell className="h-7 w-7 stroke-[2.2]" />
                 <span className="absolute right-1 top-1 h-2.5 w-2.5 rounded-full bg-[#8E5EB5]" />
               </button>
-            </div>
-
-            <div className="mt-6 flex h-[58px] items-center rounded-[20px] border border-[#DFE7E2] bg-white px-5 shadow-[0_8px_20px_rgba(15,23,42,0.04)]">
-              <Search className="h-6 w-6 text-[#0F172A]" />
-              <input
-                type="text"
-                placeholder="What service do you need today?"
-                className="ml-4 h-full flex-1 border-0 bg-transparent text-[16px] text-[#0F172A] outline-none placeholder:text-[#667085]"
-              />
             </div>
           </header>
 
