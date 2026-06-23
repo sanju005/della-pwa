@@ -1093,6 +1093,72 @@ export function BookingReviewScreen({ booking }: BookingReviewProps) {
   const [comment, setComment] = useState("");
   const [photos, setPhotos] = useState<string[]>([]);
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+  const router = useRouter();
+
+  async function submitReview() {
+    const client = getSupabaseClient();
+
+    if (!client) {
+      setError("Supabase is not configured yet.");
+      return;
+    }
+
+    const {
+      data: { session },
+    } = await client.auth.getSession();
+
+    if (!session) {
+      setError("Your session expired. Please log in again.");
+      return;
+    }
+
+    if (rating < 1) {
+      setError("Please choose a rating before submitting.");
+      return;
+    }
+
+    setSubmitting(true);
+    setError("");
+
+    const response = await fetch(`/api/bookings/${booking.id}/review`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({
+        rating,
+        comment,
+        photos,
+      }),
+    }).catch(() => null);
+
+    if (!response) {
+      setError("Unable to reach the server. Please try again.");
+      setSubmitting(false);
+      return;
+    }
+
+    const result = (await response.json().catch(() => ({}))) as {
+      success?: true;
+      error?: string;
+    };
+
+    if (!response.ok || !result.success) {
+      setError(result.error || "Unable to submit review.");
+      setSubmitting(false);
+      return;
+    }
+
+    setSubmitted(true);
+    setSubmitting(false);
+    window.setTimeout(() => {
+      router.replace(`/profile/bookings/${booking.id}`);
+      router.refresh();
+    }, 700);
+  }
 
   return (
     <ProfileShell title="Write Review" showBack backHref={`/profile/bookings/${booking.id}`}>
@@ -1172,12 +1238,19 @@ export function BookingReviewScreen({ booking }: BookingReviewProps) {
         </p>
       ) : null}
 
+      {error ? (
+        <p className="mt-4 text-center text-[13px] font-semibold text-[#dc2626]">
+          {error}
+        </p>
+      ) : null}
+
       <button
         type="button"
-        onClick={() => setSubmitted(true)}
-        className="mt-5 inline-flex h-11 w-full items-center justify-center rounded-[12px] bg-[#16a34a] text-[15px] font-extrabold text-white shadow-[0_16px_30px_rgba(22,163,74,0.22)]"
+        onClick={() => void submitReview()}
+        disabled={submitting}
+        className="mt-5 inline-flex h-11 w-full items-center justify-center rounded-[12px] bg-[#16a34a] text-[15px] font-extrabold text-white shadow-[0_16px_30px_rgba(22,163,74,0.22)] disabled:opacity-60"
       >
-        Submit Review
+        {submitting ? "Submitting..." : "Submit Review"}
       </button>
     </ProfileShell>
   );

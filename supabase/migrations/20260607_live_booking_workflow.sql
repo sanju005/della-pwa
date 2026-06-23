@@ -263,7 +263,7 @@ begin
       null,
       new.booking_status,
       new.customer_id,
-      'customer',
+      'customer'::public.booking_actor_role,
       'Booking request created'
     );
 
@@ -284,9 +284,9 @@ begin
       new.booking_status,
       auth.uid(),
       case
-        when auth.uid() = new.customer_id then 'customer'
-        when auth.uid() = new.provider_id then 'provider'
-        else 'admin'
+        when auth.uid() = new.customer_id then 'customer'::public.booking_actor_role
+        when auth.uid() = new.provider_id then 'provider'::public.booking_actor_role
+        else 'admin'::public.booking_actor_role
       end,
       case
         when new.booking_status = 'accepted' then coalesce(nullif(new.provider_response_note, ''), 'Provider accepted booking')
