@@ -748,23 +748,28 @@ export function BookingsScreen({ bookings, initialTab = "upcoming" }: BookingsPr
             title={booking.service}
             provider={booking.provider}
             schedule={booking.schedule}
-            location=""
+            location={booking.location}
             statusLabel={booking.statusLabel}
             statusTone={bookingTone(booking)}
             image={<BookingThumb kind={booking.thumbnail} imageSrc={booking.imageSrc} service={booking.service} />}
             notes={
-              booking.status === "cancelled" ? (
-                <div className="space-y-1.5 rounded-[14px] bg-[#f8fafc] px-3 py-2.5 text-[12px] leading-5 text-[#475569]">
-                  <p>
-                    <span className="font-extrabold text-[#111827]">Cancelled by:</span>{" "}
-                    {booking.cancelledBy ?? "Not specified"}
-                  </p>
-                  <p>
-                    <span className="font-extrabold text-[#111827]">Reason:</span>{" "}
-                    {booking.cancellationReason ?? "No reason shared."}
-                  </p>
-                </div>
-              ) : undefined
+              <>
+                {booking.activitySteps?.length ? (
+                  <CompactTaskPath steps={booking.activitySteps} />
+                ) : null}
+                {booking.status === "cancelled" ? (
+                  <div className="space-y-1.5 rounded-[14px] bg-[#f8fafc] px-3 py-2.5 text-[12px] leading-5 text-[#475569]">
+                    <p>
+                      <span className="font-extrabold text-[#111827]">Cancelled by:</span>{" "}
+                      {booking.cancelledBy ?? "Not specified"}
+                    </p>
+                    <p>
+                      <span className="font-extrabold text-[#111827]">Reason:</span>{" "}
+                      {booking.cancellationReason ?? "No reason shared."}
+                    </p>
+                  </div>
+                ) : null}
+              </>
             }
             secondaryAction={
               booking.status === "upcoming" ? (
@@ -795,6 +800,40 @@ export function BookingsScreen({ bookings, initialTab = "upcoming" }: BookingsPr
         View All Bookings
       </AppButton>
     </ProfileShell>
+  );
+}
+
+function CompactTaskPath({
+  steps,
+}: {
+  steps: Array<{ label: string; status: "done" | "current" | "pending" }>;
+}) {
+  return (
+    <div className="rounded-[14px] bg-[#f8fafc] px-3 py-3">
+      <p className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-[#8E5EB5]">
+        Task Path
+      </p>
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        {steps.map((step, index) => (
+          <div key={step.label} className="flex items-center gap-2">
+            <span
+              className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold ${
+                step.status === "done"
+                  ? "bg-[#dcfce7] text-[#15803d]"
+                  : step.status === "current"
+                    ? "bg-[#f3ebfc] text-[#8E5EB5]"
+                    : "bg-white text-[#94a3b8] ring-1 ring-[#e5e7eb]"
+              }`}
+            >
+              {step.label}
+            </span>
+            {index < steps.length - 1 ? (
+              <span className="text-[10px] font-bold text-[#c4b5d8]">&gt;</span>
+            ) : null}
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 

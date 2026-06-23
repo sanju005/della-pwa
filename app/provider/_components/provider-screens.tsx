@@ -1081,6 +1081,90 @@ export function BookingsScreen({
                 </AppButton>
               </div>
             ) : null}
+
+            {selectedBooking.bookingStatus === "accepted" ? (
+              <div className="mt-5 flex gap-3">
+                <AppButton
+                  className="flex-1"
+                  disabled={state.actionBookingId === selectedBooking.id}
+                  onClick={() =>
+                    state.handleBookingAction(
+                      selectedBooking.id,
+                      "on_the_way",
+                      "Provider started travel to customer",
+                    )
+                  }
+                >
+                  Update On The Way
+                </AppButton>
+              </div>
+            ) : null}
+
+            {selectedBooking.bookingStatus === "on_the_way" ? (
+              <div className="mt-5 flex gap-3">
+                <AppButton
+                  className="flex-1"
+                  disabled={state.actionBookingId === selectedBooking.id}
+                  onClick={() =>
+                    state.handleBookingAction(
+                      selectedBooking.id,
+                      "arrived",
+                      "Provider arrived at customer location",
+                    )
+                  }
+                >
+                  Update Arrived
+                </AppButton>
+              </div>
+            ) : null}
+
+            {selectedBooking.bookingStatus === "arrived" ? (
+              <div className="mt-5 flex gap-3">
+                <AppButton
+                  className="flex-1"
+                  disabled={state.actionBookingId === selectedBooking.id}
+                  onClick={() =>
+                    state.handleBookingAction(
+                      selectedBooking.id,
+                      "completed",
+                      "Provider completed the full task path",
+                    )
+                  }
+                >
+                  Update Task Completed
+                </AppButton>
+              </div>
+            ) : null}
+
+            {selectedBooking.bookingStatus === "completed" ? (
+              <div className="mt-5 flex gap-3">
+                <AppButton
+                  className="flex-1"
+                  disabled={state.actionBookingId === selectedBooking.id}
+                  onClick={() => void handleFinalizePayment(selectedBooking)}
+                >
+                  Update Paid
+                </AppButton>
+              </div>
+            ) : null}
+
+            {selectedBooking.bookingStatus === "paid" ? (
+              <div className="mt-5 flex gap-3">
+                <AppButton
+                  className="flex-1"
+                  disabled={state.actionBookingId === selectedBooking.id}
+                  onClick={() =>
+                    state.handleBookingAction(
+                      selectedBooking.id,
+                      "review_requested",
+                      "Provider requested customer review",
+                    )
+                  }
+                >
+                  Request Review
+                </AppButton>
+              </div>
+            ) : null}
           </div>
         </section>
       ) : null}
