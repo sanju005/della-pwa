@@ -1064,6 +1064,9 @@ export function BookingsScreen({
 
   const selectedBooking =
     state.bookings.find((booking) => booking.id === selectedBookingId) ?? null;
+  const selectedBookingReview = selectedBooking
+    ? state.reviews.find((review) => review.customerName === selectedBooking.customerName) ?? null
+    : null;
 
   useEffect(() => {
     if (!selectedBooking) {
@@ -1261,13 +1264,15 @@ export function BookingsScreen({
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-[#8E5EB5]">
-                Booking Request
+                {selectedBooking.bookingStatus === "pending" ? "Booking Request" : "Task Details"}
               </p>
               <h2 className="mt-2 text-[1.45rem] font-black tracking-[-0.05em] text-[#0f172a]">
                 {selectedBooking.serviceLabel}
               </h2>
               <p className="mt-1 text-[13px] text-[#64748b]">
-                Review the full request before you accept or decline it.
+                {selectedBooking.bookingStatus === "pending"
+                  ? "Review the full request before you accept or decline it."
+                  : "See full task details, path, payment proofs, images, review, and completion status."}
               </p>
             </div>
             <button
@@ -1449,10 +1454,14 @@ export function BookingsScreen({
               </div>
             ) : null}
 
-            {selectedBooking.bookingStatus === "paid" ? (
+            {["paid", "review_requested", "reviewed"].includes(selectedBooking.bookingStatus) ? (
               <div className="mt-4 space-y-3">
                 <p className="rounded-[16px] border border-[#d8f0dc] bg-[#f3fff6] px-4 py-3 text-[13px] font-semibold text-[#166534]">
-                  Cash payment received. The customer can now leave a review.
+                  {selectedBooking.bookingStatus === "reviewed"
+                    ? "Cash payment received and the customer review is completed."
+                    : selectedBooking.bookingStatus === "review_requested"
+                      ? "Cash payment received. The customer can leave a review now."
+                      : "Cash payment received. The customer can now leave a review."}
                 </p>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="rounded-[18px] border border-[#d8f0dc] bg-[#f3fff6] p-4">
@@ -1507,6 +1516,63 @@ export function BookingsScreen({
                     </BookingActionBar>
                   </div>
                 ) : null}
+              </div>
+            ) : null}
+
+            {(selectedBooking.paymentStatus || selectedBooking.paymentOption) &&
+            !["paid", "review_requested", "reviewed"].includes(selectedBooking.bookingStatus) ? (
+              <div className="mt-4 rounded-[18px] border border-[#ebe3f5] bg-white px-4 py-4">
+                <p className="text-[14px] font-extrabold text-[#0f172a]">Payment Details</p>
+                <div className="mt-4 grid grid-cols-2 gap-3">
+                  <DetailMetric
+                    label="Payment Status"
+                    value={selectedBooking.paymentStatus || "Pending"}
+                    icon={<Wallet className="h-4 w-4 text-[#8E5EB5]" />}
+                  />
+                  <DetailMetric
+                    label="Payment Method"
+                    value={selectedBooking.paymentOption === "cash" ? "Cash" : selectedBooking.paymentOption === "online" ? "Online" : "Not set"}
+                    icon={<CreditCard className="h-4 w-4 text-[#8E5EB5]" />}
+                  />
+                  <DetailMetric
+                    label="Base Amount"
+                    value={formatCurrency(selectedBooking.baseAmount || selectedBooking.quotedAmount)}
+                    icon={<Wallet className="h-4 w-4 text-[#8E5EB5]" />}
+                  />
+                  <DetailMetric
+                    label="Final Amount"
+                    value={formatCurrency(selectedBooking.quotedAmount)}
+                    icon={<Wallet className="h-4 w-4 text-[#8E5EB5]" />}
+                  />
+                </div>
+              </div>
+            ) : null}
+
+            {selectedBookingReview ? (
+              <div className="mt-4 rounded-[18px] border border-[#ebe3f5] bg-white px-4 py-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-[14px] font-extrabold text-[#0f172a]">Customer Review</p>
+                    <p className="mt-1 text-[12px] text-[#64748b]">{selectedBookingReview.createdLabel}</p>
+                  </div>
+                  <div className="flex items-center gap-1 text-[#8E5EB5]">
+                    {Array.from({ length: selectedBookingReview.rating }).map((_, index) => (
+                      <Star key={`${selectedBookingReview.id}-${index}`} className="h-4 w-4 fill-current" />
+                    ))}
+                  </div>
+                </div>
+                <p className="mt-3 text-[13px] leading-6 text-[#475569]">
+                  {selectedBookingReview.comment}
+                </p>
+              </div>
+            ) : selectedBooking.bookingStatus === "review_requested" || selectedBooking.bookingStatus === "reviewed" ? (
+              <div className="mt-4 rounded-[18px] border border-[#ebe3f5] bg-white px-4 py-4">
+                <p className="text-[14px] font-extrabold text-[#0f172a]">Customer Review</p>
+                <p className="mt-2 text-[13px] text-[#64748b]">
+                  {selectedBooking.bookingStatus === "reviewed"
+                    ? "Review status is completed, but the review text is not linked in this task feed yet."
+                    : "Waiting for the customer to submit a review for this task."}
+                </p>
               </div>
             ) : null}
           </div>
