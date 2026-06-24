@@ -1,4 +1,4 @@
-export const COMPANY_COMMISSION_RATE = 0.15;
+export const COMPANY_COMMISSION_RATE = 0.05;
 
 export function roundCurrency(value: number) {
   return Math.round(value * 100) / 100;

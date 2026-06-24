@@ -492,16 +492,14 @@ export function DashboardScreen() {
   const canceledBookings = state.bookings.filter(
     (booking) => booking.bookingStatus === "declined" || booking.bookingStatus === "cancelled",
   );
-  const walletBalance = state.bookings
-    .filter((booking) =>
-      ["completed", "paid", "review_requested", "reviewed"].includes(booking.bookingStatus),
-    )
-    .reduce((sum, booking) => sum + booking.providerNetAmount, 0);
-  const companyPayable = state.bookings
-    .filter((booking) =>
-      ["completed", "paid", "review_requested", "reviewed"].includes(booking.bookingStatus) &&
-      booking.companyPaymentStatus !== "paid",
-    )
+  const collectedBookings = state.bookings.filter(
+    (booking) =>
+      booking.paymentStatus === "paid" ||
+      ["paid", "review_requested", "reviewed"].includes(booking.bookingStatus),
+  );
+  const walletBalance = collectedBookings.reduce((sum, booking) => sum + booking.quotedAmount, 0);
+  const companyPayable = collectedBookings
+    .filter((booking) => booking.companyPaymentStatus !== "paid")
     .reduce((sum, booking) => sum + booking.companyCommissionAmount, 0);
   const todayEarnings = todayBookings
     .filter((booking) =>
@@ -642,7 +640,7 @@ export function DashboardScreen() {
                   {formatCurrency(walletBalance)}
                 </p>
                 <p className="mt-1 text-[12px] text-[#7c728f]">
-                  Available for withdrawal to your bank account
+                  Full amount collected from customers
                 </p>
               </div>
               <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-[#edf7ee] text-[#22c55e]">
@@ -668,13 +666,13 @@ export function DashboardScreen() {
 
             <div className="mt-4 grid grid-cols-2 gap-3">
               <Link
-                href="/provider/earnings"
+                href="/provider/payments"
                 className="inline-flex h-11 items-center justify-center rounded-[14px] bg-[#8E5EB5] px-4 text-[14px] font-extrabold text-white shadow-[0_12px_24px_rgba(142,94,181,0.18)]"
               >
                 Withdraw
               </Link>
               <Link
-                href="/provider/earnings"
+                href="/provider/payments"
                 className="inline-flex h-11 items-center justify-center rounded-[14px] border border-[#d9c8ee] bg-white px-4 text-[14px] font-extrabold text-[#8E5EB5]"
               >
                 Pay to Company
@@ -717,7 +715,7 @@ export function DashboardScreen() {
           </div>
 
           <Link
-            href="/provider/tasks#new-tasks"
+            href="/provider/payments"
             className="relative mt-5 block overflow-hidden rounded-[22px] border border-[#eadcf7] bg-[linear-gradient(135deg,#ffffff_0%,#fcfaff_72%,#f3eafd_100%)] p-5 shadow-[0_12px_28px_rgba(142,94,181,0.08)]"
           >
             <div className="absolute -bottom-10 -right-6 h-28 w-36 rounded-full bg-[radial-gradient(circle,rgba(179,136,235,0.18)_0%,rgba(179,136,235,0)_72%)]" />
@@ -744,7 +742,7 @@ export function DashboardScreen() {
 
           <div className="mt-4 grid grid-cols-2 gap-3">
             <Link
-              href="/provider/tasks#ongoing-tasks"
+              href="/provider/payments"
               className="relative overflow-hidden rounded-[20px] border border-[#eadcf7] bg-[linear-gradient(135deg,#ffffff_0%,#fcfaff_72%,#f3eafd_100%)] p-3.5 shadow-[0_10px_20px_rgba(142,94,181,0.05)]"
             >
               <div className="absolute -bottom-8 -right-4 h-20 w-24 rounded-full bg-[radial-gradient(circle,rgba(179,136,235,0.15)_0%,rgba(179,136,235,0)_72%)]" />
@@ -756,7 +754,7 @@ export function DashboardScreen() {
               <p className="relative mt-1 text-[11px] leading-5 text-[#7b728a]">Take live task actions</p>
             </Link>
             <Link
-              href="/provider/tasks#today-tasks"
+              href="/provider/payments"
               className="relative overflow-hidden rounded-[20px] border border-[#eadcf7] bg-[linear-gradient(135deg,#ffffff_0%,#fcfaff_72%,#f3eafd_100%)] p-3.5 shadow-[0_10px_20px_rgba(142,94,181,0.05)]"
             >
               <div className="absolute -bottom-8 -right-4 h-20 w-24 rounded-full bg-[radial-gradient(circle,rgba(179,136,235,0.15)_0%,rgba(179,136,235,0)_72%)]" />
@@ -768,7 +766,7 @@ export function DashboardScreen() {
               <p className="relative mt-1 text-[11px] leading-5 text-[#7b728a]">Pending for today</p>
             </Link>
             <Link
-              href="/provider/tasks#completed-tasks"
+              href="/provider/payments"
               className="relative overflow-hidden rounded-[20px] border border-[#eadcf7] bg-[linear-gradient(135deg,#ffffff_0%,#fcfaff_72%,#f3eafd_100%)] p-3.5 shadow-[0_10px_20px_rgba(142,94,181,0.05)]"
             >
               <div className="absolute -bottom-8 -right-4 h-20 w-24 rounded-full bg-[radial-gradient(circle,rgba(179,136,235,0.15)_0%,rgba(179,136,235,0)_72%)]" />
@@ -1202,7 +1200,7 @@ export function BookingsScreen({
       <section className="rounded-[24px] border border-[#eee5f7] bg-white p-5 shadow-[0_14px_32px_rgba(86,38,135,0.08)]">
         <button
           type="button"
-          onClick={() => router.push("/provider/tasks")}
+          onClick={() => router.push("/provider/payments")}
           className="flex w-full items-start justify-between gap-3 text-left"
         >
           <div>
@@ -1422,11 +1420,11 @@ export function BookingsScreen({
                 </p>
                 <div className="rounded-[18px] border border-[#fde7d3] bg-[#fff7ed] p-4">
                   <div className="flex items-center justify-between gap-3">
-                    <p className="text-[12px] font-bold uppercase tracking-[0.12em] text-[#ea580c]">Pending to Company</p>
+                    <p className="text-[12px] font-bold uppercase tracking-[0.12em] text-[#ea580c]">Commission After Payment</p>
                     <p className="text-[20px] font-black text-[#c2410c]">{formatCurrency(selectedBooking.companyCommissionAmount)}</p>
                   </div>
                   <p className="mt-2 text-[13px] text-[#9a3412]">
-                    Commission status: {selectedBooking.companyPaymentStatus === "paid" ? "Paid" : "Unpaid"}
+                    This 5% becomes payable only after the customer confirms the cash payment.
                   </p>
                 </div>
               </div>
@@ -1800,7 +1798,7 @@ export function BookingsScreen({
                   <div className="mt-4 flex gap-3">
                     <AppButton
                       className="flex-1"
-                      onClick={() => router.push("/provider/tasks")}
+                      onClick={() => router.push("/provider/payments")}
                     >
                       Manage In Task Panel
                     </AppButton>
@@ -2206,496 +2204,331 @@ export function MessagesScreen() {
 
 export function EarningsScreen() {
   const state = useProviderAppData();
+  const [paymentFilter, setPaymentFilter] = useState<"date" | "week" | "month" | "all">("week");
+  const [selectedPaymentDate, setSelectedPaymentDate] = useState(getTodayKey());
   const fallback = LoadingOrError(state);
 
   if (fallback) {
     return fallback;
   }
 
-  const completed = state.bookings.filter((booking) =>
-    ["completed", "paid", "review_requested", "reviewed"].includes(booking.bookingStatus),
-  );
-  const paidCashJobs = completed.filter((booking) => booking.paymentStatus === "paid");
-  const total = paidCashJobs.reduce((sum, booking) => sum + booking.quotedAmount, 0);
-  const totalCommissionPending = paidCashJobs
-    .filter((booking) => booking.companyPaymentStatus !== "paid")
-    .reduce((sum, booking) => sum + booking.companyCommissionAmount, 0);
-  const totalNetEarnings = paidCashJobs.reduce((sum, booking) => sum + booking.providerNetAmount, 0);
-  const thisWeek = completed
-    .filter((booking) => {
-      const bookingDate = new Date(`${booking.scheduledDate}T00:00:00`);
-      const today = new Date();
-      const diff = today.getTime() - bookingDate.getTime();
-      return diff <= 7 * 24 * 60 * 60 * 1000;
-    })
-    .reduce((sum, booking) => sum + (booking.paymentStatus === "paid" ? booking.quotedAmount : 0), 0);
-  const thisMonth = completed
-    .filter((booking) => {
-      const bookingDate = new Date(`${booking.scheduledDate}T00:00:00`);
-      const today = new Date();
+  const today = new Date(`${getTodayKey()}T00:00:00`);
+  const startOfWeek = new Date(today);
+  const currentDay = startOfWeek.getDay();
+  const weekOffset = currentDay === 0 ? 6 : currentDay - 1;
+  startOfWeek.setDate(startOfWeek.getDate() - weekOffset);
+  const endOfWeek = new Date(startOfWeek);
+  endOfWeek.setDate(startOfWeek.getDate() + 6);
+
+  const paymentBookings = [...state.bookings]
+    .filter(
+      (booking) =>
+        Boolean(booking.paymentStatus) ||
+        Boolean(booking.paymentOption) ||
+        ["completed", "paid", "review_requested", "reviewed"].includes(booking.bookingStatus),
+    )
+    .sort(
+      (left, right) =>
+        new Date(`${right.scheduledDate}T${right.scheduledStartTime}`).getTime() -
+        new Date(`${left.scheduledDate}T${left.scheduledStartTime}`).getTime(),
+    );
+
+  const filteredPayments = paymentBookings.filter((booking) => {
+    const bookingDate = new Date(`${booking.scheduledDate}T00:00:00`);
+
+    if (paymentFilter === "date") {
+      return booking.scheduledDate === selectedPaymentDate;
+    }
+
+    if (paymentFilter === "week") {
+      return bookingDate >= startOfWeek && bookingDate <= endOfWeek;
+    }
+
+    if (paymentFilter === "month") {
       return (
         bookingDate.getMonth() === today.getMonth() &&
         bookingDate.getFullYear() === today.getFullYear()
       );
-    })
-    .reduce((sum, booking) => sum + (booking.paymentStatus === "paid" ? booking.quotedAmount : 0), 0);
-  const leadCompleted = completed[0] ?? null;
+    }
+
+    return true;
+  });
+
+  const isCollectedPayment = (booking: ProviderBookingItem) =>
+    booking.paymentStatus === "paid" ||
+    ["paid", "review_requested", "reviewed"].includes(booking.bookingStatus);
+
+  const totalCollected = filteredPayments
+    .filter(isCollectedPayment)
+    .reduce((sum, booking) => sum + booking.quotedAmount, 0);
+  const totalPendingCompany = filteredPayments
+    .filter((booking) => isCollectedPayment(booking) && booking.companyPaymentStatus !== "paid")
+    .reduce((sum, booking) => sum + booking.companyCommissionAmount, 0);
+  const totalNetEarnings = filteredPayments
+    .filter(isCollectedPayment)
+    .reduce((sum, booking) => sum + booking.providerNetAmount, 0);
+  const totalCashCollected = filteredPayments
+    .filter((booking) => isCollectedPayment(booking) && (booking.paymentOption ?? "cash") === "cash")
+    .reduce((sum, booking) => sum + booking.quotedAmount, 0);
+  const totalOnlineCollected = filteredPayments
+    .filter((booking) => isCollectedPayment(booking) && booking.paymentOption === "online")
+    .reduce((sum, booking) => sum + booking.quotedAmount, 0);
+  const leadPayment = filteredPayments[0] ?? null;
+  const filterSummary =
+    paymentFilter === "date"
+      ? `Showing payments for ${formatDateLabel(selectedPaymentDate)}`
+      : paymentFilter === "week"
+        ? "Showing payments for this week"
+        : paymentFilter === "month"
+          ? "Showing payments for this month"
+          : "Showing all payment records";
 
   return (
-    <PageShell title="Payment / Earnings" subtitle="Live provider earnings breakdown and payment release summary.">
+    <PageShell
+      title="Payments"
+      subtitle="See cash, online, commission, withdrawal totals, and booking-linked payment details."
+    >
       <section className="rounded-[24px] border border-[#eee5f7] bg-white p-5 shadow-[0_14px_32px_rgba(86,38,135,0.08)]">
         <div className="flex items-start gap-3">
           <div className="flex h-[4.5rem] w-[4.5rem] items-center justify-center rounded-[16px] bg-[linear-gradient(180deg,#8E5EB5_0%,#6F3EA1_100%)] text-white shadow-[0_10px_20px_rgba(142,94,181,0.24)]">
-            <Wallet className="h-6 w-6" />
+            <CreditCard className="h-6 w-6" />
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-[15px] font-black text-[#1f1630]">
-              {leadCompleted?.customerName ?? "Customer Payment"}
+              {leadPayment?.customerName ?? "Provider Payments"}
             </p>
             <p className="mt-1 text-[12px] font-semibold text-[#7b728a]">
-              {leadCompleted?.serviceLabel ?? "Completed booking"}
+              {leadPayment?.serviceLabel ?? "Full payment summary"}
             </p>
             <p className="mt-1 text-[11px] text-[#8f86a2]">
-              {leadCompleted ? leadCompleted.schedule : "No released payments yet"}
-            </p>
-          </div>
-          {leadCompleted ? (
-            <span className="rounded-full bg-[#eef8ef] px-3 py-1 text-[11px] font-bold text-[#3fa55b]">
-              Completed
-            </span>
-          ) : null}
-        </div>
-      </section>
-
-      <section className="rounded-[24px] border border-[#eee5f7] bg-white p-5 shadow-[0_14px_32px_rgba(86,38,135,0.08)]">
-        <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-[#8E5EB5]">Earnings Breakdown</p>
-        <div className="mt-4 space-y-3 text-[13px] text-[#544b66]">
-          <SummaryLine label="Cash Collected" value={formatCurrency(leadCompleted?.quotedAmount || total)} />
-          <SummaryLine label="Della Commission Pending" value={formatCurrency(leadCompleted?.companyCommissionAmount || totalCommissionPending)} />
-          <div className="border-t border-[#f0e8f8] pt-3">
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-[15px] font-black text-[#1f1630]">You Will Receive</p>
-              <p className="text-[22px] font-black text-[#6F3EA1]">{formatCurrency(leadCompleted?.providerNetAmount || totalNetEarnings)}</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="rounded-[20px] border border-[#d7efdb] bg-[#effbf1] px-4 py-3">
-        <div className="flex items-center gap-3">
-          <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#22c55e] text-white">
-            <Wallet className="h-4 w-4" />
-          </span>
-          <div>
-            <p className="text-[13px] font-bold text-[#1f4d2b]">Cash Job Status</p>
-            <p className="text-[11px] text-[#5f7d67]">
-              {leadCompleted
-                ? leadCompleted.companyPaymentStatus === "paid"
-                  ? "Commission paid to Della."
-                  : "Commission still pending to Della."
-                : "Waiting for cash payment confirmation"}
+              {leadPayment
+                ? `Booking ID ${leadPayment.id} • ${leadPayment.schedule}`
+                : "No payment records found for the selected filter"}
             </p>
           </div>
         </div>
       </section>
 
       <section className="grid grid-cols-2 gap-3">
-        <MetricCard label="This Week" value={formatCurrency(thisWeek)} meta="Recent completed jobs" accent="text-[#1f1630]" />
-        <MetricCard label="This Month" value={formatCurrency(thisMonth)} meta="Current month" accent="text-[#1f1630]" />
-      </section>
-
-      <section className="grid grid-cols-2 gap-3">
-        <MetricCard label="Cash Collected" value={formatCurrency(total)} meta="Paid by customers" accent="text-[#166534]" />
-        <MetricCard label="Pending to Company" value={formatCurrency(totalCommissionPending)} meta="Commission to settle" accent="text-[#ea580c]" />
+        <MetricCard
+          label="Total Earning"
+          value={formatCurrency(totalCollected)}
+          meta="Full amount collected"
+          accent="text-[#166534]"
+        />
+        <MetricCard
+          label="Pending Company"
+          value={formatCurrency(totalPendingCompany)}
+          meta="5% commission to DELLA"
+          accent="text-[#ea580c]"
+        />
+        <MetricCard
+          label="Withdrawal"
+          value={formatCurrency(totalNetEarnings)}
+          meta="Keep after commission"
+          accent="text-[#6F3EA1]"
+        />
+        <MetricCard
+          label="Booking IDs"
+          value={String(filteredPayments.length)}
+          meta="Payment rows in view"
+          accent="text-[#0f172a]"
+        />
       </section>
 
       <section className="rounded-[24px] border border-[#eee5f7] bg-white p-5 shadow-[0_14px_32px_rgba(86,38,135,0.08)]">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <h2 className="text-[17px] font-black text-[#0f172a]">Payout Method</h2>
-            <p className="mt-1 text-[13px] text-[#64748b]">Testing payout route for provider earnings.</p>
+            <h2 className="text-[17px] font-black text-[#0f172a]">Filter Payments</h2>
+            <p className="mt-1 text-[13px] text-[#64748b]">{filterSummary}</p>
+          </div>
+          <span className="rounded-full bg-[#f5f1fa] px-3 py-1 text-[11px] font-bold text-[#8E5EB5]">
+            {filteredPayments.length}
+          </span>
+        </div>
+        <div className="mt-4 flex flex-wrap gap-2">
+          {[
+            ["date", "Date"],
+            ["week", "Week"],
+            ["month", "Month"],
+            ["all", "All"],
+          ].map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => setPaymentFilter(value as "date" | "week" | "month" | "all")}
+              className={`rounded-full px-4 py-2 text-[13px] font-bold transition ${
+                paymentFilter === value
+                  ? "bg-[#8E5EB5] text-white shadow-[0_10px_20px_rgba(142,94,181,0.22)]"
+                  : "bg-[#f6f1fb] text-[#6c5d83]"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        {paymentFilter === "date" ? (
+          <label className="mt-4 block">
+            <span className="text-[12px] font-semibold text-[#6c5d83]">Select booking date</span>
+            <input
+              type="date"
+              value={selectedPaymentDate}
+              onChange={(event) => setSelectedPaymentDate(event.target.value || getTodayKey())}
+              className="mt-2 h-11 w-full rounded-[14px] border border-[#ded5eb] bg-white px-4 text-[14px] text-[#1f1630] outline-none"
+            />
+          </label>
+        ) : null}
+      </section>
+
+      <section className="rounded-[24px] border border-[#eee5f7] bg-white p-5 shadow-[0_14px_32px_rgba(86,38,135,0.08)]">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-[17px] font-black text-[#0f172a]">Payment Split</h2>
+            <p className="mt-1 text-[13px] text-[#64748b]">
+              Full collection, company commission, and provider withdrawal summary.
+            </p>
           </div>
         </div>
-        <button
-          type="button"
-          onClick={() =>
-            state.setNotice("Withdrawals are routed through admin during testing. Your earnings total is live.")
-          }
-          className="mt-4 flex w-full items-center justify-between rounded-[16px] border border-[#e7dcf7] bg-white px-4 py-3 text-left shadow-[0_10px_20px_rgba(142,94,181,0.05)]"
-        >
-          <div>
-            <p className="text-[13px] font-bold text-[#24193a]">Bank Transfer</p>
-            <p className="text-[11px] text-[#8f86a2]">Primary payout account</p>
+        <div className="mt-4 space-y-3 text-[13px] text-[#544b66]">
+          <SummaryLine label="Cash Payments" value={formatCurrency(totalCashCollected)} />
+          <SummaryLine label="Online Payments" value={formatCurrency(totalOnlineCollected)} />
+          <SummaryLine label="Total Pending to Company" value={formatCurrency(totalPendingCompany)} />
+          <div className="border-t border-[#f0e8f8] pt-3">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-[15px] font-black text-[#1f1630]">Estimated Withdrawal</p>
+              <p className="text-[22px] font-black text-[#6F3EA1]">{formatCurrency(totalNetEarnings)}</p>
+            </div>
+            <p className="mt-1 text-[11px] text-[#8f86a2]">
+              Provider collects full amount first, then settles DELLA commission later.
+            </p>
           </div>
-          <ChevronRight className="h-4 w-4 text-[#8E5EB5]" />
-        </button>
+        </div>
+      </section>
+
+      <section className="rounded-[24px] border border-[#eee5f7] bg-white p-5 shadow-[0_14px_32px_rgba(86,38,135,0.08)]">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-[17px] font-black text-[#0f172a]">Payment Details</h2>
+            <p className="mt-1 text-[13px] text-[#64748b]">
+              Each row includes booking ID, date, mode, totals, commission, proof, and link to full detail.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() =>
+              state.setNotice("Withdrawals are routed through admin during testing. Payment totals are live.")
+            }
+            className="rounded-full bg-[#eff6ff] px-3 py-1 text-[11px] font-bold text-[#2563eb]"
+          >
+            Withdraw
+          </button>
+        </div>
+
+        <div className="mt-4 space-y-3">
+          {filteredPayments.length === 0 ? (
+            <EmptyState
+              title="No payment records"
+              description="Change the filter to see other booking payments, commission, and withdrawal data."
+              icon={<CreditCard className="h-6 w-6" />}
+            />
+          ) : (
+            filteredPayments.map((booking) => {
+              const collected = isCollectedPayment(booking);
+              const paymentMode = booking.paymentOption === "online" ? "Online" : "Cash";
+              const paymentStatusLabel = booking.paymentStatus
+                ? booking.paymentStatus.charAt(0).toUpperCase() + booking.paymentStatus.slice(1)
+                : collected
+                  ? "Paid"
+                  : "Pending";
+
+              return (
+                <div
+                  key={booking.id}
+                  className="rounded-[22px] border border-[#eee5f7] bg-[#fcfaff] p-4 shadow-[0_10px_24px_rgba(86,38,135,0.05)]"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-[15px] font-black text-[#0f172a]">{booking.serviceLabel}</p>
+                      <p className="mt-1 text-[12px] font-semibold text-[#6F3EA1]">Booking ID: {booking.id}</p>
+                      <p className="mt-1 truncate text-[13px] text-[#475569]">{booking.customerName}</p>
+                    </div>
+                    <div className="flex flex-col items-end gap-2">
+                      <StatusBadge label={paymentMode} tone={booking.paymentOption === "online" ? "info" : "accepted"} />
+                      <StatusBadge label={paymentStatusLabel} tone={collected ? "completed" : "pending"} />
+                    </div>
+                  </div>
+
+                  <div className="mt-4 grid gap-2 text-[12px] text-[#475569] sm:grid-cols-2">
+                    <div className="flex items-center gap-2">
+                      <CalendarDays className="h-4 w-4 text-[#8E5EB5]" />
+                      <span>{formatDateLabel(booking.scheduledDate)}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Clock3 className="h-4 w-4 text-[#8E5EB5]" />
+                      <span>{formatTimeLabel(booking.scheduledDate, booking.scheduledStartTime)}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <MapPin className="h-4 w-4 text-[#8E5EB5]" />
+                      <span className="truncate">{booking.location}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Wallet className="h-4 w-4 text-[#8E5EB5]" />
+                      <span>{collected ? "Collected" : "Awaiting payment confirmation"}</span>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 grid grid-cols-3 gap-3">
+                    <div className="rounded-[16px] border border-[#d8f0dc] bg-[#f3fff6] p-3">
+                      <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#15803d]">Amount</p>
+                      <p className="mt-1 text-[16px] font-black text-[#166534]">{formatCurrency(booking.quotedAmount)}</p>
+                    </div>
+                    <div className="rounded-[16px] border border-[#fde7d3] bg-[#fff7ed] p-3">
+                      <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#ea580c]">Commission</p>
+                      <p className="mt-1 text-[16px] font-black text-[#c2410c]">{formatCurrency(booking.companyCommissionAmount)}</p>
+                    </div>
+                    <div className="rounded-[16px] border border-[#e9def8] bg-[#f8f3fd] p-3">
+                      <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#7c3aed]">Withdrawal</p>
+                      <p className="mt-1 text-[16px] font-black text-[#6F3EA1]">{formatCurrency(booking.providerNetAmount)}</p>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 grid gap-2 text-[12px] text-[#5b536d] sm:grid-cols-2">
+                    <p>Company Status: <span className="font-bold text-[#1f1630]">{booking.companyPaymentStatus === "paid" ? "Paid" : "Pending"}</span></p>
+                    <p>Customer Proof: <span className="font-bold text-[#1f1630]">{booking.customerPaymentProofDataUrl ? "Attached" : "No proof"}</span></p>
+                    <p>Company Slip: <span className="font-bold text-[#1f1630]">{booking.providerCompanyPaymentProofDataUrl ? "Attached" : "No slip"}</span></p>
+                    <p>Review Status: <span className="font-bold text-[#1f1630]">{booking.customerStatusLabel}</span></p>
+                  </div>
+
+                  <div className="mt-4 flex gap-3">
+                    <AppButton href={`/provider/bookings/${booking.id}`} tone="secondary" className="flex-1">
+                      Open Full Details
+                    </AppButton>
+                    {collected && booking.companyPaymentStatus !== "paid" ? (
+                      <AppButton
+                        className="flex-1"
+                        disabled={state.actionBookingId === booking.id}
+                        onClick={() => void state.handleCommissionSettlement(booking.id, {})}
+                      >
+                        Mark Commission Paid
+                      </AppButton>
+                    ) : null}
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
       </section>
     </PageShell>
   );
 }
 
+export function PaymentsScreen() {
+  return <EarningsScreen />;
+}
+
 export function TasksScreen() {
-  const state = useProviderAppData();
-  const fallback = LoadingOrError(state);
-
-  if (fallback) {
-    return fallback;
-  }
-
-  async function handleSendFinalAmount(booking: ProviderBookingItem) {
-    const input = window.prompt(
-      "Enter final amount (RM) to send to the customer.",
-      String(booking.quotedAmount || booking.baseAmount || 0),
-    );
-
-    if (input === null) {
-      return;
-    }
-
-    const finalAmount = Number(input);
-
-    if (!Number.isFinite(finalAmount) || finalAmount <= 0) {
-      state.setError("Final amount must be a valid number.");
-      return;
-    }
-
-    const note = window.prompt(
-      "Optional payment note for customer",
-      booking.providerResponseNote || "Please review and confirm the final cash amount.",
-    );
-
-    if (note === null) {
-      return;
-    }
-
-    state.handleBookingAction(
-      booking.id,
-      "completed",
-      note.trim(),
-      { finalAmount },
-    );
-  }
-
-  const newTasks = state.bookings.filter(
-    (booking) => booking.bucket === "requests" || booking.bookingStatus === "pending",
-  );
-  const todaysTasks = state.bookings.filter(
-    (booking) =>
-      booking.scheduledDate === getTodayKey() &&
-      booking.bookingStatus !== "declined" &&
-      booking.bookingStatus !== "cancelled",
-  );
-  const ongoing = state.bookings.filter(
-    (booking) => booking.bookingStatus === "accepted" || booking.bookingStatus === "on_the_way" || booking.bookingStatus === "arrived",
-  );
-  const completedTasks = state.bookings.filter((booking) =>
-    ["completed", "paid", "review_requested", "reviewed"].includes(booking.bookingStatus),
-  );
-  const completedToday = state.bookings.filter(
-    (booking) =>
-      booking.scheduledDate === getTodayKey() &&
-      ["completed", "paid", "review_requested", "reviewed"].includes(booking.bookingStatus),
-  );
-
-  return (
-    <PageShell title="Task Progress" subtitle="Follow the live provider task path and update each step in order.">
-      <section className="grid grid-cols-2 gap-3">
-        <MetricCard
-          label="Ongoing"
-          value={String(ongoing.length)}
-          meta="Accepted and active"
-          accent="text-[#0f172a]"
-        />
-        <MetricCard
-          label="Completed Today"
-          value={String(completedToday.length)}
-          meta="Finished today"
-          accent="text-[#0f172a]"
-        />
-      </section>
-
-      <section id="new-tasks" className="rounded-[26px] border border-[#eee5f7] bg-white p-5 shadow-[0_18px_44px_rgba(86,38,135,0.08)]">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <h2 className="text-[17px] font-black text-[#0f172a]">New Tasks</h2>
-            <p className="mt-1 text-[13px] text-[#64748b]">
-              New requests that need your action now.
-            </p>
-          </div>
-          <span className="rounded-full bg-[#f7f1fc] px-3 py-1 text-[12px] font-bold text-[#8E5EB5]">
-            {newTasks.length}
-          </span>
-        </div>
-        <div className="mt-4 space-y-3">
-          {newTasks.length === 0 ? (
-            <EmptyState
-              title="No new tasks"
-              description="Fresh incoming requests will appear here automatically."
-              icon={<Bell className="h-6 w-6" />}
-            />
-          ) : (
-            newTasks.map((booking) => (
-              <div
-                key={booking.id}
-                className="rounded-[22px] border border-[#eee5f7] bg-[#fcfaff] p-4 shadow-[0_10px_24px_rgba(86,38,135,0.05)]"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-[15px] font-black text-[#0f172a]">{booking.serviceLabel}</p>
-                    <p className="mt-1 text-[13px] text-[#475569]">{booking.customerName}</p>
-                  </div>
-                  <StatusBadge label={booking.statusLabel} tone={providerStatusTone(booking.bookingStatus)} />
-                </div>
-                <div className="mt-3 space-y-2 text-[13px] text-[#475569]">
-                  <div className="flex items-center gap-2">
-                    <CalendarDays className="h-4 w-4 text-[#8E5EB5]" />
-                    <span>{booking.schedule}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4 text-[#8E5EB5]" />
-                    <span>{booking.location}</span>
-                  </div>
-                </div>
-                <div className="mt-4 flex gap-3">
-                  <AppButton
-                    className="flex-1"
-                    tone="danger"
-                    disabled={state.actionBookingId === booking.id}
-                    onClick={() =>
-                      state.handleBookingAction(
-                        booking.id,
-                        "declined",
-                        "Provider declined booking",
-                      )
-                    }
-                  >
-                    Decline
-                  </AppButton>
-                  <AppButton
-                    className="flex-1"
-                    disabled={state.actionBookingId === booking.id}
-                    onClick={() =>
-                      state.handleBookingAction(
-                        booking.id,
-                        "accepted",
-                        "Provider accepted booking",
-                      )
-                    }
-                  >
-                    Accept
-                  </AppButton>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      </section>
-
-      <section id="today-tasks" className="rounded-[26px] border border-[#eee5f7] bg-white p-5 shadow-[0_18px_44px_rgba(86,38,135,0.08)]">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <h2 className="text-[17px] font-black text-[#0f172a]">Today&apos;s Tasks</h2>
-            <p className="mt-1 text-[13px] text-[#64748b]">
-              Scheduled work for today with quick access to details.
-            </p>
-          </div>
-          <span className="rounded-full bg-[#f7f1fc] px-3 py-1 text-[12px] font-bold text-[#8E5EB5]">
-            {todaysTasks.length}
-          </span>
-        </div>
-        <div className="mt-4 space-y-3">
-          {todaysTasks.length === 0 ? (
-            <EmptyState
-              title="No tasks for today"
-              description="Today&apos;s provider schedule will appear here automatically."
-              icon={<CalendarDays className="h-6 w-6" />}
-            />
-          ) : (
-            todaysTasks.map((booking) => (
-              <div
-                key={booking.id}
-                className="rounded-[22px] border border-[#eee5f7] bg-[#fcfaff] p-4 shadow-[0_10px_24px_rgba(86,38,135,0.05)]"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-[15px] font-black text-[#0f172a]">{booking.serviceLabel}</p>
-                    <p className="mt-1 text-[13px] text-[#475569]">{booking.customerName}</p>
-                  </div>
-                  <StatusBadge label={booking.statusLabel} tone={providerStatusTone(booking.bookingStatus)} />
-                </div>
-                <div className="mt-3 space-y-2 text-[13px] text-[#475569]">
-                  <div className="flex items-center gap-2">
-                    <Clock3 className="h-4 w-4 text-[#8E5EB5]" />
-                    <span>{booking.schedule}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4 text-[#8E5EB5]" />
-                    <span>{booking.location}</span>
-                  </div>
-                </div>
-                <div className="mt-4">
-                  <AppButton href={`/provider/bookings/${booking.id}`} tone="secondary" className="w-full">
-                    Open Task Details
-                  </AppButton>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      </section>
-
-      <section id="ongoing-tasks" className="rounded-[26px] border border-[#eee5f7] bg-white p-5 shadow-[0_18px_44px_rgba(86,38,135,0.08)]">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <h2 className="text-[17px] font-black text-[#0f172a]">Ongoing Tasks</h2>
-            <p className="mt-1 text-[13px] text-[#64748b]">
-              These are the jobs you should work on right now.
-            </p>
-          </div>
-          <Link href="/provider/bookings" className="text-[13px] font-bold text-[#8E5EB5]">
-            All bookings
-          </Link>
-        </div>
-        <div className="mt-4 space-y-3">
-          {ongoing.length === 0 ? (
-            <EmptyState
-              title="No ongoing tasks"
-              description="Accepted or in-progress jobs will show here automatically."
-              icon={<BriefcaseBusiness className="h-6 w-6" />}
-            />
-          ) : (
-            ongoing.map((booking) => (
-              <div
-                key={booking.id}
-                className="rounded-[22px] border border-[#eee5f7] bg-[#fcfaff] p-4 shadow-[0_10px_24px_rgba(86,38,135,0.05)]"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-[15px] font-black text-[#0f172a]">{booking.serviceLabel}</p>
-                    <p className="mt-1 text-[13px] text-[#475569]">{booking.customerName}</p>
-                  </div>
-                  <StatusBadge label={booking.statusLabel} tone={providerStatusTone(booking.bookingStatus)} />
-                </div>
-                <div className="mt-3 space-y-2 text-[13px] text-[#475569]">
-                  <div className="flex items-center gap-2">
-                    <CalendarDays className="h-4 w-4 text-[#8E5EB5]" />
-                    <span>{booking.schedule}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4 text-[#8E5EB5]" />
-                    <span>{booking.location}</span>
-                  </div>
-                </div>
-                <div className="mt-4 rounded-[18px] border border-[#ebe3f5] bg-white px-4 py-4">
-                  <p className="text-[14px] font-extrabold text-[#0f172a]">Task Progress</p>
-                  <div className="mt-4">
-                    <TaskPath steps={getProviderTaskSteps(booking.bookingStatus)} />
-                  </div>
-                </div>
-                <div className="mt-4 flex gap-3">
-                  {booking.bookingStatus === "accepted" ? (
-                    <AppButton
-                      className="flex-1"
-                      disabled={state.actionBookingId === booking.id}
-                      onClick={() =>
-                        state.handleBookingAction(
-                          booking.id,
-                          "on_the_way",
-                          "Provider started travel to customer",
-                        )
-                      }
-                    >
-                      Mark On the Way
-                    </AppButton>
-                  ) : null}
-                  {booking.bookingStatus === "on_the_way" ? (
-                    <AppButton
-                      className="flex-1"
-                      disabled={state.actionBookingId === booking.id}
-                      onClick={() =>
-                        state.handleBookingAction(
-                          booking.id,
-                          "arrived",
-                          "Provider arrived at customer location",
-                        )
-                      }
-                    >
-                      Mark Arrived
-                    </AppButton>
-                  ) : null}
-                  {booking.bookingStatus === "arrived" ? (
-                    <AppButton
-                      className="flex-1"
-                      disabled={state.actionBookingId === booking.id}
-                      onClick={() => void handleSendFinalAmount(booking)}
-                    >
-                      Send Final Amount
-                    </AppButton>
-                  ) : null}
-                  <AppButton href={`/provider/bookings/${booking.id}`} tone="secondary" className="flex-1">
-                    Open Booking
-                  </AppButton>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      </section>
-
-      <section id="completed-tasks" className="rounded-[26px] border border-[#eee5f7] bg-white p-5 shadow-[0_18px_44px_rgba(86,38,135,0.08)]">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <h2 className="text-[17px] font-black text-[#0f172a]">Completed Tasks</h2>
-            <p className="mt-1 text-[13px] text-[#64748b]">
-              Finished jobs with task details and payment follow-up.
-            </p>
-          </div>
-          <span className="rounded-full bg-[#f7f1fc] px-3 py-1 text-[12px] font-bold text-[#8E5EB5]">
-            {completedTasks.length}
-          </span>
-        </div>
-        <div className="mt-4 space-y-3">
-          {completedTasks.length === 0 ? (
-            <EmptyState
-              title="No completed tasks"
-              description="Finished provider work will appear here once tasks are completed."
-              icon={<BriefcaseBusiness className="h-6 w-6" />}
-            />
-          ) : (
-            completedTasks.map((booking) => (
-              <div
-                key={booking.id}
-                className="rounded-[22px] border border-[#eee5f7] bg-[#fcfaff] p-4 shadow-[0_10px_24px_rgba(86,38,135,0.05)]"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-[15px] font-black text-[#0f172a]">{booking.serviceLabel}</p>
-                    <p className="mt-1 text-[13px] text-[#475569]">{booking.customerName}</p>
-                  </div>
-                  <StatusBadge label={booking.statusLabel} tone={providerStatusTone(booking.bookingStatus)} />
-                </div>
-                <div className="mt-3 space-y-2 text-[13px] text-[#475569]">
-                  <div className="flex items-center gap-2">
-                    <CalendarDays className="h-4 w-4 text-[#8E5EB5]" />
-                    <span>{booking.schedule}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Wallet className="h-4 w-4 text-[#8E5EB5]" />
-                    <span>{formatCurrency(booking.quotedAmount)}</span>
-                  </div>
-                </div>
-                <div className="mt-4">
-                  <AppButton href={`/provider/bookings/${booking.id}`} tone="secondary" className="w-full">
-                    Open Task Details
-                  </AppButton>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      </section>
-    </PageShell>
-  );
+  return <PaymentsScreen />;
 }
 
 export function ServicesScreen() {
@@ -3461,7 +3294,7 @@ export function MoreScreen() {
       <section className="rounded-[26px] bg-white p-5 shadow-[0_18px_44px_rgba(15,23,42,0.08)] ring-1 ring-[#e6eee8]">
         <div className="space-y-3">
           <InfoRow icon={<UserRound className="h-4.5 w-4.5 text-[#16a34a]" />} label="Personal Information" value="Open" href="/provider/profile" />
-          <InfoRow icon={<Landmark className="h-4.5 w-4.5 text-[#16a34a]" />} label="Bank Details" value="Wallet" href="/provider/earnings" />
+          <InfoRow icon={<Landmark className="h-4.5 w-4.5 text-[#16a34a]" />} label="Bank Details" value="Wallet" href="/provider/payments" />
           <InfoRow icon={<BriefcaseBusiness className="h-4.5 w-4.5 text-[#16a34a]" />} label="My Services" value="Manage" href="/provider/services" />
           <InfoRow icon={<CalendarDays className="h-4.5 w-4.5 text-[#16a34a]" />} label="Availability" value="Edit" href="/provider/availability" />
           <InfoRow icon={<Star className="h-4.5 w-4.5 text-[#16a34a]" />} label="Reviews" value="View" href="/provider/reviews" />
