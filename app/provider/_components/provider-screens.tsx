@@ -478,9 +478,14 @@ export function DashboardScreen() {
     )
     .sort((left, right) =>
       `${left.scheduledDate}T${left.scheduledStartTime}`.localeCompare(
-        `${right.scheduledDate}T${right.scheduledStartTime}`,
+      `${right.scheduledDate}T${right.scheduledStartTime}`,
       ),
     );
+  const pendingTodayTasks = state.bookings.filter(
+    (booking) =>
+      booking.scheduledDate === todayKey &&
+      (booking.bucket === "requests" || booking.bookingStatus === "pending"),
+  );
   const completedBookings = state.bookings.filter((booking) =>
     ["completed", "paid", "review_requested", "reviewed"].includes(booking.bookingStatus),
   );
@@ -707,6 +712,7 @@ export function DashboardScreen() {
               <h2 className="text-[17px] font-black tracking-[-0.04em] text-[#0f172a]">
                 Today&apos;s Task
               </h2>
+              <p className="mt-1 text-[12px] text-[#7b728a]">Total task of the day</p>
             </div>
           </div>
 
@@ -736,42 +742,54 @@ export function DashboardScreen() {
             </div>
           </Link>
 
-          <div className="mt-4 grid grid-cols-3 gap-3">
+          <div className="mt-4 grid grid-cols-2 gap-3">
             <Link
               href="/provider/tasks#ongoing-tasks"
-              className="relative overflow-hidden rounded-[20px] border border-[#eadcf7] bg-[linear-gradient(135deg,#ffffff_0%,#fcfaff_72%,#f3eafd_100%)] p-4 shadow-[0_10px_20px_rgba(142,94,181,0.05)]"
+              className="relative overflow-hidden rounded-[20px] border border-[#eadcf7] bg-[linear-gradient(135deg,#ffffff_0%,#fcfaff_72%,#f3eafd_100%)] p-3.5 shadow-[0_10px_20px_rgba(142,94,181,0.05)]"
             >
               <div className="absolute -bottom-8 -right-4 h-20 w-24 rounded-full bg-[radial-gradient(circle,rgba(179,136,235,0.15)_0%,rgba(179,136,235,0)_72%)]" />
-              <span className="relative inline-flex h-14 w-14 items-center justify-center rounded-[18px] bg-[#f5effd] text-[#7c3aed]">
-                <Clock3 className="h-7 w-7" />
+              <span className="relative inline-flex h-12 w-12 items-center justify-center rounded-[16px] bg-[#f5effd] text-[#7c3aed]">
+                <Clock3 className="h-6 w-6" />
               </span>
-              <p className="relative mt-5 text-[1.65rem] font-black leading-none tracking-[-0.06em] text-[#6d28d9]">{ongoingBookings.length}</p>
+              <p className="relative mt-4 text-[1.55rem] font-black leading-none tracking-[-0.06em] text-[#6d28d9]">{ongoingBookings.length}</p>
               <p className="relative mt-2 text-[14px] font-black text-[#1f1630]">On Going</p>
-              <p className="relative mt-1 text-[12px] leading-5 text-[#7b728a]">Take live task actions</p>
+              <p className="relative mt-1 text-[11px] leading-5 text-[#7b728a]">Take live task actions</p>
+            </Link>
+            <Link
+              href="/provider/tasks#today-tasks"
+              className="relative overflow-hidden rounded-[20px] border border-[#eadcf7] bg-[linear-gradient(135deg,#ffffff_0%,#fcfaff_72%,#f3eafd_100%)] p-3.5 shadow-[0_10px_20px_rgba(142,94,181,0.05)]"
+            >
+              <div className="absolute -bottom-8 -right-4 h-20 w-24 rounded-full bg-[radial-gradient(circle,rgba(179,136,235,0.15)_0%,rgba(179,136,235,0)_72%)]" />
+              <span className="relative inline-flex h-12 w-12 items-center justify-center rounded-[16px] bg-[#f5effd] text-[#7c3aed]">
+                <Bell className="h-6 w-6" />
+              </span>
+              <p className="relative mt-4 text-[1.55rem] font-black leading-none tracking-[-0.06em] text-[#6d28d9]">{pendingTodayTasks.length}</p>
+              <p className="relative mt-2 text-[14px] font-black text-[#1f1630]">Pending Task</p>
+              <p className="relative mt-1 text-[11px] leading-5 text-[#7b728a]">Pending for today</p>
             </Link>
             <Link
               href="/provider/tasks#completed-tasks"
-              className="relative overflow-hidden rounded-[20px] border border-[#eadcf7] bg-[linear-gradient(135deg,#ffffff_0%,#fcfaff_72%,#f3eafd_100%)] p-4 shadow-[0_10px_20px_rgba(142,94,181,0.05)]"
+              className="relative overflow-hidden rounded-[20px] border border-[#eadcf7] bg-[linear-gradient(135deg,#ffffff_0%,#fcfaff_72%,#f3eafd_100%)] p-3.5 shadow-[0_10px_20px_rgba(142,94,181,0.05)]"
             >
               <div className="absolute -bottom-8 -right-4 h-20 w-24 rounded-full bg-[radial-gradient(circle,rgba(179,136,235,0.15)_0%,rgba(179,136,235,0)_72%)]" />
-              <span className="relative inline-flex h-14 w-14 items-center justify-center rounded-[18px] bg-[#f5effd] text-[#7c3aed]">
-                <CalendarDays className="h-7 w-7" />
+              <span className="relative inline-flex h-12 w-12 items-center justify-center rounded-[16px] bg-[#f5effd] text-[#7c3aed]">
+                <CalendarDays className="h-6 w-6" />
               </span>
-              <p className="relative mt-5 text-[1.65rem] font-black leading-none tracking-[-0.06em] text-[#6d28d9]">{completedBookings.length}</p>
+              <p className="relative mt-4 text-[1.55rem] font-black leading-none tracking-[-0.06em] text-[#6d28d9]">{completedBookings.length}</p>
               <p className="relative mt-2 text-[14px] font-black text-[#1f1630]">Completed</p>
-              <p className="relative mt-1 text-[12px] leading-5 text-[#7b728a]">Open finished task details</p>
+              <p className="relative mt-1 text-[11px] leading-5 text-[#7b728a]">Open finished task details</p>
             </Link>
             <Link
               href="/provider/bookings?tab=canceled"
-              className="relative overflow-hidden rounded-[20px] border border-[#eadcf7] bg-[linear-gradient(135deg,#ffffff_0%,#fcfaff_72%,#f3eafd_100%)] p-4 shadow-[0_10px_20px_rgba(142,94,181,0.05)]"
+              className="relative overflow-hidden rounded-[20px] border border-[#eadcf7] bg-[linear-gradient(135deg,#ffffff_0%,#fcfaff_72%,#f3eafd_100%)] p-3.5 shadow-[0_10px_20px_rgba(142,94,181,0.05)]"
             >
               <div className="absolute -bottom-8 -right-4 h-20 w-24 rounded-full bg-[radial-gradient(circle,rgba(179,136,235,0.15)_0%,rgba(179,136,235,0)_72%)]" />
-              <span className="relative inline-flex h-14 w-14 items-center justify-center rounded-[18px] bg-[#f5effd] text-[#7c3aed]">
-                <Bell className="h-7 w-7" />
+              <span className="relative inline-flex h-12 w-12 items-center justify-center rounded-[16px] bg-[#f5effd] text-[#7c3aed]">
+                <Bell className="h-6 w-6" />
               </span>
-              <p className="relative mt-5 text-[1.65rem] font-black leading-none tracking-[-0.06em] text-[#6d28d9]">{canceledBookings.length}</p>
+              <p className="relative mt-4 text-[1.55rem] font-black leading-none tracking-[-0.06em] text-[#6d28d9]">{canceledBookings.length}</p>
               <p className="relative mt-2 text-[14px] font-black text-[#1f1630]">Cancelled</p>
-              <p className="relative mt-1 text-[12px] leading-5 text-[#7b728a]">View cancelled tasks</p>
+              <p className="relative mt-1 text-[11px] leading-5 text-[#7b728a]">View cancelled tasks</p>
             </Link>
           </div>
 
@@ -937,47 +955,6 @@ export function DashboardScreen() {
                       {booking.bookingStatus === "on_the_way" ? "Mark Arrived" : "Mark Completed"}
                     </AppButton>
                   </div>
-                </div>
-              ))
-            )}
-          </div>
-        </section>
-
-        <section className="rounded-[26px] bg-white p-5 shadow-[0_18px_44px_rgba(15,23,42,0.08)] ring-1 ring-[#e6eee8]">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <h2 className="text-[17px] font-black tracking-[-0.04em] text-[#0f172a]">
-                Today&apos;s Schedule
-              </h2>
-              <p className="mt-1 text-[13px] text-[#64748b]">Your jobs lined up for today.</p>
-            </div>
-            <Link href="/provider/calendar" className="text-[13px] font-bold text-[#16a34a]">
-              Calendar
-            </Link>
-          </div>
-          <div className="mt-4 space-y-3">
-            {todayBookings.length === 0 ? (
-              <EmptyState
-                title="No jobs scheduled today"
-                description="Your accepted and upcoming bookings for today will appear here."
-                icon={<CalendarDays className="h-6 w-6" />}
-              />
-            ) : (
-              todayBookings.slice(0, 4).map((booking) => (
-                <div
-                  key={booking.id}
-                  className="flex items-center gap-3 rounded-[20px] border border-[#e7eee8] bg-[#fbfffc] px-3 py-3"
-                >
-                  <div className="w-16 shrink-0 text-center">
-                    <p className="text-[12px] font-black text-[#7c3aed]">
-                      {formatTimeLabel(booking.scheduledDate, booking.scheduledStartTime)}
-                    </p>
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-[14px] font-black text-[#0f172a]">{booking.serviceLabel}</p>
-                    <p className="truncate text-[12px] text-[#64748b]">{booking.location}</p>
-                  </div>
-                  <StatusBadge label={booking.statusLabel} tone={providerStatusTone(booking.bookingStatus)} />
                 </div>
               ))
             )}
