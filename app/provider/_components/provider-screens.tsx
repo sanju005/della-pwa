@@ -483,7 +483,13 @@ export function DashboardScreen() {
     .filter((booking) =>
       ["completed", "paid", "review_requested", "reviewed"].includes(booking.bookingStatus),
     )
-    .reduce((sum, booking) => sum + booking.quotedAmount, 0);
+    .reduce((sum, booking) => sum + booking.providerNetAmount, 0);
+  const companyPayable = state.bookings
+    .filter((booking) =>
+      ["completed", "paid", "review_requested", "reviewed"].includes(booking.bookingStatus) &&
+      booking.companyPaymentStatus !== "paid",
+    )
+    .reduce((sum, booking) => sum + booking.companyCommissionAmount, 0);
   const todayEarnings = todayBookings
     .filter((booking) =>
       ["completed", "paid", "review_requested", "reviewed"].includes(booking.bookingStatus),
@@ -560,19 +566,53 @@ export function DashboardScreen() {
             </div>
           </div>
 
-          <div className="mt-5 rounded-[22px] border border-[#e5eee8] bg-[#fbfffc] p-4">
-            <div className="flex items-center justify-between gap-3">
+          <div className="mt-5 overflow-hidden rounded-[22px] border border-[#e7def4] bg-[linear-gradient(135deg,#ffffff_0%,#f8f3fd_100%)] p-4 shadow-[0_16px_36px_rgba(104,63,155,0.1)]">
+            <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-[#94a3b8]">
+                <p className="text-[12px] font-extrabold uppercase tracking-[0.16em] text-[#8E5EB5]">
                   Wallet Balance
                 </p>
-                <p className="mt-2 text-[1.85rem] font-black tracking-[-0.06em] text-[#0f172a]">
+                <p className="mt-2 text-[1.85rem] font-black tracking-[-0.06em] text-[#1f1630]">
                   {formatCurrency(walletBalance)}
                 </p>
+                <p className="mt-1 text-[12px] text-[#7c728f]">
+                  Available for withdrawal to your bank account
+                </p>
               </div>
-              <div className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-[#eef9f1] text-[#16a34a]">
+              <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-[#edf7ee] text-[#22c55e]">
                 <Wallet className="h-5 w-5" />
+              </span>
+            </div>
+
+            <div className="mt-4 rounded-[18px] border border-[#ede4f8] bg-white/90 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-[#8E5EB5]">
+                    Payable to Company
+                  </p>
+                  <p className="mt-1 text-[1.3rem] font-black tracking-[-0.05em] text-[#1f1630]">
+                    {formatCurrency(companyPayable)}
+                  </p>
+                </div>
+                <span className="rounded-full bg-[#f5f1fa] px-3 py-1 text-[11px] font-bold text-[#8E5EB5]">
+                  DELLA
+                </span>
               </div>
+            </div>
+
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              <Link
+                href="/provider/earnings"
+                className="inline-flex h-11 items-center justify-center rounded-[14px] bg-[#8E5EB5] px-4 text-[14px] font-extrabold text-white shadow-[0_12px_24px_rgba(142,94,181,0.18)]"
+              >
+                Withdraw
+              </Link>
+              <Link
+                href="/provider/earnings"
+                className="inline-flex h-11 items-center justify-center rounded-[14px] border border-[#d9c8ee] bg-white px-4 text-[14px] font-extrabold text-[#8E5EB5]"
+              >
+                Pay to Company
+              </Link>
             </div>
           </div>
 
