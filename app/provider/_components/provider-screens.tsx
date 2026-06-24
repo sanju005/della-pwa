@@ -871,9 +871,10 @@ export function DashboardScreen() {
                   />
                 ) : (
                   selectedDateTasks.slice(0, 3).map((booking) => (
-                    <div
+                    <Link
                       key={booking.id}
-                      className="rounded-[18px] border border-[#e7eee8] bg-[#fbfffc] p-3"
+                      href={`/provider/bookings/${booking.id}`}
+                      className="block rounded-[18px] border border-[#e7eee8] bg-[#fbfffc] p-3 transition hover:border-[#d9c8ee] hover:shadow-[0_10px_24px_rgba(142,94,181,0.06)]"
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
@@ -886,7 +887,7 @@ export function DashboardScreen() {
                         <Clock3 className="h-4 w-4 text-[#8E5EB5]" />
                         <span>{formatTimeLabel(booking.scheduledDate, booking.scheduledStartTime)}</span>
                       </div>
-                    </div>
+                    </Link>
                   ))
                 )}
               </div>
