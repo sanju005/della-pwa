@@ -414,6 +414,11 @@ function ServiceCard({
 
 export function DashboardScreen() {
   const state = useProviderAppData();
+  const [taskCalendarMonth, setTaskCalendarMonth] = useState(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), 1);
+  });
+  const [taskCalendarDate, setTaskCalendarDate] = useState(getTodayKey());
   const fallback = LoadingOrError(state);
 
   if (fallback) {
@@ -495,6 +500,59 @@ export function DashboardScreen() {
       ["completed", "paid", "review_requested", "reviewed"].includes(booking.bookingStatus),
     )
     .reduce((sum, booking) => sum + booking.quotedAmount, 0);
+  const taskCalendarMonthLabel = new Intl.DateTimeFormat("en-MY", {
+    month: "long",
+    year: "numeric",
+  }).format(taskCalendarMonth);
+  const taskCalendarMonthStart = new Date(taskCalendarMonth.getFullYear(), taskCalendarMonth.getMonth(), 1);
+  const taskCalendarMonthEnd = new Date(taskCalendarMonth.getFullYear(), taskCalendarMonth.getMonth() + 1, 0);
+  const taskCalendarFirstWeekday = taskCalendarMonthStart.getDay();
+  const taskCalendarDaysInMonth = taskCalendarMonthEnd.getDate();
+  const taskCalendarCells: Array<{ label: number | null; key: string | null }> = [];
+
+  for (let index = 0; index < taskCalendarFirstWeekday; index += 1) {
+    taskCalendarCells.push({ label: null, key: null });
+  }
+
+  for (let day = 1; day <= taskCalendarDaysInMonth; day += 1) {
+    const key = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Asia/Kuala_Lumpur",
+    }).format(new Date(taskCalendarMonth.getFullYear(), taskCalendarMonth.getMonth(), day));
+    taskCalendarCells.push({ label: day, key });
+  }
+
+  const taskCalendarBookingCount = (dateKey: string) =>
+    state.bookings.filter((booking) => booking.scheduledDate === dateKey).length;
+
+  const selectedDateTaskTime = new Date(`${taskCalendarDate}T00:00:00`).getTime();
+  const todayTime = new Date(`${todayKey}T00:00:00`).getTime();
+  const selectedDateTaskLabel =
+    selectedDateTaskTime < todayTime
+      ? "Completed tasks"
+      : selectedDateTaskTime > todayTime
+        ? "Upcoming tasks"
+        : "Tasks for today";
+  const selectedDateTasks = state.bookings
+    .filter((booking) => {
+      if (booking.scheduledDate !== taskCalendarDate) {
+        return false;
+      }
+
+      if (selectedDateTaskTime < todayTime) {
+        return ["completed", "paid", "review_requested", "reviewed"].includes(booking.bookingStatus);
+      }
+
+      if (selectedDateTaskTime > todayTime) {
+        return booking.bookingStatus === "accepted";
+      }
+
+      return booking.bookingStatus !== "declined" && booking.bookingStatus !== "cancelled";
+    })
+    .sort((left, right) =>
+      `${left.scheduledDate}T${left.scheduledStartTime}`.localeCompare(
+        `${right.scheduledDate}T${right.scheduledStartTime}`,
+      ),
+    );
   const unreadCount = state.notifications.filter((item) => !item.isRead).length;
   const displayName = data.marketingName || data.fullName || "Provider";
 
@@ -672,6 +730,106 @@ export function DashboardScreen() {
               meta="What users see"
               accent="text-[#0f172a]"
             />
+          </div>
+
+          <div className="mt-4 rounded-[20px] border border-[#eee5f7] bg-[#fcfaff] p-4">
+            <div className="flex items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={() => setTaskCalendarMonth(new Date(taskCalendarMonth.getFullYear(), taskCalendarMonth.getMonth() - 1, 1))}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white text-[#8E5EB5]"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              <div className="text-center">
+                <p className="text-[15px] font-black text-[#1f1630]">{taskCalendarMonthLabel}</p>
+                <p className="mt-1 text-[12px] text-[#7b728a]">
+                  Select a date to view past or upcoming tasks.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setTaskCalendarMonth(new Date(taskCalendarMonth.getFullYear(), taskCalendarMonth.getMonth() + 1, 1))}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white text-[#8E5EB5]"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="mt-4 grid grid-cols-7 gap-2 text-center text-[11px] font-bold text-[#94a3b8]">
+              {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((label) => (
+                <span key={label}>{label}</span>
+              ))}
+            </div>
+
+            <div className="mt-3 grid grid-cols-7 gap-2">
+              {taskCalendarCells.map((cell, index) => {
+                const count = cell.key ? taskCalendarBookingCount(cell.key) : 0;
+                const isActive = cell.key === taskCalendarDate;
+
+                return (
+                  <button
+                    key={cell.key ?? `task-calendar-${index}`}
+                    type="button"
+                    disabled={!cell.key}
+                    onClick={() => cell.key && setTaskCalendarDate(cell.key)}
+                    className={`flex h-14 flex-col items-center justify-center rounded-[14px] text-[12px] font-bold ${
+                      isActive
+                        ? "bg-[#8E5EB5] text-white"
+                        : "bg-white text-[#1f1630] disabled:bg-transparent disabled:text-transparent"
+                    }`}
+                  >
+                    <span>{cell.label}</span>
+                    {cell.key ? (
+                      <span className={`mt-1 text-[10px] ${isActive ? "text-white/85" : count > 0 ? "text-[#8E5EB5]" : "text-[#c4b7d8]"}`}>
+                        {count}
+                      </span>
+                    ) : null}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="mt-4 rounded-[18px] border border-[#e7eee8] bg-white p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <h3 className="text-[15px] font-black text-[#0f172a]">{formatDateLabel(taskCalendarDate)}</h3>
+                  <p className="mt-1 text-[12px] text-[#64748b]">{selectedDateTaskLabel}</p>
+                </div>
+                <span className="rounded-full bg-[#f5f1fa] px-3 py-1 text-[11px] font-bold text-[#8E5EB5]">
+                  {selectedDateTasks.length}
+                </span>
+              </div>
+
+              <div className="mt-4 space-y-3">
+                {selectedDateTasks.length === 0 ? (
+                  <EmptyState
+                    title="No tasks on this date"
+                    description="Choose another date to view completed or upcoming tasks."
+                    icon={<Calendar className="h-6 w-6" />}
+                  />
+                ) : (
+                  selectedDateTasks.slice(0, 3).map((booking) => (
+                    <div
+                      key={booking.id}
+                      className="rounded-[18px] border border-[#e7eee8] bg-[#fbfffc] p-3"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="truncate text-[14px] font-black text-[#0f172a]">{booking.serviceLabel}</p>
+                          <p className="mt-1 truncate text-[12px] text-[#64748b]">{booking.customerName}</p>
+                        </div>
+                        <StatusBadge label={booking.statusLabel} tone={providerStatusTone(booking.bookingStatus)} />
+                      </div>
+                      <div className="mt-3 flex items-center gap-2 text-[12px] text-[#475569]">
+                        <Clock3 className="h-4 w-4 text-[#8E5EB5]" />
+                        <span>{formatTimeLabel(booking.scheduledDate, booking.scheduledStartTime)}</span>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
           </div>
         </section>
 
