@@ -984,6 +984,55 @@ export function DashboardScreen() {
           </div>
         </section>
 
+        <section className="rounded-[26px] bg-white p-5 shadow-[0_18px_44px_rgba(15,23,42,0.08)] ring-1 ring-[#e6eee8]">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-[17px] font-black tracking-[-0.04em] text-[#0f172a]">
+                Recent Reviews
+              </h2>
+              <p className="mt-1 text-[13px] text-[#64748b]">
+                Latest customer feedback from your completed jobs.
+              </p>
+            </div>
+            <Link href="/provider/reviews" className="text-[13px] font-bold text-[#16a34a]">
+              View all
+            </Link>
+          </div>
+          <div className="mt-4">
+            {state.reviews.length === 0 ? (
+              <EmptyState
+                title="No reviews yet"
+                description="Customer feedback will appear here once completed bookings are reviewed."
+                icon={<Star className="h-6 w-6" />}
+              />
+            ) : (
+              <div className="-mx-1 flex snap-x snap-mandatory gap-3 overflow-x-auto px-1 pb-2">
+                {state.reviews.slice(0, 8).map((review) => (
+                  <div
+                    key={review.id}
+                    className="min-w-[17rem] snap-start rounded-[22px] border border-[#eee5f7] bg-[linear-gradient(135deg,#ffffff_0%,#fcfaff_72%,#f3eafd_100%)] p-4 shadow-[0_10px_24px_rgba(86,38,135,0.05)]"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="truncate text-[14px] font-black text-[#0f172a]">{review.customerName}</p>
+                        <p className="mt-1 text-[12px] text-[#64748b]">{review.createdLabel}</p>
+                      </div>
+                      <div className="flex items-center gap-1 text-[#8E5EB5]">
+                        {Array.from({ length: review.rating }).map((_, index) => (
+                          <Star key={`${review.id}-${index}`} className="h-4 w-4 fill-current" />
+                        ))}
+                      </div>
+                    </div>
+                    <p className="mt-3 line-clamp-4 text-[13px] leading-6 text-[#475569]">
+                      {review.comment}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+
       </section>
       <ProviderBottomNav />
     </MobilePage>
@@ -1480,8 +1529,8 @@ export function BookingsScreen({
                   setCalendarDate(todayKey);
                 }
               }}
-              className={`rounded-[12px] px-4 py-2 text-[12px] font-bold ${
-                dateFilter === value ? "border border-[#eadcf7] bg-white text-[#8E5EB5] shadow-[0_8px_18px_rgba(142,94,181,0.14)]" : "bg-[#f7f1fc] text-[#7b728a]"
+              className={`inline-flex min-h-[44px] items-center justify-center rounded-[14px] px-5 py-2.5 text-[13px] font-medium transition ${
+                dateFilter === value ? "border border-[#e8d9fb] bg-white text-[#8E5EB5] shadow-[0_10px_20px_rgba(142,94,181,0.10)]" : "bg-[#f7f1fc] text-[#746b88]"
               }`}
             >
               {label}
@@ -1556,8 +1605,8 @@ export function BookingsScreen({
               key={value}
               type="button"
               onClick={() => setTab(value as typeof tab)}
-              className={`rounded-[12px] px-4 py-2 text-[12px] font-bold ${
-                tab === value ? "border border-[#eadcf7] bg-white text-[#8E5EB5] shadow-[0_8px_18px_rgba(142,94,181,0.14)]" : "bg-[#f7f1fc] text-[#7b728a]"
+              className={`inline-flex min-h-[44px] items-center justify-center rounded-[14px] px-5 py-2.5 text-[13px] font-medium transition ${
+                tab === value ? "border border-[#e8d9fb] bg-white text-[#8E5EB5] shadow-[0_10px_20px_rgba(142,94,181,0.10)]" : "bg-[#f7f1fc] text-[#746b88]"
               }`}
             >
               {label}
