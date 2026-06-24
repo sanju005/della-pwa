@@ -484,6 +484,9 @@ export function DashboardScreen() {
   const completedBookings = state.bookings.filter((booking) =>
     ["completed", "paid", "review_requested", "reviewed"].includes(booking.bookingStatus),
   );
+  const canceledBookings = state.bookings.filter(
+    (booking) => booking.bookingStatus === "declined" || booking.bookingStatus === "cancelled",
+  );
   const walletBalance = state.bookings
     .filter((booking) =>
       ["completed", "paid", "review_requested", "reviewed"].includes(booking.bookingStatus),
@@ -698,59 +701,77 @@ export function DashboardScreen() {
         ) : null}
 
         <section className="rounded-[26px] bg-white p-5 shadow-[0_18px_44px_rgba(15,23,42,0.08)] ring-1 ring-[#e6eee8]">
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <span className="h-7 w-1.5 rounded-full bg-[#8E5EB5]" />
             <div>
               <h2 className="text-[17px] font-black tracking-[-0.04em] text-[#0f172a]">
-                Task Status
+                Today&apos;s Task
               </h2>
-              <p className="mt-1 text-[13px] text-[#64748b]">
-                Synced with the same live booking flow used by customer tasks.
-              </p>
             </div>
-            <Link href="/provider/bookings" className="text-[13px] font-bold text-[#16a34a]">
-              Open bookings
-            </Link>
-          </div>
-          <div className="mt-4 grid grid-cols-3 gap-3">
-            <Link
-              href="/provider/tasks#today-tasks"
-              className="rounded-[18px] border border-[#eadcf7] bg-[#fcfaff] p-4 shadow-[0_10px_20px_rgba(142,94,181,0.05)]"
-            >
-              <p className="text-[1.65rem] font-black text-[#0f172a]">{todayBookings.length}</p>
-              <p className="mt-2 text-[14px] font-semibold text-[#1f1630]">Today&apos;s Task</p>
-              <p className="mt-1 text-[12px] text-[#8f86a2]">See today&apos;s task details</p>
-            </Link>
-            <Link
-              href="/provider/tasks#new-tasks"
-              className="rounded-[18px] border border-[#eadcf7] bg-[#fcfaff] p-4 shadow-[0_10px_20px_rgba(142,94,181,0.05)]"
-            >
-              <p className="text-[1.65rem] font-black text-[#0f172a]">{newTasks.length}</p>
-              <p className="mt-2 text-[14px] font-semibold text-[#1f1630]">New Task</p>
-              <p className="mt-1 text-[12px] text-[#8f86a2]">Review and accept requests</p>
-            </Link>
-            <Link
-              href="/provider/tasks#ongoing-tasks"
-              className="rounded-[18px] border border-[#eadcf7] bg-[#fcfaff] p-4 shadow-[0_10px_20px_rgba(142,94,181,0.05)]"
-            >
-              <p className="text-[1.65rem] font-black text-[#0f172a]">{ongoingBookings.length}</p>
-              <p className="mt-2 text-[14px] font-semibold text-[#1f1630]">On Going Task</p>
-              <p className="mt-1 text-[12px] text-[#8f86a2]">Take live task actions</p>
-            </Link>
           </div>
 
-          <div className="mt-3 grid grid-cols-1 gap-3">
+          <Link
+            href="/provider/tasks#new-tasks"
+            className="relative mt-5 block overflow-hidden rounded-[22px] border border-[#eadcf7] bg-[linear-gradient(135deg,#ffffff_0%,#fcfaff_72%,#f3eafd_100%)] p-5 shadow-[0_12px_28px_rgba(142,94,181,0.08)]"
+          >
+            <div className="absolute -bottom-10 -right-6 h-28 w-36 rounded-full bg-[radial-gradient(circle,rgba(179,136,235,0.18)_0%,rgba(179,136,235,0)_72%)]" />
+            <div className="relative flex items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <span className="inline-flex h-20 w-20 items-center justify-center rounded-[20px] bg-[#f5effd] text-[#7c3aed]">
+                  <BriefcaseBusiness className="h-9 w-9" />
+                </span>
+                <div>
+                  <p className="text-[2.2rem] font-black leading-none tracking-[-0.07em] text-[#6d28d9]">
+                    {newTasks.length}
+                  </p>
+                  <p className="mt-2 text-[14px] font-black text-[#1f1630]">New Task</p>
+                  <p className="mt-1 text-[13px] leading-6 text-[#7b728a]">
+                    Reviewing and accepting new requests
+                  </p>
+                </div>
+              </div>
+              <span className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-[#f5effd] text-[#7c3aed]">
+                <ChevronRight className="h-5 w-5" />
+              </span>
+            </div>
+          </Link>
+
+          <div className="mt-4 grid grid-cols-3 gap-3">
+            <Link
+              href="/provider/tasks#ongoing-tasks"
+              className="relative overflow-hidden rounded-[20px] border border-[#eadcf7] bg-[linear-gradient(135deg,#ffffff_0%,#fcfaff_72%,#f3eafd_100%)] p-4 shadow-[0_10px_20px_rgba(142,94,181,0.05)]"
+            >
+              <div className="absolute -bottom-8 -right-4 h-20 w-24 rounded-full bg-[radial-gradient(circle,rgba(179,136,235,0.15)_0%,rgba(179,136,235,0)_72%)]" />
+              <span className="relative inline-flex h-14 w-14 items-center justify-center rounded-[18px] bg-[#f5effd] text-[#7c3aed]">
+                <Clock3 className="h-7 w-7" />
+              </span>
+              <p className="relative mt-5 text-[1.65rem] font-black leading-none tracking-[-0.06em] text-[#6d28d9]">{ongoingBookings.length}</p>
+              <p className="relative mt-2 text-[14px] font-black text-[#1f1630]">On Going</p>
+              <p className="relative mt-1 text-[12px] leading-5 text-[#7b728a]">Take live task actions</p>
+            </Link>
             <Link
               href="/provider/tasks#completed-tasks"
-              className="rounded-[18px] border border-[#eadcf7] bg-[#fcfaff] p-4 shadow-[0_10px_20px_rgba(142,94,181,0.05)]"
+              className="relative overflow-hidden rounded-[20px] border border-[#eadcf7] bg-[linear-gradient(135deg,#ffffff_0%,#fcfaff_72%,#f3eafd_100%)] p-4 shadow-[0_10px_20px_rgba(142,94,181,0.05)]"
             >
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-[1.65rem] font-black text-[#0f172a]">{completedBookings.length}</p>
-                  <p className="mt-2 text-[14px] font-semibold text-[#1f1630]">Completed</p>
-                  <p className="mt-1 text-[12px] text-[#8f86a2]">Open finished task details</p>
-                </div>
-                <ChevronRight className="h-5 w-5 text-[#8E5EB5]" />
-              </div>
+              <div className="absolute -bottom-8 -right-4 h-20 w-24 rounded-full bg-[radial-gradient(circle,rgba(179,136,235,0.15)_0%,rgba(179,136,235,0)_72%)]" />
+              <span className="relative inline-flex h-14 w-14 items-center justify-center rounded-[18px] bg-[#f5effd] text-[#7c3aed]">
+                <CalendarDays className="h-7 w-7" />
+              </span>
+              <p className="relative mt-5 text-[1.65rem] font-black leading-none tracking-[-0.06em] text-[#6d28d9]">{completedBookings.length}</p>
+              <p className="relative mt-2 text-[14px] font-black text-[#1f1630]">Completed</p>
+              <p className="relative mt-1 text-[12px] leading-5 text-[#7b728a]">Open finished task details</p>
+            </Link>
+            <Link
+              href="/provider/bookings?tab=canceled"
+              className="relative overflow-hidden rounded-[20px] border border-[#eadcf7] bg-[linear-gradient(135deg,#ffffff_0%,#fcfaff_72%,#f3eafd_100%)] p-4 shadow-[0_10px_20px_rgba(142,94,181,0.05)]"
+            >
+              <div className="absolute -bottom-8 -right-4 h-20 w-24 rounded-full bg-[radial-gradient(circle,rgba(179,136,235,0.15)_0%,rgba(179,136,235,0)_72%)]" />
+              <span className="relative inline-flex h-14 w-14 items-center justify-center rounded-[18px] bg-[#f5effd] text-[#7c3aed]">
+                <Bell className="h-7 w-7" />
+              </span>
+              <p className="relative mt-5 text-[1.65rem] font-black leading-none tracking-[-0.06em] text-[#6d28d9]">{canceledBookings.length}</p>
+              <p className="relative mt-2 text-[14px] font-black text-[#1f1630]">Cancelled</p>
+              <p className="relative mt-1 text-[12px] leading-5 text-[#7b728a]">View cancelled tasks</p>
             </Link>
           </div>
 
@@ -852,148 +873,6 @@ export function DashboardScreen() {
                 )}
               </div>
             </div>
-          </div>
-        </section>
-
-        <section className="rounded-[26px] bg-white p-5 shadow-[0_18px_44px_rgba(15,23,42,0.08)] ring-1 ring-[#e6eee8]">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <h2 className="text-[17px] font-black tracking-[-0.04em] text-[#0f172a]">
-                New Booking Request
-              </h2>
-              <p className="mt-1 text-[13px] text-[#64748b]">
-                Latest request that needs your action.
-              </p>
-            </div>
-            <Link href="/provider/bookings" className="text-[13px] font-bold text-[#16a34a]">
-              View all
-            </Link>
-          </div>
-
-          {pendingRequest ? (
-            <div className="mt-4 rounded-[22px] border border-[#e7eee8] bg-[#fbfffc] p-4">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-[15px] font-black text-[#0f172a]">{pendingRequest.serviceLabel}</p>
-                  <p className="mt-1 text-[13px] text-[#475569]">{pendingRequest.customerName}</p>
-                </div>
-                <p className="text-[1.15rem] font-black text-[#16a34a]">
-                  {formatCompactCurrency(pendingRequest.quotedAmount)}
-                </p>
-              </div>
-              <div className="mt-4 space-y-2 text-[13px] text-[#475569]">
-                <div className="flex items-center gap-2">
-                  <CalendarDays className="h-4 w-4 text-[#16a34a]" />
-                  <span>{pendingRequest.schedule}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <MapPin className="h-4 w-4 text-[#16a34a]" />
-                  <span>{pendingRequest.location}</span>
-                </div>
-              </div>
-              <div className="mt-4 flex gap-3">
-                <AppButton
-                  className="flex-1"
-                  tone="danger"
-                  disabled={state.actionBookingId === pendingRequest.id}
-                  onClick={() =>
-                    state.handleBookingAction(
-                      pendingRequest.id,
-                      "declined",
-                      "Provider declined booking",
-                    )
-                  }
-                >
-                  Decline
-                </AppButton>
-                <AppButton
-                  className="flex-1"
-                  disabled={state.actionBookingId === pendingRequest.id}
-                  onClick={() =>
-                    state.handleBookingAction(
-                      pendingRequest.id,
-                      "accepted",
-                      "Provider accepted booking",
-                    )
-                  }
-                >
-                  Accept
-                </AppButton>
-              </div>
-            </div>
-          ) : (
-            <div className="mt-4">
-              <EmptyState
-                title="No new booking requests"
-                description="When customers book you, new requests will appear here for quick action."
-                icon={<Bell className="h-6 w-6" />}
-              />
-            </div>
-          )}
-        </section>
-
-        <section className="rounded-[26px] bg-white p-5 shadow-[0_18px_44px_rgba(15,23,42,0.08)] ring-1 ring-[#e6eee8]">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <h2 className="text-[17px] font-black tracking-[-0.04em] text-[#0f172a]">
-                Accepted Tasks
-              </h2>
-              <p className="mt-1 text-[13px] text-[#64748b]">
-                Accepted by provider. Customers see these as confirmed tasks.
-              </p>
-            </div>
-            <span className="rounded-full bg-[#eef9f1] px-3 py-1 text-[12px] font-bold text-[#16a34a]">
-              {acceptedBookings.length}
-            </span>
-          </div>
-          <div className="mt-4 space-y-3">
-            {acceptedBookings.length === 0 ? (
-              <EmptyState
-                title="No accepted tasks"
-                description="Accepted jobs will appear here before you start the trip."
-                icon={<BriefcaseBusiness className="h-6 w-6" />}
-              />
-            ) : (
-              acceptedBookings.slice(0, 3).map((booking) => (
-                <div
-                  key={booking.id}
-                  className="rounded-[20px] border border-[#e7eee8] bg-[#fbfffc] p-4"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="text-[14px] font-black text-[#0f172a]">{booking.serviceLabel}</p>
-                      <p className="mt-1 text-[12px] text-[#64748b]">{booking.customerName}</p>
-                    </div>
-                    <StatusBadge label={booking.customerStatusLabel} tone="accepted" />
-                  </div>
-                  <div className="mt-3 space-y-2 text-[13px] text-[#475569]">
-                    <div className="flex items-center gap-2">
-                      <CalendarDays className="h-4 w-4 text-[#16a34a]" />
-                      <span>{booking.schedule}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4 text-[#16a34a]" />
-                      <span>{booking.location}</span>
-                    </div>
-                  </div>
-                  <div className="mt-4">
-                    <AppButton
-                      className="w-full"
-                      disabled={state.actionBookingId === booking.id}
-                      onClick={() =>
-                        state.handleBookingAction(
-                          booking.id,
-                          "on_the_way",
-                          "Provider started travel to customer",
-                        )
-                      }
-                    >
-                      Start Task
-                    </AppButton>
-                  </div>
-                </div>
-              ))
-            )}
           </div>
         </section>
 
