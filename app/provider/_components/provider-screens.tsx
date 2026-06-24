@@ -885,40 +885,6 @@ export function DashboardScreen() {
           </div>
         </section>
 
-        <section className="rounded-[26px] bg-white p-5 shadow-[0_18px_44px_rgba(15,23,42,0.08)] ring-1 ring-[#e6eee8]">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <h2 className="text-[17px] font-black tracking-[-0.04em] text-[#0f172a]">
-                My Services
-              </h2>
-              <p className="mt-1 text-[13px] text-[#64748b]">
-                Service cards from your real provider profile.
-              </p>
-            </div>
-            <Link href="/provider/services" className="text-[13px] font-bold text-[#16a34a]">
-              View all
-            </Link>
-          </div>
-          <div className="mt-4 space-y-3">
-            {data.services.length === 0 ? (
-              <EmptyState
-                title="No services added yet"
-                description="Your registered services will appear here after setup."
-                icon={<BriefcaseBusiness className="h-6 w-6" />}
-              />
-            ) : (
-              data.services.slice(0, 3).map((service) => (
-                <ServiceCard
-                  key={service.id}
-                  name={formatServiceLabel(service.serviceType)}
-                  hourly={service.hourlyRate}
-                  daily={service.dailyRate}
-                  experience={service.yearsExperience}
-                />
-              ))
-            )}
-          </div>
-        </section>
       </section>
       <ProviderBottomNav />
     </MobilePage>
@@ -932,7 +898,13 @@ export function BookingsScreen({
 }) {
   const router = useRouter();
   const state = useProviderAppData();
-  const [tab, setTab] = useState<"ongoing" | "upcoming" | "pending" | "canceled" | "completes">("pending");
+  const [tab, setTab] = useState<"ongoing" | "upcoming" | "pending" | "canceled" | "completes">("upcoming");
+  const [dateFilter, setDateFilter] = useState<"all" | "today" | "calendar">("all");
+  const [calendarMonth, setCalendarMonth] = useState(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), 1);
+  });
+  const [calendarDate, setCalendarDate] = useState(getTodayKey());
   const [selectedBookingId, setSelectedBookingId] = useState(initialBookingId);
   const [commissionProofDataUrl, setCommissionProofDataUrl] = useState("");
   const [commissionProofFileName, setCommissionProofFileName] = useState("");
@@ -950,7 +922,19 @@ export function BookingsScreen({
       return;
     }
 
-    setTab(getBookingTab(selectedBooking));
+    const bookingTab = getBookingTab(selectedBooking);
+
+    if (bookingTab === "canceled") {
+      setTab("canceled");
+      return;
+    }
+
+    if (bookingTab === "completes") {
+      setTab("completes");
+      return;
+    }
+
+    setTab("upcoming");
   }, [selectedBooking]);
 
   const fallback = LoadingOrError(state);
@@ -1033,37 +1017,65 @@ export function BookingsScreen({
   }
 
   const todayKey = getTodayKey();
+  const calendarMonthLabel = new Intl.DateTimeFormat("en-MY", {
+    month: "long",
+    year: "numeric",
+  }).format(calendarMonth);
+  const monthStart = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), 1);
+  const monthEnd = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 0);
+  const firstWeekday = monthStart.getDay();
+  const daysInMonth = monthEnd.getDate();
+  const calendarCells: Array<{ label: number | null; key: string | null }> = [];
+
+  for (let index = 0; index < firstWeekday; index += 1) {
+    calendarCells.push({ label: null, key: null });
+  }
+
+  for (let day = 1; day <= daysInMonth; day += 1) {
+    const key = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Asia/Kuala_Lumpur",
+    }).format(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), day));
+    calendarCells.push({ label: day, key });
+  }
+
+  const bookingCountForDate = (dateKey: string) =>
+    state.bookings.filter((booking) => booking.scheduledDate === dateKey).length;
+
   const items = state.bookings.filter((booking) => {
-    if (tab === "pending") {
-      return booking.bucket === "requests" || booking.bookingStatus === "pending";
-    }
-
-    if (tab === "ongoing") {
-      return (
-        booking.bookingStatus === "on_the_way" ||
-        booking.bookingStatus === "arrived" ||
-        (booking.bookingStatus === "accepted" && booking.scheduledDate <= todayKey)
-      );
-    }
-
     if (tab === "upcoming") {
-      return booking.bookingStatus === "accepted" && booking.scheduledDate > todayKey;
+      if (!(booking.bookingStatus === "accepted" && booking.scheduledDate >= todayKey)) {
+        return false;
+      }
+    } else if (tab === "canceled") {
+      if (!(booking.bookingStatus === "declined" || booking.bookingStatus === "cancelled")) {
+        return false;
+      }
+    } else if (!["completed", "paid", "review_requested", "reviewed"].includes(booking.bookingStatus)) {
+      return false;
     }
 
-    if (tab === "canceled") {
-      return booking.bookingStatus === "declined" || booking.bookingStatus === "cancelled";
+    if (dateFilter === "today") {
+      return booking.scheduledDate === todayKey;
     }
 
-    return ["completed", "paid", "review_requested", "reviewed"].includes(booking.bookingStatus);
+    if (dateFilter === "calendar") {
+      return booking.scheduledDate === calendarDate;
+    }
+
+    return true;
   });
 
   return (
     <PageShell
       title="Bookings"
-      subtitle="Manage incoming requests, task progress, and completed provider work."
+      subtitle="Manage upcoming, canceled, and completed provider work."
     >
       <section className="rounded-[24px] border border-[#eee5f7] bg-white p-5 shadow-[0_14px_32px_rgba(86,38,135,0.08)]">
-        <div className="flex items-start justify-between gap-3">
+        <button
+          type="button"
+          onClick={() => router.push("/provider/tasks")}
+          className="flex w-full items-start justify-between gap-3 text-left"
+        >
           <div>
             <p className="text-[12px] font-extrabold uppercase tracking-[0.14em] text-[#8E5EB5]">
               Provider Flow
@@ -1072,7 +1084,7 @@ export function BookingsScreen({
               Incoming Requests
             </h2>
             <p className="mt-1 text-[13px] leading-6 text-[#7b728a]">
-              View booking requests, accept jobs, and keep customer updates live.
+              Open the task panel to accept requests and manage the live task process.
             </p>
           </div>
           <div className="rounded-[18px] bg-[#f7f1fc] px-4 py-3 text-center">
@@ -1081,7 +1093,7 @@ export function BookingsScreen({
               {state.bookings.filter((booking) => booking.bookingStatus === "pending").length}
             </p>
           </div>
-        </div>
+        </button>
       </section>
 
       {state.error ? (
@@ -1356,8 +1368,87 @@ export function BookingsScreen({
       <section className="rounded-[24px] border border-[#eee5f7] bg-white p-5 shadow-[0_14px_32px_rgba(86,38,135,0.08)]">
         <div className="flex flex-wrap gap-2">
           {[
-            ["pending", "Pending"],
-            ["ongoing", "On Going"],
+            ["all", "All"],
+            ["today", "Today"],
+            ["calendar", "Calendar"],
+          ].map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => {
+                setDateFilter(value as typeof dateFilter);
+                if (value === "today") {
+                  setCalendarDate(todayKey);
+                }
+              }}
+              className={`rounded-[12px] px-4 py-2 text-[12px] font-bold ${
+                dateFilter === value ? "border border-[#eadcf7] bg-white text-[#8E5EB5] shadow-[0_8px_18px_rgba(142,94,181,0.14)]" : "bg-[#f7f1fc] text-[#7b728a]"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {dateFilter === "calendar" ? (
+          <div className="mt-4 rounded-[20px] border border-[#eee5f7] bg-[#fcfaff] p-4">
+            <div className="flex items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1))}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white text-[#8E5EB5]"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              <div className="text-center">
+                <p className="text-[15px] font-black text-[#1f1630]">{calendarMonthLabel}</p>
+                <p className="mt-1 text-[12px] text-[#7b728a]">Dates show the total number of bookings.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1))}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white text-[#8E5EB5]"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="mt-4 grid grid-cols-7 gap-2 text-center text-[11px] font-bold text-[#94a3b8]">
+              {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((label) => (
+                <span key={label}>{label}</span>
+              ))}
+            </div>
+
+            <div className="mt-3 grid grid-cols-7 gap-2">
+              {calendarCells.map((cell, index) => {
+                const count = cell.key ? bookingCountForDate(cell.key) : 0;
+                const isActive = cell.key === calendarDate;
+
+                return (
+                  <button
+                    key={cell.key ?? `bookings-calendar-${index}`}
+                    type="button"
+                    disabled={!cell.key}
+                    onClick={() => cell.key && setCalendarDate(cell.key)}
+                    className={`flex h-14 flex-col items-center justify-center rounded-[14px] text-[12px] font-bold ${
+                      isActive ? "bg-[#8E5EB5] text-white" : "bg-white text-[#1f1630] disabled:bg-transparent disabled:text-transparent"
+                    }`}
+                  >
+                    <span>{cell.label}</span>
+                    {cell.key ? (
+                      <span className={`mt-1 text-[10px] ${isActive ? "text-white/85" : count > 0 ? "text-[#8E5EB5]" : "text-[#c4b7d8]"}`}>
+                        {count}
+                      </span>
+                    ) : null}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ) : null}
+
+        <div className="mt-4 flex flex-wrap gap-2">
+          {[
             ["upcoming", "Upcoming"],
             ["canceled", "Canceled"],
             ["completes", "Completed"],
@@ -1378,8 +1469,20 @@ export function BookingsScreen({
         <div className="mt-4 space-y-3">
           {items.length === 0 ? (
             <EmptyState
-              title={`No ${tab} bookings`}
-              description="This list will fill automatically as bookings move through their status."
+              title={
+                tab === "upcoming"
+                  ? "No upcoming bookings"
+                  : tab === "canceled"
+                    ? "No canceled bookings"
+                    : "No completed bookings"
+              }
+              description={
+                dateFilter === "today"
+                  ? "No bookings found for today in this section."
+                  : dateFilter === "calendar"
+                    ? "No bookings found for the selected calendar date."
+                    : "This list will fill automatically as bookings move through their status."
+              }
               icon={<CalendarDays className="h-6 w-6" />}
             />
           ) : (
@@ -1498,6 +1601,23 @@ export function BookingsScreen({
                       }
                     >
                       Accept
+                    </AppButton>
+                  </div>
+                ) : null}
+                {tab === "upcoming" ? (
+                  <div className="mt-4 flex gap-3">
+                    <AppButton
+                      className="flex-1"
+                      onClick={() => router.push("/provider/tasks")}
+                    >
+                      Manage In Task Panel
+                    </AppButton>
+                    <AppButton
+                      tone="secondary"
+                      className="flex-1"
+                      onClick={() => openBooking(booking.id)}
+                    >
+                      Open Booking
                     </AppButton>
                   </div>
                 ) : null}
@@ -1688,9 +1808,9 @@ export function CalendarScreen() {
 
         <div className="mt-3 grid grid-cols-7 gap-2">
           {cells.map((cell, index) => {
-            const hasBooking = cell.key
-              ? state.bookings.some((booking) => booking.scheduledDate === cell.key)
-              : false;
+            const totalBookings = cell.key
+              ? state.bookings.filter((booking) => booking.scheduledDate === cell.key).length
+              : 0;
             const isActive = cell.key === selectedDate;
 
             return (
@@ -1699,15 +1819,17 @@ export function CalendarScreen() {
                 type="button"
                 disabled={!cell.key}
                 onClick={() => cell.key && setSelectedDate(cell.key)}
-                className={`relative h-11 rounded-[14px] text-[13px] font-bold ${
+                className={`flex h-14 flex-col items-center justify-center rounded-[14px] text-[12px] font-bold ${
                   isActive
                     ? "bg-[#16a34a] text-white"
                     : "bg-[#f8fbf9] text-[#0f172a] disabled:bg-transparent"
                 }`}
               >
-                {cell.label}
-                {hasBooking && !isActive ? (
-                  <span className="absolute bottom-1 left-1/2 h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-[#16a34a]" />
+                <span>{cell.label}</span>
+                {cell.key ? (
+                  <span className={`mt-1 text-[10px] ${isActive ? "text-white/85" : totalBookings > 0 ? "text-[#16a34a]" : "text-[#cbd5e1]"}`}>
+                    {totalBookings}
+                  </span>
                 ) : null}
               </button>
             );
