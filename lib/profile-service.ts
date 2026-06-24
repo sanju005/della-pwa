@@ -77,6 +77,8 @@ export async function getProfileOverviewData(): Promise<ProfileOverviewData> {
     favoriteProviders,
     paymentMethods: structuredClone(paymentMethods),
     paymentSummary: {
+      walletBalance: 120,
+      companyPayable: 45,
       totalPaid,
       lastPaymentLabel: latestPayment
         ? `${latestPayment.serviceTitle} on ${new Intl.DateTimeFormat("en-MY", {

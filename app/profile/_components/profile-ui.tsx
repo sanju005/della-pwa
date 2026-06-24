@@ -196,6 +196,9 @@ export function ProfileOverviewScreen({ initialData }: OverviewProps) {
   const [profile, setProfile] = useState(initialData.profile);
   const [bookingSummary, setBookingSummary] = useState(initialData.bookingSummary);
   const [paymentSummary, setPaymentSummary] = useState(initialData.paymentSummary);
+  const [walletPanel, setWalletPanel] = useState<"closed" | "withdraw" | "payable">("closed");
+  const [selectedBank, setSelectedBank] = useState("Maybank");
+  const [walletMessage, setWalletMessage] = useState("");
   const [logoutError, setLogoutError] = useState("");
   const [isLoggingOut, startLogoutTransition] = useTransition();
   const router = useRouter();
@@ -222,6 +225,56 @@ export function ProfileOverviewScreen({ initialData }: OverviewProps) {
       router.replace("/login");
       router.refresh();
     });
+  };
+
+  const handleWithdrawClick = () => {
+    setWalletMessage("");
+    setWalletPanel("withdraw");
+  };
+
+  const handlePayableClick = () => {
+    setWalletMessage("");
+    setWalletPanel("payable");
+  };
+
+  const handleConnectBank = () => {
+    if (paymentSummary.walletBalance <= 0) {
+      setWalletMessage("No wallet balance available to withdraw yet.");
+      setWalletPanel("closed");
+      return;
+    }
+
+    const amount = paymentSummary.walletBalance;
+    setPaymentSummary((current) => ({
+      ...current,
+      walletBalance: 0,
+    }));
+    setWalletMessage(
+      `${selectedBank} connected. Withdrawal request for ${formatRinggit(amount)} is being processed.`,
+    );
+    setWalletPanel("closed");
+  };
+
+  const handlePayCompany = () => {
+    if (paymentSummary.companyPayable <= 0) {
+      setWalletMessage("No payable amount due to the company right now.");
+      setWalletPanel("closed");
+      return;
+    }
+
+    const amount = paymentSummary.companyPayable;
+    setPaymentSummary((current) => ({
+      ...current,
+      companyPayable: 0,
+      totalPaid: Number((current.totalPaid + amount).toFixed(2)),
+      lastPaymentLabel: `Company payment on ${new Intl.DateTimeFormat("en-MY", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      }).format(new Date())}`,
+    }));
+    setWalletMessage(`${formatRinggit(amount)} paid to DELLA successfully.`);
+    setWalletPanel("closed");
   };
 
   useEffect(() => {
@@ -276,6 +329,19 @@ export function ProfileOverviewScreen({ initialData }: OverviewProps) {
     <ProfileShell title="My Profile" showBottomNav>
       <ProfileSummaryCard profile={profile} fullName={fullName} />
       <ProfileCompletion completion={profile.completion} />
+      <WalletSummaryCard
+        walletBalance={paymentSummary.walletBalance}
+        companyPayable={paymentSummary.companyPayable}
+        walletPanel={walletPanel}
+        selectedBank={selectedBank}
+        walletMessage={walletMessage}
+        onSelectedBankChange={setSelectedBank}
+        onWithdrawClick={handleWithdrawClick}
+        onPayableClick={handlePayableClick}
+        onConnectBank={handleConnectBank}
+        onPayCompany={handlePayCompany}
+        onClosePanel={() => setWalletPanel("closed")}
+      />
 
       <SectionCard
         title="Personal Information"
@@ -2634,6 +2700,164 @@ function ProfileCompletion({ completion }: { completion: number }) {
   );
 }
 
+function WalletSummaryCard({
+  walletBalance,
+  companyPayable,
+  walletPanel,
+  selectedBank,
+  walletMessage,
+  onSelectedBankChange,
+  onWithdrawClick,
+  onPayableClick,
+  onConnectBank,
+  onPayCompany,
+  onClosePanel,
+}: {
+  walletBalance: number;
+  companyPayable: number;
+  walletPanel: "closed" | "withdraw" | "payable";
+  selectedBank: string;
+  walletMessage: string;
+  onSelectedBankChange: (value: string) => void;
+  onWithdrawClick: () => void;
+  onPayableClick: () => void;
+  onConnectBank: () => void;
+  onPayCompany: () => void;
+  onClosePanel: () => void;
+}) {
+  const bankOptions = ["Maybank", "CIMB", "Public Bank", "RHB Bank"];
+
+  return (
+    <section className="mt-4 overflow-hidden rounded-[22px] border border-[#e7def4] bg-[linear-gradient(135deg,#ffffff_0%,#f8f3fd_100%)] p-4 shadow-[0_16px_36px_rgba(104,63,155,0.1)]">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-[12px] font-extrabold uppercase tracking-[0.16em] text-[#8E5EB5]">
+            Wallet Balance
+          </p>
+          <p className="mt-2 text-[2rem] font-black tracking-[-0.06em] text-[#1f1630]">
+            {formatRinggit(walletBalance)}
+          </p>
+          <p className="mt-1 text-[12px] text-[#7c728f]">
+            Available for withdrawal to your bank account
+          </p>
+        </div>
+        <span className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-[#edf7ee] text-[#22c55e]">
+          <WalletIcon className="h-6 w-6" />
+        </span>
+      </div>
+
+      <div className="mt-4 rounded-[18px] border border-[#ede4f8] bg-white/90 p-4">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-[#8E5EB5]">
+              Payable to Company
+            </p>
+            <p className="mt-1 text-[1.4rem] font-black tracking-[-0.05em] text-[#1f1630]">
+              {formatRinggit(companyPayable)}
+            </p>
+          </div>
+          <span className="rounded-full bg-[#f5f1fa] px-3 py-1 text-[11px] font-bold text-[#8E5EB5]">
+            DELLA
+          </span>
+        </div>
+      </div>
+
+      <div className="mt-4 grid grid-cols-2 gap-3">
+        <button
+          type="button"
+          onClick={onWithdrawClick}
+          className="inline-flex h-11 items-center justify-center rounded-[14px] bg-[#8E5EB5] px-4 text-[14px] font-extrabold text-white shadow-[0_12px_24px_rgba(142,94,181,0.18)]"
+        >
+          Withdraw
+        </button>
+        <button
+          type="button"
+          onClick={onPayableClick}
+          className="inline-flex h-11 items-center justify-center rounded-[14px] border border-[#d9c8ee] bg-white px-4 text-[14px] font-extrabold text-[#8E5EB5]"
+        >
+          Pay to Company
+        </button>
+      </div>
+
+      {walletPanel === "withdraw" ? (
+        <div className="mt-4 rounded-[18px] border border-[#e8def6] bg-white p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-[14px] font-extrabold text-[#1f1630]">Connect bank account</p>
+              <p className="mt-1 text-[12px] text-[#7c728f]">
+                Choose the bank account to receive {formatRinggit(walletBalance)}.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={onClosePanel}
+              className="text-[12px] font-bold text-[#8E5EB5]"
+            >
+              Close
+            </button>
+          </div>
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            {bankOptions.map((bank) => (
+              <button
+                key={bank}
+                type="button"
+                onClick={() => onSelectedBankChange(bank)}
+                className={`rounded-[12px] border px-3 py-3 text-left text-[13px] font-bold ${
+                  selectedBank === bank
+                    ? "border-[#8E5EB5] bg-[#f7f1fc] text-[#8E5EB5]"
+                    : "border-[#e5e7eb] bg-white text-[#374151]"
+                }`}
+              >
+                {bank}
+              </button>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={onConnectBank}
+            className="mt-4 inline-flex h-11 w-full items-center justify-center rounded-[14px] bg-[#22c55e] px-4 text-[14px] font-extrabold text-white shadow-[0_12px_24px_rgba(34,197,94,0.18)]"
+          >
+            Connect and Withdraw
+          </button>
+        </div>
+      ) : null}
+
+      {walletPanel === "payable" ? (
+        <div className="mt-4 rounded-[18px] border border-[#e8def6] bg-white p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-[14px] font-extrabold text-[#1f1630]">Pay company now</p>
+              <p className="mt-1 text-[12px] text-[#7c728f]">
+                Confirm payment of {formatRinggit(companyPayable)} to DELLA.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={onClosePanel}
+              className="text-[12px] font-bold text-[#8E5EB5]"
+            >
+              Close
+            </button>
+          </div>
+          <button
+            type="button"
+            onClick={onPayCompany}
+            className="mt-4 inline-flex h-11 w-full items-center justify-center rounded-[14px] bg-[#8E5EB5] px-4 text-[14px] font-extrabold text-white shadow-[0_12px_24px_rgba(142,94,181,0.18)]"
+          >
+            Pay {formatRinggit(companyPayable)}
+          </button>
+        </div>
+      ) : null}
+
+      {walletMessage ? (
+        <p className="mt-4 rounded-[14px] border border-[#d7efdb] bg-[#effbf1] px-4 py-3 text-[12px] font-semibold text-[#1f6b37]">
+          {walletMessage}
+        </p>
+      ) : null}
+    </section>
+  );
+}
+
 function SectionCard({
   title,
   actionLabel,
@@ -3001,6 +3225,10 @@ function customerInitials(profile: CustomerProfile) {
   }
 
   return "DE";
+}
+
+function formatRinggit(amount: number) {
+  return `RM ${amount.toFixed(2)}`;
 }
 
 function SettingIcon({

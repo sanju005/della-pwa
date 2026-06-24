@@ -133,6 +133,8 @@ export type ProfileOverviewData = {
   favoriteProviders: FavoriteProvider[];
   paymentMethods: PaymentMethod[];
   paymentSummary: {
+    walletBalance: number;
+    companyPayable: number;
     totalPaid: number;
     lastPaymentLabel: string;
   };

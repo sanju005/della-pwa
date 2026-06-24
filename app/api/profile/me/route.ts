@@ -285,6 +285,8 @@ function buildPaymentSummary(rows: PaymentAggregateRow[]) {
       : "No payment yet";
 
   return {
+    walletBalance: 0,
+    companyPayable: 0,
     totalPaid,
     lastPaymentLabel: latestLabel,
   };
