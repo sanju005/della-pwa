@@ -46,6 +46,23 @@ type BookingRow = {
   decline_reason: string | null;
   quoted_amount: number | null;
   created_at: string;
+  payment_records?: Array<{
+    amount: number | null;
+    payment_method: string | null;
+    payment_option: "cash" | "online" | null;
+    status: string | null;
+    paid_at: string | null;
+    company_commission_amount: number | null;
+    provider_net_amount: number | null;
+    company_payment_status: "pending" | "paid" | null;
+    customer_payment_proof_data_url: string | null;
+    customer_payment_proof_file_name: string | null;
+    customer_payment_proof_mime_type: string | null;
+    provider_company_payment_proof_data_url: string | null;
+    provider_company_payment_proof_file_name: string | null;
+    provider_company_payment_proof_mime_type: string | null;
+    created_at: string;
+  }> | null;
 };
 
 function getAdminSupabaseClient() {
@@ -166,11 +183,11 @@ function providerStatusLabel(status: BookingRow["booking_status"]) {
     case "arrived":
       return "Arrived";
     case "completed":
-      return "Task Completed";
+      return "Awaiting Cash Payment";
     case "paid":
-      return "Payment Done";
+      return "Cash Collected";
     case "review_requested":
-      return "Request Review";
+      return "Review";
     case "reviewed":
       return "Reviewed";
     case "declined":
@@ -274,7 +291,8 @@ export async function GET(request: Request) {
       provider_response_note,
       decline_reason,
       quoted_amount,
-      created_at
+      created_at,
+      payment_records:payments(amount, payment_method, payment_option, status, paid_at, company_commission_amount, provider_net_amount, company_payment_status, customer_payment_proof_data_url, customer_payment_proof_file_name, customer_payment_proof_mime_type, provider_company_payment_proof_data_url, provider_company_payment_proof_file_name, provider_company_payment_proof_mime_type, created_at)
     `)
     .eq("provider_id", verified.profile.id)
     .order("created_at", { ascending: false });
@@ -317,17 +335,45 @@ export async function GET(request: Request) {
       providerResponseNote: row.provider_response_note ?? "",
       declineReason: row.decline_reason ?? "",
       quotedAmount:
-        parsePaymentAdjustmentNote(row.provider_response_note)?.finalAmount ??
-        Number(row.quoted_amount ?? 0),
+        typeof row.payment_records?.[0]?.amount === "number"
+          ? Number(row.payment_records[0]?.amount ?? 0)
+          : parsePaymentAdjustmentNote(row.provider_response_note)?.finalAmount ??
+            Number(row.quoted_amount ?? 0),
       baseAmount:
         parsePaymentAdjustmentNote(row.provider_response_note)?.baseAmount ??
         Number(row.quoted_amount ?? 0),
+      paymentStatus:
+        row.payment_records?.[0]?.status === "paid" ||
+        row.payment_records?.[0]?.status === "failed" ||
+        row.payment_records?.[0]?.status === "cancelled" ||
+        row.payment_records?.[0]?.status === "refunded"
+          ? row.payment_records[0].status
+          : "pending",
+      paymentOption: row.payment_records?.[0]?.payment_option === "online" ? "online" : "cash",
+      companyCommissionAmount:
+        typeof row.payment_records?.[0]?.company_commission_amount === "number"
+          ? Number(row.payment_records[0]?.company_commission_amount ?? 0)
+          : 0,
+      companyPaymentStatus:
+        row.payment_records?.[0]?.company_payment_status === "paid" ? "paid" : "pending",
+      providerNetAmount:
+        typeof row.payment_records?.[0]?.provider_net_amount === "number"
+          ? Number(row.payment_records[0]?.provider_net_amount ?? 0)
+          : Number(row.quoted_amount ?? 0),
+      customerPaymentProofDataUrl: row.payment_records?.[0]?.customer_payment_proof_data_url ?? "",
+      customerPaymentProofFileName: row.payment_records?.[0]?.customer_payment_proof_file_name ?? "",
+      customerPaymentProofMimeType: row.payment_records?.[0]?.customer_payment_proof_mime_type ?? "",
+      providerCompanyPaymentProofDataUrl: row.payment_records?.[0]?.provider_company_payment_proof_data_url ?? "",
+      providerCompanyPaymentProofFileName: row.payment_records?.[0]?.provider_company_payment_proof_file_name ?? "",
+      providerCompanyPaymentProofMimeType: row.payment_records?.[0]?.provider_company_payment_proof_mime_type ?? "",
       additionalCharge:
         parsePaymentAdjustmentNote(row.provider_response_note)?.additionalCharge ?? 0,
       additionalChargeDescription:
         parsePaymentAdjustmentNote(row.provider_response_note)?.chargeDescription ?? "",
       paymentNote:
-        parsePaymentAdjustmentNote(row.provider_response_note)?.note ?? "",
+        row.payment_records?.[0]?.status === "paid"
+          ? `Customer paid via ${row.payment_records?.[0]?.payment_method ?? "Cash"}.`
+          : parsePaymentAdjustmentNote(row.provider_response_note)?.note ?? "",
       createdAt: row.created_at,
     })),
   });

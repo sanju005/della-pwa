@@ -45,6 +45,7 @@ type BookingAggregateRow = {
 
 type PaymentAggregateRow = {
   amount: number | null;
+  status?: string | null;
   paid_at?: string | null;
   created_at?: string | null;
   service_title?: string | null;
@@ -268,7 +269,7 @@ function mapBookingSummary(rows: BookingAggregateRow[]) {
 
 function buildPaymentSummary(rows: PaymentAggregateRow[]) {
   const totalPaid = rows.reduce(
-    (sum, row) => sum + (typeof row.amount === "number" ? row.amount : 0),
+    (sum, row) => sum + (row.status === "paid" && typeof row.amount === "number" ? row.amount : 0),
     0,
   );
 
@@ -309,7 +310,7 @@ export async function GET(request: Request) {
       .limit(200),
     verified.adminClient
       .from("payments")
-      .select("amount, paid_at, created_at, service_title")
+      .select("amount, status, paid_at, created_at, service_title")
       .eq("customer_id", verified.profile.id)
       .order("paid_at", { ascending: false, nullsFirst: false })
       .order("created_at", { ascending: false, nullsFirst: false })

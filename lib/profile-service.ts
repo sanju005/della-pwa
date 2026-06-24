@@ -31,6 +31,7 @@ const mockProfile: CustomerProfile = {
 
 const paymentMethods = [
   { id: "cash", label: "Cash", type: "Cash", isDefault: true },
+  { id: "online", label: "Online Payment", type: "Coming Soon", disabled: true },
 ];
 
 const paymentHistory: PaymentHistoryItem[] = [];

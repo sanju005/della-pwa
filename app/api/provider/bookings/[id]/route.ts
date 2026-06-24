@@ -1,8 +1,8 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 
+import { calculateCommission } from "@/lib/payments";
 import { sendPushNotificationToUser } from "@/lib/push-notifications";
-import { buildPaymentAdjustmentNote } from "@/lib/payment-adjustment";
 import {
   getSupabaseServiceKey,
   getSupabaseUrl,
@@ -37,8 +37,6 @@ type UpdatePayload = {
   status?: BookingStatus;
   note?: string;
   finalAmount?: number;
-  additionalCharge?: number;
-  chargeDescription?: string;
 };
 
 type BookingOwnerRow = {
@@ -80,16 +78,11 @@ function mapBookingUpdateError(message?: string | null) {
 
 function buildFallbackUpdatePayload(
   nextStatus: BookingStatus,
-  current: BookingOwnerRow,
-  finalAmount: number | null,
+  _current: BookingOwnerRow,
 ) {
   const payload: Record<string, string | number | BookingStatus> = {
     booking_status: nextStatus,
   };
-
-  if (nextStatus === "paid") {
-    payload.quoted_amount = finalAmount ?? Number(current.quoted_amount ?? 0);
-  }
 
   return payload;
 }
@@ -187,7 +180,7 @@ const allowedTransitions: Record<BookingStatus, BookingStatus[]> = {
   on_the_way: ["arrived", "cancelled"],
   arrived: ["completed", "cancelled"],
   completed: ["paid"],
-  paid: ["review_requested"],
+  paid: [],
   review_requested: [],
   reviewed: [],
   declined: [],
@@ -208,8 +201,6 @@ function notificationTypeForStatus(status: BookingStatus) {
       return "task_completed";
     case "paid":
       return "payment_done";
-    case "review_requested":
-      return "review_requested";
     case "cancelled":
       return "booking_cancelled";
     default:
@@ -221,7 +212,6 @@ function notificationContent(
   status: BookingStatus,
   serviceLabel: string,
   note: string,
-  finalAmount?: number
 ) {
   switch (status) {
     case "accepted":
@@ -246,18 +236,13 @@ function notificationContent(
       };
     case "completed":
       return {
-        title: "Task completed",
-        body: `Your ${serviceLabel} task was marked completed.`,
+        title: "Review final amount",
+        body: `Your ${serviceLabel} task is completed. Please review the final cash amount from your provider.`,
       };
     case "paid":
       return {
-        title: "Payment done",
-        body: `Payment was marked complete for your ${serviceLabel} booking${typeof finalAmount === "number" ? ` (RM ${finalAmount.toFixed(2)})` : ""}.`,
-      };
-    case "review_requested":
-      return {
-        title: "Review requested",
-        body: `Please review your ${serviceLabel} booking.`,
+        title: "Cash paid successfully",
+        body: `Cash payment was confirmed for your ${serviceLabel} booking.`,
       };
     case "cancelled":
       return {
@@ -283,15 +268,10 @@ export async function PATCH(
   const payload = (await request.json()) as UpdatePayload;
   const nextStatus = payload.status;
   const note = payload.note?.trim() ?? "";
-  const additionalCharge =
-    typeof payload.additionalCharge === "number" && Number.isFinite(payload.additionalCharge)
-      ? Math.max(0, payload.additionalCharge)
-      : 0;
   const finalAmount =
     typeof payload.finalAmount === "number" && Number.isFinite(payload.finalAmount)
       ? Math.max(0, payload.finalAmount)
       : null;
-  const chargeDescription = payload.chargeDescription?.trim() ?? "";
 
   if (!nextStatus) {
     return NextResponse.json(
@@ -323,9 +303,9 @@ export async function PATCH(
     );
   }
 
-  if (nextStatus === "paid" && finalAmount === null) {
+  if (nextStatus === "completed" && finalAmount === null) {
     return NextResponse.json(
-      { error: "Final payment amount is required." },
+      { error: "Final amount is required before sending the cash payment request." },
       { status: 400 }
     );
   }
@@ -353,22 +333,12 @@ export async function PATCH(
 
   if (nextStatus === "completed") {
     updatePayload.completed_at = new Date().toISOString();
+    updatePayload.provider_response_note = note || "Provider sent final cash amount for approval.";
+    updatePayload.quoted_amount = finalAmount ?? Number(current.quoted_amount ?? 0);
   }
 
   if (nextStatus === "paid") {
     updatePayload.paid_at = new Date().toISOString();
-    updatePayload.provider_response_note = buildPaymentAdjustmentNote({
-      baseAmount: Number(current.quoted_amount ?? 0),
-      finalAmount: finalAmount ?? Number(current.quoted_amount ?? 0),
-      additionalCharge,
-      chargeDescription,
-      note,
-    });
-    updatePayload.quoted_amount = finalAmount ?? Number(current.quoted_amount ?? 0);
-  }
-
-  if (nextStatus === "review_requested") {
-    updatePayload.review_requested_at = new Date().toISOString();
   }
 
   if (nextStatus === "cancelled") {
@@ -385,7 +355,6 @@ export async function PATCH(
     const fallbackPayload = buildFallbackUpdatePayload(
       nextStatus,
       current,
-      finalAmount,
     );
 
     const fallbackWrite = await verified.adminClient
@@ -405,12 +374,45 @@ export async function PATCH(
     );
   }
 
+  if (nextStatus === "completed") {
+    const commission = calculateCommission(finalAmount ?? Number(current.quoted_amount ?? 0));
+    const { error: paymentUpsertError } = await verified.adminClient
+      .from("payments")
+      .upsert(
+        {
+          booking_id: current.id,
+          customer_id: current.customer_id,
+          provider_id: current.provider_id,
+          service_title: `${current.service_label} Service`,
+          currency: "myr",
+          amount: commission.amount,
+          payment_provider: "cash",
+          payment_option: "cash",
+          payment_method: "Cash",
+          status: "pending",
+          company_commission_rate: commission.companyCommissionRate,
+          company_commission_amount: commission.companyCommissionAmount,
+          provider_net_amount: commission.providerNetAmount,
+          company_payment_status: "pending",
+          provider_sent_amount_at: new Date().toISOString(),
+        },
+        { onConflict: "booking_id" },
+      );
+
+    if (paymentUpsertError) {
+      console.error("[Provider booking update] Failed to save payment request:", paymentUpsertError);
+      return NextResponse.json(
+        { error: paymentUpsertError.message || "Booking updated but payment request could not be prepared." },
+        { status: 500 }
+      );
+    }
+  }
+
   const nextNotificationType = notificationTypeForStatus(nextStatus);
   const nextNotificationContent = notificationContent(
     nextStatus,
     current.service_label,
     note,
-    finalAmount ?? undefined
   );
 
   if (nextNotificationType && nextNotificationContent) {

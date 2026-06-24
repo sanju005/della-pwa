@@ -700,7 +700,7 @@ export function BookingFormScreen({
           </div>
           <div className="mt-2.5 flex items-center justify-center gap-2 text-[12px] text-[#667085]">
             <ShieldCheck className="h-4 w-4 text-[#8E5EB5]" />
-            <span>Cash payment will be collected after service</span>
+            <span>Cash payment will be reviewed after task completion</span>
           </div>
         </div>
       </div>

@@ -90,6 +90,23 @@ type BookingRow = {
   decline_reason: string | null;
   quoted_amount: number | null;
   created_at: string;
+  payment_records?: Array<{
+    amount: number | null;
+    payment_method: string | null;
+    payment_option: "cash" | "online" | null;
+    status: string | null;
+    paid_at: string | null;
+    company_commission_amount: number | null;
+    provider_net_amount: number | null;
+    company_payment_status: "pending" | "paid" | null;
+    customer_payment_proof_data_url: string | null;
+    customer_payment_proof_file_name: string | null;
+    customer_payment_proof_mime_type: string | null;
+    provider_company_payment_proof_data_url: string | null;
+    provider_company_payment_proof_file_name: string | null;
+    provider_company_payment_proof_mime_type: string | null;
+    created_at: string;
+  }> | null;
 };
 
 type ProviderServiceRow = {
@@ -423,6 +440,15 @@ function mapLiveBookingToUi(
     ? row.service_key
     : "cleaner";
   const paymentAdjustment = parsePaymentAdjustmentNote(row.provider_response_note);
+  const paymentRecord = row.payment_records?.[0] ?? null;
+  const paidAmount = typeof paymentRecord?.amount === "number"
+    ? Number(paymentRecord.amount)
+    : paymentAdjustment?.finalAmount ?? Number(row.quoted_amount ?? 0);
+  const paymentMethod = paymentRecord?.payment_method?.trim()
+    ? paymentRecord.payment_method
+    : row.booking_status === "paid" || row.booking_status === "review_requested" || row.booking_status === "reviewed"
+      ? "Cash"
+      : "Cash";
 
   return {
     id: row.id,
@@ -431,6 +457,7 @@ function mapLiveBookingToUi(
     schedule: scheduleParts.schedule,
     location: row.location_text,
     status: toBookingTab(row.booking_status),
+    workflowStatus: row.booking_status,
     statusLabel: userStatusLabel(row.booking_status),
     badgeTone: toBadgeTone(row.booking_status),
     thumbnail:
@@ -443,11 +470,31 @@ function mapLiveBookingToUi(
       name: providerName,
       serviceKey,
     }),
-    paymentAmount: paymentAdjustment?.finalAmount ?? Number(row.quoted_amount ?? 0),
-    paymentMethod:
-      row.booking_status === "paid" || row.booking_status === "review_requested" || row.booking_status === "reviewed"
-        ? "Cash"
-        : "Cash - pay after service",
+    paymentAmount: paidAmount,
+    paymentMethod,
+    paymentOption: paymentRecord?.payment_option === "online" ? "online" : "cash",
+    paymentStatus:
+      paymentRecord?.status === "paid" ||
+      paymentRecord?.status === "failed" ||
+      paymentRecord?.status === "cancelled" ||
+      paymentRecord?.status === "refunded"
+        ? paymentRecord.status
+        : "pending",
+    companyCommissionAmount:
+      typeof paymentRecord?.company_commission_amount === "number"
+        ? Number(paymentRecord.company_commission_amount)
+        : 0,
+    providerNetAmount:
+      typeof paymentRecord?.provider_net_amount === "number"
+        ? Number(paymentRecord.provider_net_amount)
+        : 0,
+    companyPaymentStatus: paymentRecord?.company_payment_status === "paid" ? "paid" : "pending",
+    customerPaymentProofDataUrl: paymentRecord?.customer_payment_proof_data_url ?? "",
+    customerPaymentProofFileName: paymentRecord?.customer_payment_proof_file_name ?? "",
+    customerPaymentProofMimeType: paymentRecord?.customer_payment_proof_mime_type ?? "",
+    providerCompanyPaymentProofDataUrl: paymentRecord?.provider_company_payment_proof_data_url ?? "",
+    providerCompanyPaymentProofFileName: paymentRecord?.provider_company_payment_proof_file_name ?? "",
+    providerCompanyPaymentProofMimeType: paymentRecord?.provider_company_payment_proof_mime_type ?? "",
     baseAmount: paymentAdjustment?.baseAmount,
     additionalCharge: paymentAdjustment?.additionalCharge,
     additionalChargeDescription: paymentAdjustment?.chargeDescription,
@@ -504,7 +551,8 @@ export async function GET(request: Request) {
       provider_response_note,
       decline_reason,
       quoted_amount,
-      created_at
+      created_at,
+      payment_records:payments(amount, payment_method, payment_option, status, paid_at, company_commission_amount, provider_net_amount, company_payment_status, customer_payment_proof_data_url, customer_payment_proof_file_name, customer_payment_proof_mime_type, provider_company_payment_proof_data_url, provider_company_payment_proof_file_name, provider_company_payment_proof_mime_type, created_at)
     `)
     .eq("customer_id", verified.profile.id)
     .order("created_at", { ascending: false });

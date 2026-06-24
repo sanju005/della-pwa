@@ -31,6 +31,7 @@ export type PaymentMethod = {
   label: string;
   type: string;
   isDefault?: boolean;
+  disabled?: boolean;
 };
 
 export type PaymentHistoryItem = {
@@ -74,12 +75,34 @@ export type Booking = {
   schedule: string;
   location: string;
   status: BookingStatus;
+  workflowStatus:
+    | "pending"
+    | "accepted"
+    | "on_the_way"
+    | "arrived"
+    | "completed"
+    | "paid"
+    | "review_requested"
+    | "reviewed"
+    | "declined"
+    | "cancelled";
   statusLabel: string;
   badgeTone: "green" | "amber" | "slate";
   thumbnail: string;
   imageSrc?: string;
   paymentAmount?: number;
   paymentMethod?: string;
+  paymentOption?: "cash" | "online";
+  paymentStatus?: "pending" | "paid" | "failed" | "cancelled" | "refunded";
+  companyCommissionAmount?: number;
+  providerNetAmount?: number;
+  companyPaymentStatus?: "pending" | "paid";
+  customerPaymentProofDataUrl?: string;
+  customerPaymentProofFileName?: string;
+  customerPaymentProofMimeType?: string;
+  providerCompanyPaymentProofDataUrl?: string;
+  providerCompanyPaymentProofFileName?: string;
+  providerCompanyPaymentProofMimeType?: string;
   baseAmount?: number;
   additionalCharge?: number;
   additionalChargeDescription?: string;

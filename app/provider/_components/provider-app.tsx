@@ -77,6 +77,17 @@ export type ProviderBookingItem = {
   declineReason: string;
   quotedAmount: number;
   baseAmount: number;
+  paymentStatus?: "pending" | "paid" | "failed" | "cancelled" | "refunded";
+  paymentOption?: "cash" | "online";
+  companyCommissionAmount: number;
+  companyPaymentStatus: "pending" | "paid";
+  providerNetAmount: number;
+  customerPaymentProofDataUrl?: string;
+  customerPaymentProofFileName?: string;
+  customerPaymentProofMimeType?: string;
+  providerCompanyPaymentProofDataUrl?: string;
+  providerCompanyPaymentProofFileName?: string;
+  providerCompanyPaymentProofMimeType?: string;
   additionalCharge: number;
   additionalChargeDescription: string;
   paymentNote: string;
@@ -394,9 +405,7 @@ export function useProviderAppData() {
     status: ProviderBookingItem["bookingStatus"],
     note = "",
     paymentDetails?: {
-      finalAmount: number;
-      additionalCharge: number;
-      chargeDescription: string;
+      finalAmount?: number;
     },
   ) {
     const client = getSupabaseClient();
@@ -432,8 +441,6 @@ export function useProviderAppData() {
           status,
           note,
           finalAmount: paymentDetails?.finalAmount,
-          additionalCharge: paymentDetails?.additionalCharge,
-          chargeDescription: paymentDetails?.chargeDescription,
         }),
       }).catch((error) => {
         console.error("[Provider app] Booking action request failed:", error);
@@ -469,6 +476,62 @@ export function useProviderAppData() {
     });
   }
 
+  function handleCommissionSettlement(
+    bookingId: string,
+    proof?: {
+      proofDataUrl?: string;
+      proofFileName?: string;
+      proofMimeType?: string;
+    },
+  ) {
+    const client = getSupabaseClient();
+
+    startTransition(async () => {
+      setError("");
+      setNotice("");
+      setActionBookingId(bookingId);
+
+      if (!client) {
+        setError("Supabase is not configured yet.");
+        setActionBookingId("");
+        return;
+      }
+
+      const {
+        data: { session },
+      } = await client.auth.getSession();
+
+      if (!session) {
+        router.replace("/login");
+        setActionBookingId("");
+        return;
+      }
+
+      const response = await fetch(`/api/provider/bookings/${bookingId}/settle-commission`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify(proof ?? {}),
+      }).catch(() => null);
+
+      const result = response
+        ? ((await response.json().catch(() => ({}))) as { success?: true; error?: string })
+        : null;
+
+      if (!response || !response.ok || !result?.success) {
+        setError(result?.error || "Unable to settle company commission.");
+        setActionBookingId("");
+        return;
+      }
+
+      await reloadWorkspace();
+      setNotice("Company commission marked as paid.");
+      setActionBookingId("");
+    });
+  }
+
   async function handleSignOut() {
     const client = getSupabaseClient();
 
@@ -497,6 +560,7 @@ export function useProviderAppData() {
     setNotice,
     reloadWorkspace,
     handleBookingAction,
+    handleCommissionSettlement,
     handleSignOut,
   };
 }

@@ -2,8 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useMemo, useRef, useState, useTransition, type ChangeEvent } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   AppButton,
   BookingCard as SharedBookingCard,
@@ -28,6 +28,7 @@ import {
   type StoredLiveLocation,
 } from "@/lib/live-location";
 import { saveCustomerProfile } from "@/lib/profile-browser";
+import { isPaymentProofMimeType, PAYMENT_PROOF_MAX_BYTES, readFileAsDataUrl as readPaymentProofAsDataUrl } from "@/lib/upload-proof";
 import type {
   Address,
   Booking,
@@ -90,6 +91,46 @@ type BookingDetailProps = {
 type BookingReviewProps = {
   booking: Booking;
 };
+
+function isPdfProof(mimeType?: string, fileName?: string) {
+  return mimeType === "application/pdf" || fileName?.toLowerCase().endsWith(".pdf");
+}
+
+function PaymentProofPreview({
+  title,
+  dataUrl,
+  fileName,
+  mimeType,
+}: {
+  title: string;
+  dataUrl?: string;
+  fileName?: string;
+  mimeType?: string;
+}) {
+  if (!dataUrl) {
+    return null;
+  }
+
+  return (
+    <div className="mt-4 rounded-[18px] border border-[#ebe2f8] bg-[#fcfaff] p-4">
+      <p className="text-[13px] font-semibold text-[#111827]">{title}</p>
+      {isPdfProof(mimeType, fileName) ? (
+        <div className="mt-3 rounded-[14px] border border-dashed border-[#d9c7ef] bg-white px-4 py-4 text-[13px] text-[#6d6480]">
+          PDF proof attached: {fileName || "Payment proof.pdf"}
+        </div>
+      ) : (
+        <img
+          src={dataUrl}
+          alt={fileName || title}
+          className="mt-3 h-40 w-full rounded-[14px] object-cover"
+        />
+      )}
+      {fileName ? (
+        <p className="mt-2 text-[12px] text-[#6d6480]">{fileName}</p>
+      ) : null}
+    </div>
+  );
+}
 
 export function ProfileShell({
   children,
@@ -1147,12 +1188,111 @@ export function SettingsScreen({ groups }: SettingsProps) {
 
 export function BookingDetailScreen({ booking }: BookingDetailProps) {
   const progressSteps = booking.activitySteps ?? [];
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [paymentError, setPaymentError] = useState("");
+  const [paymentNotice, setPaymentNotice] = useState("");
+  const [paymentLoading, startPaymentTransition] = useTransition();
+  const [paymentProofDataUrl, setPaymentProofDataUrl] = useState("");
+  const [paymentProofFileName, setPaymentProofFileName] = useState("");
+  const [paymentProofMimeType, setPaymentProofMimeType] = useState("");
+  const canPayNow = booking.workflowStatus === "completed";
+  const canReview =
+    booking.workflowStatus === "paid" ||
+    booking.workflowStatus === "review_requested" ||
+    booking.workflowStatus === "reviewed";
   const paidDateLabel =
-    booking.status === "completed"
-      ? "Payment Completed"
+    canPayNow
+      ? "Awaiting Customer Payment"
       : booking.status === "ongoing"
         ? "Payment Pending"
-        : "Awaiting Payment";
+        : canReview
+          ? "Payment Completed"
+          : "Awaiting Payment";
+
+  useEffect(() => {
+    if (searchParams.get("payment") === "success") {
+      setPaymentNotice("Cash payment confirmed successfully.");
+    }
+  }, [searchParams]);
+
+  function handleCashPaid() {
+    const client = getSupabaseClient();
+
+    startPaymentTransition(async () => {
+      setPaymentError("");
+      setPaymentNotice("");
+
+      if (!client) {
+        setPaymentError("Supabase is not configured yet.");
+        return;
+      }
+
+      const {
+        data: { session },
+      } = await client.auth.getSession();
+
+      if (!session) {
+        setPaymentError("Your session expired. Please log in again.");
+        return;
+      }
+
+      const response = await fetch(`/api/bookings/${booking.id}/cash-pay`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          proofDataUrl: paymentProofDataUrl,
+          proofFileName: paymentProofFileName,
+          proofMimeType: paymentProofMimeType,
+        }),
+      }).catch(() => null);
+
+      const result = response
+        ? ((await response.json().catch(() => ({}))) as { success?: boolean; error?: string })
+        : null;
+
+      if (!response || !response.ok || !result?.success) {
+        setPaymentError(result?.error || "Unable to confirm cash payment.");
+        return;
+      }
+
+      setPaymentNotice("Cash payment confirmed successfully.");
+      router.replace(`/profile/bookings/${booking.id}?payment=success`);
+      router.refresh();
+    });
+  }
+
+  async function handlePaymentProofChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+
+    if (!file) {
+      return;
+    }
+
+    if (file.size > PAYMENT_PROOF_MAX_BYTES) {
+      setPaymentError("Payment proof must be 5MB or smaller.");
+      return;
+    }
+
+    if (!isPaymentProofMimeType(file.type)) {
+      setPaymentError("Payment proof must be JPG, PNG, GIF, WebP, or PDF.");
+      return;
+    }
+
+    try {
+      const dataUrl = await readPaymentProofAsDataUrl(file);
+      setPaymentProofDataUrl(dataUrl);
+      setPaymentProofFileName(file.name);
+      setPaymentProofMimeType(file.type);
+      setPaymentError("");
+    } catch {
+      setPaymentError("Unable to read the payment proof file.");
+    }
+  }
 
   return (
     <ProfileShell title="Task Progress" showBack backHref="/profile/bookings">
@@ -1226,6 +1366,20 @@ export function BookingDetailScreen({ booking }: BookingDetailProps) {
         </div>
       </section>
 
+      <PaymentProofPreview
+        title="Customer Payment Proof"
+        dataUrl={booking.customerPaymentProofDataUrl}
+        fileName={booking.customerPaymentProofFileName}
+        mimeType={booking.customerPaymentProofMimeType}
+      />
+
+      <PaymentProofPreview
+        title="Provider Company Payment Proof"
+        dataUrl={booking.providerCompanyPaymentProofDataUrl}
+        fileName={booking.providerCompanyPaymentProofFileName}
+        mimeType={booking.providerCompanyPaymentProofMimeType}
+      />
+
       <section className="mt-4 rounded-[24px] border border-[#ebe2f8] bg-white p-4 shadow-[0_14px_30px_rgba(106,69,160,0.07)]">
         <p className="text-[12px] font-extrabold uppercase tracking-[0.14em] text-[#8E5EB5]">
           Payment Summary
@@ -1233,7 +1387,7 @@ export function BookingDetailScreen({ booking }: BookingDetailProps) {
         <div className="mt-4 space-y-3 text-[13px] text-[#4f4663]">
           <SummaryRow label="Service Charges" value={`RM${booking.baseAmount ?? booking.paymentAmount ?? 0}`} />
           <SummaryRow label="Service Fee" value={typeof booking.additionalCharge === "number" ? `RM${booking.additionalCharge}` : "RM0"} />
-          <SummaryRow label="Payment Method" value={booking.paymentMethod ?? "Not available"} />
+          <SummaryRow label="Payment Method" value={booking.paymentMethod ?? "Cash"} />
           <div className="border-t border-[#efe6fb] pt-3">
             <div className="flex items-center justify-between gap-3">
               <p className="text-[15px] font-black text-[#24193a]">Total Paid</p>
@@ -1273,6 +1427,48 @@ export function BookingDetailScreen({ booking }: BookingDetailProps) {
           </div>
         ) : null}
       </section>
+
+      <section className="mt-4 rounded-[24px] border border-[#ebe2f8] bg-white p-4 shadow-[0_14px_30px_rgba(106,69,160,0.07)]">
+        <p className="text-[12px] font-extrabold uppercase tracking-[0.14em] text-[#8E5EB5]">
+          Payment Method
+        </p>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <div className="rounded-[18px] border-2 border-[#8E5EB5] bg-white px-4 py-4 shadow-[0_10px_22px_rgba(142,94,181,0.08)]">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-[15px] font-black text-[#1f1630]">Cash</p>
+                <p className="mt-1 text-[12px] text-[#6d6480]">Pay directly to provider</p>
+              </div>
+              <span className="rounded-full bg-[#8E5EB5] px-2 py-1 text-[11px] font-bold text-white">
+                Active
+              </span>
+            </div>
+          </div>
+          <div className="rounded-[18px] border border-[#ebe2f8] bg-[#faf7fd] px-4 py-4 opacity-70">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-[15px] font-black text-[#1f1630]">Online Payment</p>
+                <p className="mt-1 text-[12px] text-[#6d6480]">Coming Soon</p>
+              </div>
+              <span className="rounded-full bg-[#ede7f6] px-2 py-1 text-[11px] font-bold text-[#7f7692]">
+                Locked
+              </span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {paymentError ? (
+        <p className="mt-4 rounded-[16px] border border-[#fecaca] bg-[#fff1f2] px-4 py-3 text-[13px] font-semibold text-[#dc2626]">
+          {paymentError}
+        </p>
+      ) : null}
+
+      {paymentNotice || searchParams.get("payment") === "success" ? (
+        <p className="mt-4 rounded-[16px] border border-[#bbf7d0] bg-[#f0fdf4] px-4 py-3 text-[13px] font-semibold text-[#15803d]">
+          {paymentNotice || "Cash payment confirmed successfully."}
+        </p>
+      ) : null}
 
       {booking.status === "cancelled" ? (
         <SectionCard title="Cancellation Details">
@@ -1314,7 +1510,46 @@ export function BookingDetailScreen({ booking }: BookingDetailProps) {
         </p>
       </SectionCard>
 
-      {booking.status === "completed" ? (
+      {canPayNow ? (
+        <StickyActionBar>
+          <div className="flex w-full flex-col gap-3">
+            <label className="rounded-[16px] border border-dashed border-[#d9c7ef] bg-white px-4 py-3 text-[13px] font-semibold text-[#6d6480]">
+              Attach payment proof (optional): cash photo or transfer slip, JPG/PNG/GIF/WebP/PDF up to 5MB.
+              <input
+                type="file"
+                accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,application/pdf,image/jpeg,image/png,image/gif,image/webp"
+                className="mt-3 block w-full text-[12px] text-[#6d6480]"
+                onChange={(event) => void handlePaymentProofChange(event)}
+              />
+            </label>
+            {paymentProofDataUrl ? (
+              <PaymentProofPreview
+                title="New Payment Proof"
+                dataUrl={paymentProofDataUrl}
+                fileName={paymentProofFileName}
+                mimeType={paymentProofMimeType}
+              />
+            ) : null}
+            <button
+              type="button"
+              onClick={() => setPaymentError("Please contact support if the service or final amount is incorrect.")}
+              className="inline-flex h-11 w-full items-center justify-center rounded-[12px] border border-[#e6daf4] bg-white text-[14px] font-extrabold text-[#8E5EB5]"
+            >
+              Issue With Amount
+            </button>
+            <button
+              type="button"
+              onClick={handleCashPaid}
+              disabled={paymentLoading}
+              className="inline-flex h-11 w-full items-center justify-center rounded-[12px] bg-[#8E5EB5] text-[15px] font-extrabold text-white shadow-[0_16px_30px_rgba(142,94,181,0.24)] disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              {paymentLoading ? "Confirming..." : "Agree & Pay Cash"}
+            </button>
+          </div>
+        </StickyActionBar>
+      ) : null}
+
+      {canReview ? (
         <StickyActionBar>
           <Link
             href={`/profile/bookings/${booking.id}/review`}

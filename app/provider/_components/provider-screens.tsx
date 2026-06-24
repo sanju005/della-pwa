@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
 import {
   Bell,
@@ -36,6 +36,7 @@ import {
   StatusBadge,
 } from "@/app/_components/della-ui";
 import { getSupabaseClient } from "@/lib/supabase";
+import { isPaymentProofMimeType, PAYMENT_PROOF_MAX_BYTES, readFileAsDataUrl } from "@/lib/upload-proof";
 
 import {
   formatCompactCurrency,
@@ -111,6 +112,46 @@ function LoadingOrError(state: ReturnType<typeof useProviderAppData>) {
   }
 
   return null;
+}
+
+function isPdfProof(mimeType?: string, fileName?: string) {
+  return mimeType === "application/pdf" || fileName?.toLowerCase().endsWith(".pdf");
+}
+
+function ProofPreviewCard({
+  title,
+  dataUrl,
+  fileName,
+  mimeType,
+}: {
+  title: string;
+  dataUrl?: string;
+  fileName?: string;
+  mimeType?: string;
+}) {
+  if (!dataUrl) {
+    return null;
+  }
+
+  return (
+    <div className="rounded-[18px] border border-[#eee5f7] bg-[#fcfaff] p-4">
+      <p className="text-[13px] font-semibold text-[#111827]">{title}</p>
+      {isPdfProof(mimeType, fileName) ? (
+        <div className="mt-3 rounded-[14px] border border-dashed border-[#d9c7ef] bg-white px-4 py-4 text-[13px] text-[#6d6480]">
+          PDF proof attached: {fileName || "Payment proof.pdf"}
+        </div>
+      ) : (
+        <img
+          src={dataUrl}
+          alt={fileName || title}
+          className="mt-3 h-40 w-full rounded-[14px] object-cover"
+        />
+      )}
+      {fileName ? (
+        <p className="mt-2 text-[12px] text-[#6d6480]">{fileName}</p>
+      ) : null}
+    </div>
+  );
 }
 
 function PageShell({
@@ -377,6 +418,40 @@ export function DashboardScreen() {
 
   if (fallback) {
     return fallback;
+  }
+
+  async function handleSendFinalAmount(booking: ProviderBookingItem) {
+    const input = window.prompt(
+      "Enter final amount (RM) to send to the customer.",
+      String(booking.quotedAmount || booking.baseAmount || 0),
+    );
+
+    if (input === null) {
+      return;
+    }
+
+    const finalAmount = Number(input);
+
+    if (!Number.isFinite(finalAmount) || finalAmount <= 0) {
+      state.setError("Final amount must be a valid number.");
+      return;
+    }
+
+    const note = window.prompt(
+      "Optional payment note for customer",
+      booking.providerResponseNote || "Please review and confirm the final cash amount.",
+    );
+
+    if (note === null) {
+      return;
+    }
+
+    state.handleBookingAction(
+      booking.id,
+      "completed",
+      note.trim(),
+      { finalAmount },
+    );
   }
 
   const data = state.data!;
@@ -859,6 +934,9 @@ export function BookingsScreen({
   const state = useProviderAppData();
   const [tab, setTab] = useState<"ongoing" | "upcoming" | "pending" | "canceled" | "completes">("pending");
   const [selectedBookingId, setSelectedBookingId] = useState(initialBookingId);
+  const [commissionProofDataUrl, setCommissionProofDataUrl] = useState("");
+  const [commissionProofFileName, setCommissionProofFileName] = useState("");
+  const [commissionProofMimeType, setCommissionProofMimeType] = useState("");
 
   useEffect(() => {
     setSelectedBookingId(initialBookingId);
@@ -891,49 +969,67 @@ export function BookingsScreen({
     router.push("/provider/bookings", { scroll: false });
   }
 
-  async function handleFinalizePayment(booking: ProviderBookingItem) {
-    const extraChargeInput = window.prompt(
-      "Additional charge amount (RM). Use 0 if none.",
-      booking.additionalCharge > 0 ? String(booking.additionalCharge) : "0"
+  async function handleSendFinalAmount(booking: ProviderBookingItem) {
+    const input = window.prompt(
+      "Enter final amount (RM) to send to the customer.",
+      String(booking.quotedAmount || booking.baseAmount || 0),
     );
 
-    if (extraChargeInput === null) {
+    if (input === null) {
       return;
     }
 
-    const additionalCharge = Number(extraChargeInput);
+    const finalAmount = Number(input);
 
-    if (!Number.isFinite(additionalCharge) || additionalCharge < 0) {
-      state.setError("Additional charge must be a valid number.");
+    if (!Number.isFinite(finalAmount) || finalAmount <= 0) {
+      state.setError("Final amount must be a valid number.");
       return;
     }
 
-    const chargeDescription = window.prompt(
-      "Additional charge description",
-      booking.additionalChargeDescription || "Extra hours / extra work"
+    const note = window.prompt(
+      "Optional payment note for customer",
+      booking.providerResponseNote || "Please review and confirm the final cash amount.",
     );
 
-    if (chargeDescription === null) {
+    if (note === null) {
       return;
     }
 
-    const paymentNote = window.prompt(
-      "Payment note for customer",
-      booking.paymentNote || "Final cash payment confirmed by provider."
+    state.handleBookingAction(
+      booking.id,
+      "completed",
+      note.trim(),
+      { finalAmount },
     );
+  }
 
-    if (paymentNote === null) {
+  async function handleCommissionProofChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+
+    if (!file) {
       return;
     }
 
-    const baseAmount = booking.baseAmount || booking.quotedAmount;
-    const finalAmount = Math.max(0, baseAmount + additionalCharge);
+    if (file.size > PAYMENT_PROOF_MAX_BYTES) {
+      state.setError("Commission proof must be 5MB or smaller.");
+      return;
+    }
 
-    state.handleBookingAction(booking.id, "paid", paymentNote, {
-      finalAmount,
-      additionalCharge,
-      chargeDescription: chargeDescription.trim(),
-    });
+    if (!isPaymentProofMimeType(file.type)) {
+      state.setError("Commission proof must be JPG, PNG, GIF, WebP, or PDF.");
+      return;
+    }
+
+    try {
+      const dataUrl = await readFileAsDataUrl(file);
+      setCommissionProofDataUrl(dataUrl);
+      setCommissionProofFileName(file.name);
+      setCommissionProofMimeType(file.type);
+      state.setError("");
+    } catch {
+      state.setError("Unable to read the commission proof file.");
+    }
   }
 
   const todayKey = getTodayKey();
@@ -1169,47 +1265,89 @@ export function BookingsScreen({
                 <AppButton
                   className="flex-1"
                   disabled={state.actionBookingId === selectedBooking.id}
-                  onClick={() =>
-                    state.handleBookingAction(
-                      selectedBooking.id,
-                      "completed",
-                      "Provider completed the full task path",
-                    )
-                  }
+                  onClick={() => void handleSendFinalAmount(selectedBooking)}
                 >
-                  Update Task Completed
+                  Send Final Amount
                 </AppButton>
               </BookingActionBar>
             ) : null}
 
             {selectedBooking.bookingStatus === "completed" ? (
-              <BookingActionBar>
-                <AppButton
-                  className="flex-1"
-                  disabled={state.actionBookingId === selectedBooking.id}
-                  onClick={() => void handleFinalizePayment(selectedBooking)}
-                >
-                  Update Paid
-                </AppButton>
-              </BookingActionBar>
+              <div className="mt-4 space-y-3">
+                <p className="rounded-[16px] border border-[#d8f0dc] bg-[#f3fff6] px-4 py-3 text-[13px] font-semibold text-[#166534]">
+                  Final cash amount sent to the customer. Waiting for customer cash confirmation.
+                </p>
+                <div className="rounded-[18px] border border-[#fde7d3] bg-[#fff7ed] p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-[12px] font-bold uppercase tracking-[0.12em] text-[#ea580c]">Pending to Company</p>
+                    <p className="text-[20px] font-black text-[#c2410c]">{formatCurrency(selectedBooking.companyCommissionAmount)}</p>
+                  </div>
+                  <p className="mt-2 text-[13px] text-[#9a3412]">
+                    Commission status: {selectedBooking.companyPaymentStatus === "paid" ? "Paid" : "Unpaid"}
+                  </p>
+                </div>
+              </div>
             ) : null}
 
             {selectedBooking.bookingStatus === "paid" ? (
-              <BookingActionBar>
-                <AppButton
-                  className="flex-1"
-                  disabled={state.actionBookingId === selectedBooking.id}
-                  onClick={() =>
-                    state.handleBookingAction(
-                      selectedBooking.id,
-                      "review_requested",
-                      "Provider requested customer review",
-                    )
-                  }
-                >
-                  Request Review
-                </AppButton>
-              </BookingActionBar>
+              <div className="mt-4 space-y-3">
+                <p className="rounded-[16px] border border-[#d8f0dc] bg-[#f3fff6] px-4 py-3 text-[13px] font-semibold text-[#166534]">
+                  Cash payment received. The customer can now leave a review.
+                </p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="rounded-[18px] border border-[#d8f0dc] bg-[#f3fff6] p-4">
+                    <p className="text-[12px] font-bold uppercase tracking-[0.12em] text-[#15803d]">Cash Collected</p>
+                    <p className="mt-2 text-[22px] font-black text-[#166534]">{formatCurrency(selectedBooking.quotedAmount)}</p>
+                  </div>
+                  <div className="rounded-[18px] border border-[#fde7d3] bg-[#fff7ed] p-4">
+                    <p className="text-[12px] font-bold uppercase tracking-[0.12em] text-[#ea580c]">Pending to Company</p>
+                    <p className="mt-2 text-[22px] font-black text-[#c2410c]">{formatCurrency(selectedBooking.companyCommissionAmount)}</p>
+                    <p className="mt-1 text-[12px] text-[#9a3412]">
+                      {selectedBooking.companyPaymentStatus === "paid" ? "Commission paid" : "Commission unpaid"}
+                    </p>
+                  </div>
+                </div>
+                <ProofPreviewCard
+                  title="Customer Payment Proof"
+                  dataUrl={selectedBooking.customerPaymentProofDataUrl}
+                  fileName={selectedBooking.customerPaymentProofFileName}
+                  mimeType={selectedBooking.customerPaymentProofMimeType}
+                />
+                <ProofPreviewCard
+                  title="Company Payment Proof"
+                  dataUrl={selectedBooking.providerCompanyPaymentProofDataUrl || commissionProofDataUrl}
+                  fileName={selectedBooking.providerCompanyPaymentProofFileName || commissionProofFileName}
+                  mimeType={selectedBooking.providerCompanyPaymentProofMimeType || commissionProofMimeType}
+                />
+                {selectedBooking.companyPaymentStatus !== "paid" ? (
+                  <div className="space-y-3">
+                    <label className="block rounded-[16px] border border-dashed border-[#d9c7ef] bg-white px-4 py-3 text-[13px] font-semibold text-[#6d6480]">
+                      Attach company payment proof (optional): transfer slip or receipt, JPG/PNG/GIF/WebP/PDF up to 5MB.
+                      <input
+                        type="file"
+                        accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,application/pdf,image/jpeg,image/png,image/gif,image/webp"
+                        className="mt-3 block w-full text-[12px] text-[#6d6480]"
+                        onChange={(event) => void handleCommissionProofChange(event)}
+                      />
+                    </label>
+                    <BookingActionBar>
+                      <AppButton
+                        className="flex-1"
+                        disabled={state.actionBookingId === selectedBooking.id}
+                        onClick={() =>
+                          void state.handleCommissionSettlement(selectedBooking.id, {
+                            proofDataUrl: commissionProofDataUrl,
+                            proofFileName: commissionProofFileName,
+                            proofMimeType: commissionProofMimeType,
+                          })
+                        }
+                      >
+                        Pay / Settle Company Commission
+                      </AppButton>
+                    </BookingActionBar>
+                  </div>
+                ) : null}
+              </div>
             ) : null}
           </div>
         </section>
@@ -1399,15 +1537,9 @@ export function BookingsScreen({
                       <AppButton
                         className="flex-1"
                         disabled={state.actionBookingId === booking.id}
-                        onClick={() =>
-                          state.handleBookingAction(
-                            booking.id,
-                            "completed",
-                            "Provider completed the full task path",
-                          )
-                        }
+                        onClick={() => void handleSendFinalAmount(booking)}
                       >
-                        Complete Task
+                        Send Final Amount
                       </AppButton>
                     ) : null}
                     <AppButton
@@ -1421,13 +1553,9 @@ export function BookingsScreen({
                 ) : null}
                 {tab === "completes" && booking.bookingStatus === "completed" ? (
                   <div className="mt-4 flex gap-3">
-                    <AppButton
-                      className="flex-1"
-                      disabled={state.actionBookingId === booking.id}
-                      onClick={() => void handleFinalizePayment(booking)}
-                    >
-                      Finalize Payment
-                    </AppButton>
+                    <p className="flex-1 rounded-[14px] border border-[#d8f0dc] bg-[#f3fff6] px-4 py-3 text-[13px] font-semibold leading-5 text-[#166534]">
+                      Waiting for customer cash confirmation.
+                    </p>
                     <AppButton
                       tone="secondary"
                       className="flex-1"
@@ -1773,7 +1901,12 @@ export function EarningsScreen() {
   const completed = state.bookings.filter((booking) =>
     ["completed", "paid", "review_requested", "reviewed"].includes(booking.bookingStatus),
   );
-  const total = completed.reduce((sum, booking) => sum + booking.quotedAmount, 0);
+  const paidCashJobs = completed.filter((booking) => booking.paymentStatus === "paid");
+  const total = paidCashJobs.reduce((sum, booking) => sum + booking.quotedAmount, 0);
+  const totalCommissionPending = paidCashJobs
+    .filter((booking) => booking.companyPaymentStatus !== "paid")
+    .reduce((sum, booking) => sum + booking.companyCommissionAmount, 0);
+  const totalNetEarnings = paidCashJobs.reduce((sum, booking) => sum + booking.providerNetAmount, 0);
   const thisWeek = completed
     .filter((booking) => {
       const bookingDate = new Date(`${booking.scheduledDate}T00:00:00`);
@@ -1781,7 +1914,7 @@ export function EarningsScreen() {
       const diff = today.getTime() - bookingDate.getTime();
       return diff <= 7 * 24 * 60 * 60 * 1000;
     })
-    .reduce((sum, booking) => sum + booking.quotedAmount, 0);
+    .reduce((sum, booking) => sum + (booking.paymentStatus === "paid" ? booking.quotedAmount : 0), 0);
   const thisMonth = completed
     .filter((booking) => {
       const bookingDate = new Date(`${booking.scheduledDate}T00:00:00`);
@@ -1791,7 +1924,7 @@ export function EarningsScreen() {
         bookingDate.getFullYear() === today.getFullYear()
       );
     })
-    .reduce((sum, booking) => sum + booking.quotedAmount, 0);
+    .reduce((sum, booking) => sum + (booking.paymentStatus === "paid" ? booking.quotedAmount : 0), 0);
   const leadCompleted = completed[0] ?? null;
 
   return (
@@ -1823,13 +1956,12 @@ export function EarningsScreen() {
       <section className="rounded-[24px] border border-[#eee5f7] bg-white p-5 shadow-[0_14px_32px_rgba(86,38,135,0.08)]">
         <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-[#8E5EB5]">Earnings Breakdown</p>
         <div className="mt-4 space-y-3 text-[13px] text-[#544b66]">
-          <SummaryLine label="Service Amount" value={formatCurrency(leadCompleted?.baseAmount || leadCompleted?.quotedAmount || total)} />
-          <SummaryLine label="Platform Fee" value="RM0.00" />
-          <SummaryLine label="Tax (5%)" value="RM0.00" />
+          <SummaryLine label="Cash Collected" value={formatCurrency(leadCompleted?.quotedAmount || total)} />
+          <SummaryLine label="Della Commission Pending" value={formatCurrency(leadCompleted?.companyCommissionAmount || totalCommissionPending)} />
           <div className="border-t border-[#f0e8f8] pt-3">
             <div className="flex items-center justify-between gap-3">
               <p className="text-[15px] font-black text-[#1f1630]">You Will Receive</p>
-              <p className="text-[22px] font-black text-[#6F3EA1]">{formatCurrency(leadCompleted?.quotedAmount || total)}</p>
+              <p className="text-[22px] font-black text-[#6F3EA1]">{formatCurrency(leadCompleted?.providerNetAmount || totalNetEarnings)}</p>
             </div>
           </div>
         </div>
@@ -1841,9 +1973,13 @@ export function EarningsScreen() {
             <Wallet className="h-4 w-4" />
           </span>
           <div>
-            <p className="text-[13px] font-bold text-[#1f4d2b]">Payment Released</p>
+            <p className="text-[13px] font-bold text-[#1f4d2b]">Cash Job Status</p>
             <p className="text-[11px] text-[#5f7d67]">
-              {leadCompleted ? `Released on ${formatDateLabel(leadCompleted.scheduledDate)}` : "Waiting for released earnings"}
+              {leadCompleted
+                ? leadCompleted.companyPaymentStatus === "paid"
+                  ? "Commission paid to Della."
+                  : "Commission still pending to Della."
+                : "Waiting for cash payment confirmation"}
             </p>
           </div>
         </div>
@@ -1852,6 +1988,11 @@ export function EarningsScreen() {
       <section className="grid grid-cols-2 gap-3">
         <MetricCard label="This Week" value={formatCurrency(thisWeek)} meta="Recent completed jobs" accent="text-[#1f1630]" />
         <MetricCard label="This Month" value={formatCurrency(thisMonth)} meta="Current month" accent="text-[#1f1630]" />
+      </section>
+
+      <section className="grid grid-cols-2 gap-3">
+        <MetricCard label="Cash Collected" value={formatCurrency(total)} meta="Paid by customers" accent="text-[#166534]" />
+        <MetricCard label="Pending to Company" value={formatCurrency(totalCommissionPending)} meta="Commission to settle" accent="text-[#ea580c]" />
       </section>
 
       <section className="rounded-[24px] border border-[#eee5f7] bg-white p-5 shadow-[0_14px_32px_rgba(86,38,135,0.08)]">
@@ -1885,6 +2026,40 @@ export function TasksScreen() {
 
   if (fallback) {
     return fallback;
+  }
+
+  async function handleSendFinalAmount(booking: ProviderBookingItem) {
+    const input = window.prompt(
+      "Enter final amount (RM) to send to the customer.",
+      String(booking.quotedAmount || booking.baseAmount || 0),
+    );
+
+    if (input === null) {
+      return;
+    }
+
+    const finalAmount = Number(input);
+
+    if (!Number.isFinite(finalAmount) || finalAmount <= 0) {
+      state.setError("Final amount must be a valid number.");
+      return;
+    }
+
+    const note = window.prompt(
+      "Optional payment note for customer",
+      booking.providerResponseNote || "Please review and confirm the final cash amount.",
+    );
+
+    if (note === null) {
+      return;
+    }
+
+    state.handleBookingAction(
+      booking.id,
+      "completed",
+      note.trim(),
+      { finalAmount },
+    );
   }
 
   const ongoing = state.bookings.filter(
@@ -1996,15 +2171,9 @@ export function TasksScreen() {
                     <AppButton
                       className="flex-1"
                       disabled={state.actionBookingId === booking.id}
-                      onClick={() =>
-                        state.handleBookingAction(
-                          booking.id,
-                          "completed",
-                          "Provider completed the task",
-                        )
-                      }
+                      onClick={() => void handleSendFinalAmount(booking)}
                     >
-                      Complete Task
+                      Send Final Amount
                     </AppButton>
                   ) : null}
                   <AppButton href={`/provider/bookings/${booking.id}`} tone="secondary" className="flex-1">
