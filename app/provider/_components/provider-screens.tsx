@@ -461,15 +461,12 @@ export function DashboardScreen() {
 
   const data = state.data!;
   const pendingRequest = state.bookings.find((booking) => booking.bucket === "requests") ?? null;
+  const newTasks = state.bookings.filter(
+    (booking) => booking.bucket === "requests" || booking.bookingStatus === "pending",
+  );
   const acceptedBookings = state.bookings.filter((booking) => booking.bookingStatus === "accepted");
   const ongoingBookings = state.bookings.filter(
     (booking) => booking.bookingStatus === "on_the_way" || booking.bookingStatus === "arrived",
-  );
-  const confirmedBookings = state.bookings.filter(
-    (booking) =>
-      booking.customerStatusLabel === "Confirmed" ||
-      booking.customerStatusLabel === "On the Way" ||
-      booking.customerStatusLabel === "Arrived",
   );
   const todayKey = getTodayKey();
   const todayBookings = state.bookings
@@ -484,6 +481,9 @@ export function DashboardScreen() {
         `${right.scheduledDate}T${right.scheduledStartTime}`,
       ),
     );
+  const completedBookings = state.bookings.filter((booking) =>
+    ["completed", "paid", "review_requested", "reviewed"].includes(booking.bookingStatus),
+  );
   const walletBalance = state.bookings
     .filter((booking) =>
       ["completed", "paid", "review_requested", "reviewed"].includes(booking.bookingStatus),
@@ -712,24 +712,46 @@ export function DashboardScreen() {
             </Link>
           </div>
           <div className="mt-4 grid grid-cols-3 gap-3">
-            <MetricCard
-              label="Accepted"
-              value={String(acceptedBookings.length)}
-              meta="Ready to start"
-              accent="text-[#0f172a]"
-            />
-            <MetricCard
-              label="Ongoing Task"
-              value={String(ongoingBookings.length)}
-              meta="On the way / arrived"
-              accent="text-[#0f172a]"
-            />
-            <MetricCard
-              label="Confirmed"
-              value={String(confirmedBookings.length)}
-              meta="What users see"
-              accent="text-[#0f172a]"
-            />
+            <Link
+              href="/provider/tasks#today-tasks"
+              className="rounded-[18px] border border-[#eadcf7] bg-[#fcfaff] p-4 shadow-[0_10px_20px_rgba(142,94,181,0.05)]"
+            >
+              <p className="text-[1.65rem] font-black text-[#0f172a]">{todayBookings.length}</p>
+              <p className="mt-2 text-[14px] font-semibold text-[#1f1630]">Today&apos;s Task</p>
+              <p className="mt-1 text-[12px] text-[#8f86a2]">See today&apos;s task details</p>
+            </Link>
+            <Link
+              href="/provider/tasks#new-tasks"
+              className="rounded-[18px] border border-[#eadcf7] bg-[#fcfaff] p-4 shadow-[0_10px_20px_rgba(142,94,181,0.05)]"
+            >
+              <p className="text-[1.65rem] font-black text-[#0f172a]">{newTasks.length}</p>
+              <p className="mt-2 text-[14px] font-semibold text-[#1f1630]">New Task</p>
+              <p className="mt-1 text-[12px] text-[#8f86a2]">Review and accept requests</p>
+            </Link>
+            <Link
+              href="/provider/tasks#ongoing-tasks"
+              className="rounded-[18px] border border-[#eadcf7] bg-[#fcfaff] p-4 shadow-[0_10px_20px_rgba(142,94,181,0.05)]"
+            >
+              <p className="text-[1.65rem] font-black text-[#0f172a]">{ongoingBookings.length}</p>
+              <p className="mt-2 text-[14px] font-semibold text-[#1f1630]">On Going Task</p>
+              <p className="mt-1 text-[12px] text-[#8f86a2]">Take live task actions</p>
+            </Link>
+          </div>
+
+          <div className="mt-3 grid grid-cols-1 gap-3">
+            <Link
+              href="/provider/tasks#completed-tasks"
+              className="rounded-[18px] border border-[#eadcf7] bg-[#fcfaff] p-4 shadow-[0_10px_20px_rgba(142,94,181,0.05)]"
+            >
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-[1.65rem] font-black text-[#0f172a]">{completedBookings.length}</p>
+                  <p className="mt-2 text-[14px] font-semibold text-[#1f1630]">Completed</p>
+                  <p className="mt-1 text-[12px] text-[#8f86a2]">Open finished task details</p>
+                </div>
+                <ChevronRight className="h-5 w-5 text-[#8E5EB5]" />
+              </div>
+            </Link>
           </div>
 
           <div className="mt-4 rounded-[20px] border border-[#eee5f7] bg-[#fcfaff] p-4">
@@ -2382,8 +2404,20 @@ export function TasksScreen() {
     );
   }
 
+  const newTasks = state.bookings.filter(
+    (booking) => booking.bucket === "requests" || booking.bookingStatus === "pending",
+  );
+  const todaysTasks = state.bookings.filter(
+    (booking) =>
+      booking.scheduledDate === getTodayKey() &&
+      booking.bookingStatus !== "declined" &&
+      booking.bookingStatus !== "cancelled",
+  );
   const ongoing = state.bookings.filter(
     (booking) => booking.bookingStatus === "accepted" || booking.bookingStatus === "on_the_way" || booking.bookingStatus === "arrived",
+  );
+  const completedTasks = state.bookings.filter((booking) =>
+    ["completed", "paid", "review_requested", "reviewed"].includes(booking.bookingStatus),
   );
   const completedToday = state.bookings.filter(
     (booking) =>
@@ -2408,7 +2442,137 @@ export function TasksScreen() {
         />
       </section>
 
-      <section className="rounded-[26px] border border-[#eee5f7] bg-white p-5 shadow-[0_18px_44px_rgba(86,38,135,0.08)]">
+      <section id="new-tasks" className="rounded-[26px] border border-[#eee5f7] bg-white p-5 shadow-[0_18px_44px_rgba(86,38,135,0.08)]">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-[17px] font-black text-[#0f172a]">New Tasks</h2>
+            <p className="mt-1 text-[13px] text-[#64748b]">
+              New requests that need your action now.
+            </p>
+          </div>
+          <span className="rounded-full bg-[#f7f1fc] px-3 py-1 text-[12px] font-bold text-[#8E5EB5]">
+            {newTasks.length}
+          </span>
+        </div>
+        <div className="mt-4 space-y-3">
+          {newTasks.length === 0 ? (
+            <EmptyState
+              title="No new tasks"
+              description="Fresh incoming requests will appear here automatically."
+              icon={<Bell className="h-6 w-6" />}
+            />
+          ) : (
+            newTasks.map((booking) => (
+              <div
+                key={booking.id}
+                className="rounded-[22px] border border-[#eee5f7] bg-[#fcfaff] p-4 shadow-[0_10px_24px_rgba(86,38,135,0.05)]"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-[15px] font-black text-[#0f172a]">{booking.serviceLabel}</p>
+                    <p className="mt-1 text-[13px] text-[#475569]">{booking.customerName}</p>
+                  </div>
+                  <StatusBadge label={booking.statusLabel} tone={providerStatusTone(booking.bookingStatus)} />
+                </div>
+                <div className="mt-3 space-y-2 text-[13px] text-[#475569]">
+                  <div className="flex items-center gap-2">
+                    <CalendarDays className="h-4 w-4 text-[#8E5EB5]" />
+                    <span>{booking.schedule}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4 text-[#8E5EB5]" />
+                    <span>{booking.location}</span>
+                  </div>
+                </div>
+                <div className="mt-4 flex gap-3">
+                  <AppButton
+                    className="flex-1"
+                    tone="danger"
+                    disabled={state.actionBookingId === booking.id}
+                    onClick={() =>
+                      state.handleBookingAction(
+                        booking.id,
+                        "declined",
+                        "Provider declined booking",
+                      )
+                    }
+                  >
+                    Decline
+                  </AppButton>
+                  <AppButton
+                    className="flex-1"
+                    disabled={state.actionBookingId === booking.id}
+                    onClick={() =>
+                      state.handleBookingAction(
+                        booking.id,
+                        "accepted",
+                        "Provider accepted booking",
+                      )
+                    }
+                  >
+                    Accept
+                  </AppButton>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </section>
+
+      <section id="today-tasks" className="rounded-[26px] border border-[#eee5f7] bg-white p-5 shadow-[0_18px_44px_rgba(86,38,135,0.08)]">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-[17px] font-black text-[#0f172a]">Today&apos;s Tasks</h2>
+            <p className="mt-1 text-[13px] text-[#64748b]">
+              Scheduled work for today with quick access to details.
+            </p>
+          </div>
+          <span className="rounded-full bg-[#f7f1fc] px-3 py-1 text-[12px] font-bold text-[#8E5EB5]">
+            {todaysTasks.length}
+          </span>
+        </div>
+        <div className="mt-4 space-y-3">
+          {todaysTasks.length === 0 ? (
+            <EmptyState
+              title="No tasks for today"
+              description="Today&apos;s provider schedule will appear here automatically."
+              icon={<CalendarDays className="h-6 w-6" />}
+            />
+          ) : (
+            todaysTasks.map((booking) => (
+              <div
+                key={booking.id}
+                className="rounded-[22px] border border-[#eee5f7] bg-[#fcfaff] p-4 shadow-[0_10px_24px_rgba(86,38,135,0.05)]"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-[15px] font-black text-[#0f172a]">{booking.serviceLabel}</p>
+                    <p className="mt-1 text-[13px] text-[#475569]">{booking.customerName}</p>
+                  </div>
+                  <StatusBadge label={booking.statusLabel} tone={providerStatusTone(booking.bookingStatus)} />
+                </div>
+                <div className="mt-3 space-y-2 text-[13px] text-[#475569]">
+                  <div className="flex items-center gap-2">
+                    <Clock3 className="h-4 w-4 text-[#8E5EB5]" />
+                    <span>{booking.schedule}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4 text-[#8E5EB5]" />
+                    <span>{booking.location}</span>
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <AppButton href={`/provider/bookings/${booking.id}`} tone="secondary" className="w-full">
+                    Open Task Details
+                  </AppButton>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </section>
+
+      <section id="ongoing-tasks" className="rounded-[26px] border border-[#eee5f7] bg-white p-5 shadow-[0_18px_44px_rgba(86,38,135,0.08)]">
         <div className="flex items-center justify-between gap-3">
           <div>
             <h2 className="text-[17px] font-black text-[#0f172a]">Ongoing Tasks</h2>
@@ -2498,6 +2662,59 @@ export function TasksScreen() {
                   ) : null}
                   <AppButton href={`/provider/bookings/${booking.id}`} tone="secondary" className="flex-1">
                     Open Booking
+                  </AppButton>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </section>
+
+      <section id="completed-tasks" className="rounded-[26px] border border-[#eee5f7] bg-white p-5 shadow-[0_18px_44px_rgba(86,38,135,0.08)]">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-[17px] font-black text-[#0f172a]">Completed Tasks</h2>
+            <p className="mt-1 text-[13px] text-[#64748b]">
+              Finished jobs with task details and payment follow-up.
+            </p>
+          </div>
+          <span className="rounded-full bg-[#f7f1fc] px-3 py-1 text-[12px] font-bold text-[#8E5EB5]">
+            {completedTasks.length}
+          </span>
+        </div>
+        <div className="mt-4 space-y-3">
+          {completedTasks.length === 0 ? (
+            <EmptyState
+              title="No completed tasks"
+              description="Finished provider work will appear here once tasks are completed."
+              icon={<BriefcaseBusiness className="h-6 w-6" />}
+            />
+          ) : (
+            completedTasks.map((booking) => (
+              <div
+                key={booking.id}
+                className="rounded-[22px] border border-[#eee5f7] bg-[#fcfaff] p-4 shadow-[0_10px_24px_rgba(86,38,135,0.05)]"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-[15px] font-black text-[#0f172a]">{booking.serviceLabel}</p>
+                    <p className="mt-1 text-[13px] text-[#475569]">{booking.customerName}</p>
+                  </div>
+                  <StatusBadge label={booking.statusLabel} tone={providerStatusTone(booking.bookingStatus)} />
+                </div>
+                <div className="mt-3 space-y-2 text-[13px] text-[#475569]">
+                  <div className="flex items-center gap-2">
+                    <CalendarDays className="h-4 w-4 text-[#8E5EB5]" />
+                    <span>{booking.schedule}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Wallet className="h-4 w-4 text-[#8E5EB5]" />
+                    <span>{formatCurrency(booking.quotedAmount)}</span>
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <AppButton href={`/provider/bookings/${booking.id}`} tone="secondary" className="w-full">
+                    Open Task Details
                   </AppButton>
                 </div>
               </div>
