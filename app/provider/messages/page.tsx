@@ -1,5 +1,11 @@
+import { Suspense } from "react";
+
 import { MessagesScreen } from "../_components/provider-screens";
 
 export default function ProviderMessagesPage() {
-  return <MessagesScreen />;
+  return (
+    <Suspense fallback={null}>
+      <MessagesScreen />
+    </Suspense>
+  );
 }
