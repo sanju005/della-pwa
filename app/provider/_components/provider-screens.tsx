@@ -2465,14 +2465,14 @@ export function EarningsScreen() {
         </div>
         <div className="mt-4 grid grid-cols-2 gap-3">
           <AppButton
-            className="w-full"
+            className="w-full px-3 text-[13px] sm:text-[14px]"
             disabled={dailyAction !== "" || totalNetEarnings <= 0}
             onClick={handleDailyWithdraw}
           >
             {dailyAction === "withdraw" ? "Processing..." : `Withdraw ${formatCurrency(totalNetEarnings)}`}
           </AppButton>
           <AppButton
-            className="w-full"
+            className="w-full px-3 text-[13px] sm:text-[14px]"
             tone="secondary"
             disabled={dailyAction !== "" || totalPendingCompany <= 0}
             onClick={() => void handleDailyCompanyPayment()}

@@ -142,7 +142,7 @@ export function AppButton({
   type?: "button" | "submit";
 }) {
   const classes = cx(
-    "inline-flex h-11 items-center justify-center gap-2 rounded-[14px] px-4 text-[14px] font-extrabold transition disabled:cursor-not-allowed disabled:opacity-60 sm:h-12 sm:px-5 sm:text-[15px]",
+    "inline-flex min-h-[2.75rem] items-center justify-center gap-2 rounded-[14px] px-4 py-2.5 text-center text-[14px] font-extrabold leading-tight whitespace-normal transition disabled:cursor-not-allowed disabled:opacity-60 sm:min-h-[3rem] sm:px-5 sm:py-3 sm:text-[15px]",
     tone === "primary" &&
       "bg-[#8E5EB5] text-white shadow-[0_16px_30px_rgba(142,94,181,0.22)] hover:bg-[#7B4EA1]",
     tone === "secondary" &&
