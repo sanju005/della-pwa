@@ -2206,6 +2206,7 @@ export function EarningsScreen() {
   const state = useProviderAppData();
   const [paymentFilter, setPaymentFilter] = useState<"date" | "week" | "month" | "all">("week");
   const [selectedPaymentDate, setSelectedPaymentDate] = useState(getTodayKey());
+  const [dailyAction, setDailyAction] = useState<"" | "withdraw" | "pay-company">("");
   const fallback = LoadingOrError(state);
 
   if (fallback) {
@@ -2274,14 +2275,73 @@ export function EarningsScreen() {
     .filter((booking) => isCollectedPayment(booking) && booking.paymentOption === "online")
     .reduce((sum, booking) => sum + booking.quotedAmount, 0);
   const leadPayment = filteredPayments[0] ?? null;
+  const payableBookings = filteredPayments.filter(
+    (booking) => isCollectedPayment(booking) && booking.companyPaymentStatus !== "paid",
+  );
   const filterSummary =
     paymentFilter === "date"
       ? `Showing payments for ${formatDateLabel(selectedPaymentDate)}`
       : paymentFilter === "week"
         ? "Showing payments for this week"
         : paymentFilter === "month"
-          ? "Showing payments for this month"
+        ? "Showing payments for this month"
           : "Showing all payment records";
+
+  async function handleDailyCompanyPayment() {
+    if (payableBookings.length === 0) {
+      state.setNotice("No company payment is due for the selected total.");
+      return;
+    }
+
+    const accessToken = await getProviderAccessToken();
+
+    if (!accessToken) {
+      state.setError("Your session expired. Please log in again.");
+      return;
+    }
+
+    setDailyAction("pay-company");
+    state.setError("");
+    state.setNotice("");
+
+    try {
+      for (const booking of payableBookings) {
+        const response = await fetch(`/api/provider/bookings/${booking.id}/settle-commission`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({}),
+        });
+
+        const result = (await response.json().catch(() => ({}))) as { success?: true; error?: string };
+
+        if (!response.ok || !result?.success) {
+          throw new Error(result?.error || `Unable to settle company payment for booking ${booking.id}.`);
+        }
+      }
+
+      await state.reloadWorkspace();
+      state.setNotice("Daily company payment marked as paid for the selected total.");
+    } catch (error) {
+      state.setError(error instanceof Error ? error.message : "Unable to settle daily company payment.");
+    } finally {
+      setDailyAction("");
+    }
+  }
+
+  function handleDailyWithdraw() {
+    if (totalNetEarnings <= 0) {
+      state.setNotice("No withdrawal amount is available for the selected total.");
+      return;
+    }
+
+    setDailyAction("withdraw");
+    state.setError("");
+    state.setNotice("Daily withdrawal is routed through admin during testing.");
+    window.setTimeout(() => setDailyAction(""), 600);
+  }
 
   return (
     <PageShell
@@ -2383,9 +2443,9 @@ export function EarningsScreen() {
       <section className="rounded-[24px] border border-[#eee5f7] bg-white p-5 shadow-[0_14px_32px_rgba(86,38,135,0.08)]">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <h2 className="text-[17px] font-black text-[#0f172a]">Payment Split</h2>
+            <h2 className="text-[17px] font-black text-[#0f172a]">Daily Total</h2>
             <p className="mt-1 text-[13px] text-[#64748b]">
-              Full collection, company commission, and provider withdrawal summary.
+              Only this total can be used for withdraw and pay to company.
             </p>
           </div>
         </div>
@@ -2403,6 +2463,23 @@ export function EarningsScreen() {
             </p>
           </div>
         </div>
+        <div className="mt-4 grid grid-cols-2 gap-3">
+          <AppButton
+            className="w-full"
+            disabled={dailyAction !== "" || totalNetEarnings <= 0}
+            onClick={handleDailyWithdraw}
+          >
+            {dailyAction === "withdraw" ? "Processing..." : `Withdraw ${formatCurrency(totalNetEarnings)}`}
+          </AppButton>
+          <AppButton
+            className="w-full"
+            tone="secondary"
+            disabled={dailyAction !== "" || totalPendingCompany <= 0}
+            onClick={() => void handleDailyCompanyPayment()}
+          >
+            {dailyAction === "pay-company" ? "Paying..." : `Pay ${formatCurrency(totalPendingCompany)}`}
+          </AppButton>
+        </div>
       </section>
 
       <section className="rounded-[24px] border border-[#eee5f7] bg-white p-5 shadow-[0_14px_32px_rgba(86,38,135,0.08)]">
@@ -2413,15 +2490,6 @@ export function EarningsScreen() {
               Each row includes booking ID, date, mode, totals, commission, proof, and link to full detail.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() =>
-              state.setNotice("Withdrawals are routed through admin during testing. Payment totals are live.")
-            }
-            className="rounded-full bg-[#eff6ff] px-3 py-1 text-[11px] font-bold text-[#2563eb]"
-          >
-            Withdraw
-          </button>
         </div>
 
         <div className="mt-4 space-y-3">
@@ -2503,15 +2571,6 @@ export function EarningsScreen() {
                     <AppButton href={`/provider/bookings/${booking.id}`} tone="secondary" className="flex-1">
                       Open Full Details
                     </AppButton>
-                    {collected && booking.companyPaymentStatus !== "paid" ? (
-                      <AppButton
-                        className="flex-1"
-                        disabled={state.actionBookingId === booking.id}
-                        onClick={() => void state.handleCommissionSettlement(booking.id, {})}
-                      >
-                        Mark Commission Paid
-                      </AppButton>
-                    ) : null}
                   </div>
                 </div>
               );
