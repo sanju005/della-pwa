@@ -36,6 +36,13 @@ import {
   StatusBadge,
 } from "@/app/_components/della-ui";
 import { BookingMessagesPanel } from "@/app/_components/booking-messages-panel";
+import {
+  disablePushNotifications,
+  getPushSetupState,
+  requestNotificationPermission,
+  saveFCMToken,
+  type PushSetupState,
+} from "@/lib/notifications";
 import { getSupabaseClient } from "@/lib/supabase";
 import { isPaymentProofMimeType, PAYMENT_PROOF_MAX_BYTES, readFileAsDataUrl } from "@/lib/upload-proof";
 
@@ -410,6 +417,141 @@ function ServiceCard({
         </span>
       </div>
     </div>
+  );
+}
+
+function ProviderPushNotificationsCard() {
+  const [pushState, setPushState] = useState<PushSetupState>({
+    permission: "default",
+    hasSavedToken: false,
+  });
+  const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState("");
+
+  useEffect(() => {
+    let active = true;
+
+    void getPushSetupState().then((state) => {
+      if (!active) {
+        return;
+      }
+
+      setPushState(state);
+    });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  async function onEnable() {
+    setBusy(true);
+    setNotice("");
+
+    try {
+      const token = await requestNotificationPermission();
+
+      if (!token) {
+        const state = await getPushSetupState();
+        setPushState(state);
+        setNotice(
+          state.permission === "denied"
+            ? "Push is blocked in this browser. Please allow notifications in browser settings."
+            : "Push permission was not granted."
+        );
+        return;
+      }
+
+      const result = await saveFCMToken(token);
+
+      if (!result.success) {
+        setNotice(result.error || "Unable to save this device for push notifications.");
+        return;
+      }
+
+      setPushState({
+        permission: "granted",
+        hasSavedToken: true,
+      });
+      setNotice("Push notifications enabled on this device.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onDisable() {
+    setBusy(true);
+    setNotice("");
+
+    try {
+      const result = await disablePushNotifications();
+
+      if (!result.success) {
+        setNotice(result.error || "Unable to disable push notifications.");
+        return;
+      }
+
+      const state = await getPushSetupState();
+      setPushState(state);
+      setNotice("Push notifications disabled for this device.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const enabled = pushState.permission === "granted" && pushState.hasSavedToken;
+
+  return (
+    <section className="rounded-[26px] bg-white p-5 shadow-[0_18px_44px_rgba(15,23,42,0.08)] ring-1 ring-[#e6eee8]">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h3 className="text-[1.1rem] font-black tracking-[-0.04em] text-[#0f172a]">
+            Push Notifications
+          </h3>
+          <p className="mt-1 text-[12px] text-[#64748b]">
+            Enable browser alerts for new bookings, payments, and customer updates.
+          </p>
+        </div>
+        <Bell className="h-5 w-5 text-[#16a34a]" />
+      </div>
+
+      <div className="mt-4 rounded-[18px] border border-[#e7eee8] bg-[#fbfffc] p-4">
+        <p className="text-[12px] font-bold uppercase tracking-[0.12em] text-[#94a3b8]">
+          Status
+        </p>
+        <p className="mt-2 text-[14px] font-semibold text-[#0f172a]">
+          {enabled ? "Enabled on this device" : "Not enabled on this device"}
+        </p>
+        <p className="mt-1 text-[12px] text-[#64748b]">
+          Browser permission: {pushState.permission}
+        </p>
+      </div>
+
+      {notice ? (
+        <p className="mt-4 rounded-[16px] border border-[#d8ebdf] bg-[#f6fcf7] px-4 py-3 text-[13px] font-semibold text-[#166534]">
+          {notice}
+        </p>
+      ) : null}
+
+      <div className="mt-5 flex gap-3">
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => void onEnable()}
+          className="inline-flex h-11 flex-1 items-center justify-center rounded-[14px] bg-[#16a34a] px-4 text-[13px] font-extrabold text-white disabled:opacity-60"
+        >
+          {busy ? "Updating..." : enabled ? "Enable Again" : "Enable Push"}
+        </button>
+        <button
+          type="button"
+          disabled={busy || !enabled}
+          onClick={() => void onDisable()}
+          className="inline-flex h-11 flex-1 items-center justify-center rounded-[14px] border border-[#d8ebdf] bg-white px-4 text-[13px] font-extrabold text-[#166534] disabled:opacity-60"
+        >
+          Disable Push
+        </button>
+      </div>
+    </section>
   );
 }
 
@@ -3088,6 +3230,8 @@ export function ProfileScreen() {
           </Link>
         </div>
       </section>
+
+      <ProviderPushNotificationsCard />
 
       <section className="rounded-[26px] bg-white p-5 shadow-[0_18px_44px_rgba(15,23,42,0.08)] ring-1 ring-[#e6eee8]">
         <div className="flex items-center justify-between gap-3">
