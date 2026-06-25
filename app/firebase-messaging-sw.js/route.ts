@@ -1,14 +1,26 @@
+import { NextResponse } from "next/server";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+function getPublicFirebaseConfig() {
+  return {
+    apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY ?? "",
+    authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN ?? "",
+    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ?? "",
+    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET ?? "",
+    messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID ?? "",
+    appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID ?? "",
+  };
+}
+
+export async function GET() {
+  const firebaseConfig = getPublicFirebaseConfig();
+  const script = `
 importScripts("https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js");
 importScripts("https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging-compat.js");
 
-firebase.initializeApp({
-  apiKey: "AIzaSyCNnSdYrL-iKY0fCglW00YiiLeWso6DVAs",
-  authDomain: "dellaapp.firebaseapp.com",
-  projectId: "dellaapp",
-  storageBucket: "dellaapp.firebasestorage.app",
-  messagingSenderId: "609758824758",
-  appId: "1:609758824758:web:4999a6268be583d32c4b97",
-});
+firebase.initializeApp(${JSON.stringify(firebaseConfig)});
 
 const messaging = firebase.messaging();
 
@@ -49,3 +61,12 @@ self.addEventListener("notificationclick", (event) => {
     })
   );
 });
+`;
+
+  return new NextResponse(script, {
+    headers: {
+      "Content-Type": "application/javascript; charset=utf-8",
+      "Cache-Control": "no-store, max-age=0",
+    },
+  });
+}

@@ -6,12 +6,12 @@ import {
 } from "firebase/messaging";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCNnSdYrL-iKY0fCglW00YiiLeWso6DVAs",
-  authDomain: "dellaapp.firebaseapp.com",
-  projectId: "dellaapp",
-  storageBucket: "dellaapp.firebasestorage.app",
-  messagingSenderId: "609758824758",
-  appId: "1:609758824758:web:4999a6268be583d32c4b97",
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY ?? "",
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN ?? "",
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ?? "",
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET ?? "",
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID ?? "",
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID ?? "",
 };
 
 export const firebaseApp =
