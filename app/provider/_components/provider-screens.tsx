@@ -35,6 +35,7 @@ import {
   MobilePage,
   StatusBadge,
 } from "@/app/_components/della-ui";
+import { BookingMessagesPanel } from "@/app/_components/booking-messages-panel";
 import { getSupabaseClient } from "@/lib/supabase";
 import { isPaymentProofMimeType, PAYMENT_PROOF_MAX_BYTES, readFileAsDataUrl } from "@/lib/upload-proof";
 
@@ -2068,13 +2069,6 @@ export function CalendarScreen() {
 }
 
 export function MessagesScreen() {
-  const state = useProviderAppData();
-  const fallback = LoadingOrError(state);
-
-  if (fallback) {
-    return fallback;
-  }
-
   return (
     <PageShell
       title="Messages"
@@ -2088,116 +2082,29 @@ export function MessagesScreen() {
         </Link>
       }
     >
-      <section className="rounded-[26px] bg-white p-5 shadow-[0_18px_44px_rgba(15,23,42,0.08)] ring-1 ring-[#e6eee8]">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <h2 className="text-[17px] font-black text-[#0f172a]">Customer Conversations</h2>
-            <p className="mt-1 text-[13px] text-[#64748b]">
-              Real booking notes and latest customer messages.
-            </p>
-          </div>
-          <span className="rounded-full bg-[#eef9f1] px-3 py-1 text-[12px] font-bold text-[#16a34a]">
-            {state.messages.length}
-          </span>
-        </div>
-        <div className="mt-4 space-y-3">
-          {state.messages.length === 0 ? (
-            <EmptyState
-              title="No messages yet"
-              description="Customer notes and booking conversations will appear here once someone books your service."
-              icon={<MessageCircleMore className="h-6 w-6" />}
-            />
-          ) : (
-            state.messages.map((item) => (
-              <div
-                key={item.bookingId}
-                className={`rounded-[20px] border p-4 ${
-                  item.unreadCount > 0 ? "border-[#bbf7d0] bg-[#f6fff8]" : "border-[#e7eee8] bg-[#fbfffc]"
-                }`}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="truncate text-[14px] font-black text-[#0f172a]">
-                      {item.customerName}
-                    </p>
-                    <p className="mt-1 text-[12px] font-semibold text-[#16a34a]">
-                      {item.serviceLabel}
-                    </p>
-                    <p className="mt-2 text-[13px] leading-6 text-[#64748b]">{item.preview}</p>
-                    <div className="mt-3 space-y-1 text-[12px] text-[#64748b]">
-                      <div className="flex items-center gap-2">
-                        <CalendarDays className="h-4 w-4 text-[#16a34a]" />
-                        <span>{item.schedule}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <MapPin className="h-4 w-4 text-[#16a34a]" />
-                        <span>{item.location}</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-[11px] font-semibold text-[#94a3b8]">
-                      {formatRelativeDate(item.lastMessageAt)}
-                    </p>
-                    {item.unreadCount > 0 ? (
-                      <span className="mt-2 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-[#16a34a] px-1 text-[10px] font-extrabold text-white">
-                        {item.unreadCount}
-                      </span>
-                    ) : null}
-                  </div>
-                </div>
-                <div className="mt-4">
-                  <AppButton href={`/provider/bookings/${item.bookingId}`} className="w-full" tone="secondary">
-                    Open Booking
-                  </AppButton>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      </section>
-
-      <section className="rounded-[26px] bg-white p-5 shadow-[0_18px_44px_rgba(15,23,42,0.08)] ring-1 ring-[#e6eee8]">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <h2 className="text-[17px] font-black text-[#0f172a]">System Alerts</h2>
-            <p className="mt-1 text-[13px] text-[#64748b]">
-              Booking status updates and provider notifications.
-            </p>
-          </div>
-          <span className="rounded-full bg-[#eef9f1] px-3 py-1 text-[12px] font-bold text-[#16a34a]">
-            {state.notifications.length}
-          </span>
-        </div>
-        <div className="mt-4 space-y-3">
-          {state.notifications.length === 0 ? (
-            <EmptyState
-              title="No alerts yet"
-              description="System updates will appear here when bookings change."
-              icon={<Bell className="h-6 w-6" />}
-            />
-          ) : (
-            state.notifications.map((item) => (
-              <div
-                key={item.id}
-                className={`rounded-[20px] border p-4 ${
-                  item.isRead ? "border-[#e7eee8] bg-[#fbfffc]" : "border-[#bbf7d0] bg-[#f6fff8]"
-                }`}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="truncate text-[14px] font-black text-[#0f172a]">{item.title}</p>
-                    <p className="mt-1 text-[13px] leading-6 text-[#64748b]">{item.body}</p>
-                  </div>
-                  <p className="text-[11px] font-semibold text-[#94a3b8]">
-                    {formatRelativeDate(item.createdAt)}
-                  </p>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      </section>
+      <BookingMessagesPanel
+        role="provider"
+        basePath="/provider/messages"
+        emptyTitle="No messages yet"
+        emptyDescription="Customer notes and booking conversations will appear here once someone books your service."
+        emptyActionHref="/provider/bookings"
+        emptyActionLabel="Open Bookings"
+        theme={{
+          accentText: "text-[#16a34a]",
+          accentBg: "bg-[#16a34a]",
+          accentSoftBg: "bg-[#f6fff8]",
+          accentBorder: "border-[#bbf7d0]",
+          badgeBg: "bg-[#eef9f1]",
+          badgeText: "text-[#16a34a]",
+          ownBubble: "bg-[#16a34a]",
+          ownBubbleText: "text-white",
+          otherBubble: "bg-[#f8fcf9]",
+          otherBubbleText: "text-[#0f172a]",
+          threadUnreadBorder: "border-[#bbf7d0]",
+          threadUnreadBg: "bg-[#f6fff8]",
+          composerButton: "bg-[#16a34a]",
+        }}
+      />
     </PageShell>
   );
 }

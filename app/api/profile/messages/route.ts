@@ -9,7 +9,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
-  const verified = await verifyAuthenticatedUser(request, "provider");
+  const verified = await verifyAuthenticatedUser(request, "customer");
 
   if ("error" in verified) {
     const errorResponse = verified.error!;
@@ -20,7 +20,7 @@ export async function GET(request: Request) {
     const threads = await loadConversationThreads(
       verified.adminClient,
       verified.profile,
-      "provider",
+      "customer",
     );
 
     return NextResponse.json({ threads });

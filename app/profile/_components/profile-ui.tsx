@@ -8,9 +8,9 @@ import {
   AppButton,
   BookingCard as SharedBookingCard,
   EmptyState as SharedEmptyState,
-  MessagePlaceholderCard,
   StatusBadge as SharedStatusBadge,
 } from "@/app/_components/della-ui";
+import { BookingMessagesPanel } from "@/app/_components/booking-messages-panel";
 
 import { LiveLocationChip } from "@/app/_components/live-location-chip";
 import {
@@ -1242,7 +1242,7 @@ export function BookingsScreen({ bookings, initialTab = "pending" }: BookingsPro
             ) : null}
 
             <div className="mt-4 grid grid-cols-2 gap-3">
-              <AppButton href="/profile/messages" tone="secondary" className="w-full !rounded-[14px] !border-[#d9c5f1] !bg-white !text-[#8E5EB5] !shadow-none">
+              <AppButton href={`/profile/messages?booking=${booking.id}`} tone="secondary" className="w-full !rounded-[14px] !border-[#d9c5f1] !bg-white !text-[#8E5EB5] !shadow-none">
                 Message
               </AppButton>
               <AppButton href={`/profile/bookings/${booking.id}`} className="w-full !rounded-[14px] !bg-[#8E5EB5] !shadow-[0_12px_24px_rgba(142,94,181,0.22)]">
@@ -2557,14 +2557,29 @@ export function NotificationsScreen({
 export function MessagesScreen() {
   return (
     <ProfileShell title="Messages" showBack backHref="/profile">
-      <div className="space-y-4">
-        <SharedEmptyState
-          title="No conversations yet"
-          description="When booking chat is enabled for a provider, your conversation threads will appear here."
-          action={<AppButton href="/profile/bookings">Open My Bookings</AppButton>}
-        />
-        <MessagePlaceholderCard />
-      </div>
+      <BookingMessagesPanel
+        role="customer"
+        basePath="/profile/messages"
+        emptyTitle="No conversations yet"
+        emptyDescription="When you book a provider, that booking thread will appear here for live conversation updates."
+        emptyActionHref="/profile/bookings"
+        emptyActionLabel="Open My Bookings"
+        theme={{
+          accentText: "text-[#8E5EB5]",
+          accentBg: "bg-[#8E5EB5]",
+          accentSoftBg: "bg-[#faf5ff]",
+          accentBorder: "border-[#d9c5f1]",
+          badgeBg: "bg-[#f5f1fa]",
+          badgeText: "text-[#8E5EB5]",
+          ownBubble: "bg-[#8E5EB5]",
+          ownBubbleText: "text-white",
+          otherBubble: "bg-[#f7f4fb]",
+          otherBubbleText: "text-[#24193a]",
+          threadUnreadBorder: "border-[#d9c5f1]",
+          threadUnreadBg: "bg-[#fcf8ff]",
+          composerButton: "bg-[#8E5EB5]",
+        }}
+      />
     </ProfileShell>
   );
 }
