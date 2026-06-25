@@ -1,6 +1,7 @@
 import "server-only";
 
 import { cache } from "react";
+import { createClient } from "@supabase/supabase-js";
 import {
   buildProviderDetailHref,
   buildProviderPortraitSrc,
@@ -9,6 +10,7 @@ import {
   type ProviderListing,
 } from "./provider-catalog";
 import { getProviderRegistration } from "./provider-registration-storage";
+import { getSupabaseServiceKey, getSupabaseUrl } from "./supabase-env";
 
 type ProviderGalleryImage = {
   src: string;
@@ -17,10 +19,18 @@ type ProviderGalleryImage = {
 };
 
 export type ProviderAvailabilitySlot = {
+  isoDate: string;
   dayLabel: string;
   dateLabel: string;
   timeLabel: string;
+  startTimeLabel: string;
+  endTimeLabel: string;
   state: "available" | "booked";
+};
+
+export type ProviderBookedTimeRange = {
+  startTimeLabel: string;
+  endTimeLabel: string;
 };
 
 type ProviderCustomerReview = {
@@ -55,6 +65,7 @@ export type ProviderDetail = ProviderListing & {
   availability: ProviderAvailabilitySlot[];
   calendarMonthLabel: string;
   calendarDates: ProviderCalendarDate[];
+  bookedTimeRangesByDate: Record<string, ProviderBookedTimeRange[]>;
   customerReviews: ProviderCustomerReview[];
 };
 
@@ -131,6 +142,47 @@ const specialtyDefaults: Record<ProviderCategoryKey, string[]> = {
   electrician: ["Wiring", "Lighting", "Socket Repair", "Fan Installation", "Troubleshooting", "Home Upgrades"],
 };
 
+type ReviewRow = {
+  id: string;
+  rating: number | null;
+  comment: string | null;
+  created_at: string;
+  customer_id: string | null;
+};
+
+type CustomerProfileRow = {
+  id: string;
+  full_name: string | null;
+};
+
+type ProviderAvailabilityRow = {
+  day_of_week: string;
+  start_time: string | null;
+  end_time: string | null;
+};
+
+type ProviderBookingWindowRow = {
+  scheduled_date: string;
+  scheduled_start_time: string;
+  scheduled_end_time: string;
+};
+
+function buildSupabaseAdminClient() {
+  const url = getSupabaseUrl();
+  const serviceKey = getSupabaseServiceKey();
+
+  if (!url || !serviceKey) {
+    return null;
+  }
+
+  return createClient(url, serviceKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  });
+}
+
 function titleForService(serviceKey: ProviderCategoryKey) {
   switch (serviceKey) {
     case "chef":
@@ -150,10 +202,6 @@ function titleForService(serviceKey: ProviderCategoryKey) {
     case "electrician":
       return "Certified Electrician";
   }
-}
-
-function providerMediaUrl(serviceKey: ProviderCategoryKey, kind: string) {
-  return `/api/provider-media/${serviceKey}/${kind}`;
 }
 
 function registrationServiceLabel(serviceKey: ProviderCategoryKey) {
@@ -183,6 +231,35 @@ function addDays(date: Date, days: number) {
   return next;
 }
 
+function normalizeDayKey(value: string) {
+  return value.trim().toLowerCase();
+}
+
+function timeValueToLabel(value: string | null | undefined) {
+  if (!value) {
+    return "";
+  }
+
+  const [rawHour, rawMinute] = value.slice(0, 5).split(":").map(Number);
+
+  if (!Number.isFinite(rawHour) || !Number.isFinite(rawMinute)) {
+    return "";
+  }
+
+  const period = rawHour >= 12 ? "PM" : "AM";
+  const hour12 = rawHour % 12 === 0 ? 12 : rawHour % 12;
+
+  return `${String(hour12).padStart(2, "0")}:${String(rawMinute).padStart(2, "0")} ${period}`;
+}
+
+function toTimeRangeLabel(startTimeLabel: string, endTimeLabel: string) {
+  if (!startTimeLabel || !endTimeLabel) {
+    return "Unavailable";
+  }
+
+  return `${startTimeLabel} - ${endTimeLabel}`;
+}
+
 function formatAvailabilityDate(date: Date) {
   return date.toLocaleDateString("en-MY", {
     month: "short",
@@ -191,58 +268,72 @@ function formatAvailabilityDate(date: Date) {
   });
 }
 
-function buildAvailability(serviceKey: ProviderCategoryKey): ProviderAvailabilitySlot[] {
-  const defaults: Record<ProviderCategoryKey, string[]> = {
-    chef: ["2:00 PM", "10:00 AM", "10:00 AM", "10:00 AM", "10:00 AM", "Booked", "1:00 PM"],
-    maid: ["9:00 AM", "9:00 AM", "8:00 AM", "9:00 AM", "9:00 AM", "Booked", "10:00 AM"],
-    babysitter: ["8:00 AM", "10:00 AM", "10:00 AM", "11:00 AM", "10:00 AM", "Booked", "8:00 AM"],
-    driver: ["7:00 AM", "8:00 AM", "8:00 AM", "9:00 AM", "8:00 AM", "Booked", "7:00 AM"],
-    cleaner: ["9:00 AM", "9:00 AM", "8:00 AM", "11:00 AM", "9:00 AM", "Booked", "10:00 AM"],
-    tutor: ["3:00 PM", "3:00 PM", "4:00 PM", "5:00 PM", "3:00 PM", "Booked", "2:00 PM"],
-    plumber: ["9:00 AM", "9:00 AM", "9:00 AM", "10:00 AM", "9:00 AM", "Booked", "11:00 AM"],
-    electrician: ["9:00 AM", "9:00 AM", "9:00 AM", "10:00 AM", "9:00 AM", "Booked", "11:00 AM"],
-  };
-
+function buildAvailabilityFromRows(rows: ProviderAvailabilityRow[]): {
+  availability: ProviderAvailabilitySlot[];
+  availabilityLabel: string;
+  calendarMonthLabel: string;
+  calendarDates: ProviderCalendarDate[];
+  workingDayKeys: Set<string>;
+} {
+  const rowByDayKey = new Map(
+    rows.map((row) => [normalizeDayKey(row.day_of_week), row] as const),
+  );
+  const workingDayKeys = new Set(rowByDayKey.keys());
   const startDate = new Date();
-
-  return Array.from({ length: 7 }, (_, index) => {
+  const availability = Array.from({ length: 7 }, (_, index) => {
     const date = addDays(startDate, index);
-    const timeLabel = defaults[serviceKey][index] ?? "10:00 AM";
+    const dayKey = normalizeDayKey(
+      date.toLocaleDateString("en-MY", { weekday: "long" }),
+    );
+    const row = rowByDayKey.get(dayKey);
+    const startTimeLabel = timeValueToLabel(row?.start_time);
+    const endTimeLabel = timeValueToLabel(row?.end_time);
+    const isAvailable = Boolean(startTimeLabel && endTimeLabel);
 
     return {
+      isoDate: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`,
       dayLabel: date.toLocaleDateString("en-MY", { weekday: "short" }),
       dateLabel: formatAvailabilityDate(date),
-      timeLabel,
-      state: timeLabel.toLowerCase().includes("booked") ? "booked" : "available",
-    };
+      timeLabel: toTimeRangeLabel(startTimeLabel, endTimeLabel),
+      startTimeLabel,
+      endTimeLabel,
+      state: isAvailable ? "available" : "booked",
+    } satisfies ProviderAvailabilitySlot;
   });
+  const nextAvailableSlot = availability.find((slot) => slot.state === "available");
+  const calendar = buildCalendarDates(rowByDayKey);
+
+  return {
+    availability,
+    availabilityLabel: nextAvailableSlot ? "Available" : "Unavailable",
+    calendarMonthLabel: calendar.monthLabel,
+    calendarDates: calendar.dates,
+    workingDayKeys,
+  };
 }
 
-function buildCalendarDates(serviceKey: ProviderCategoryKey): {
+function buildCalendarDates(rowByDayKey: Map<string, ProviderAvailabilityRow>): {
   monthLabel: string;
   dates: ProviderCalendarDate[];
 } {
   const startDate = new Date();
-  const bookedOffsetsByService: Record<ProviderCategoryKey, number[]> = {
-    chef: [5, 12, 19, 26],
-    maid: [4, 10, 17, 24],
-    babysitter: [6, 13, 20, 27],
-    driver: [3, 9, 16, 23],
-    cleaner: [2, 8, 15, 22, 29],
-    tutor: [7, 14, 21, 28],
-    plumber: [5, 11, 18, 25],
-    electrician: [6, 12, 19, 26],
-  };
 
   const dates: ProviderCalendarDate[] = Array.from({ length: 30 }, (_, index) => {
     const date = addDays(startDate, index);
     const dayNumber = date.getDate();
+    const dayKey = normalizeDayKey(
+      date.toLocaleDateString("en-MY", { weekday: "long" }),
+    );
+    const row = rowByDayKey.get(dayKey);
 
     return {
       isoDate: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(dayNumber).padStart(2, "0")}`,
       dayNumber,
       weekdayShort: date.toLocaleDateString("en-MY", { weekday: "short" }),
-      state: bookedOffsetsByService[serviceKey].includes(index + 1) ? "booked" : "available",
+      state:
+        row?.start_time && row?.end_time
+          ? "available"
+          : "booked",
     };
   });
 
@@ -272,81 +363,259 @@ function mergeSpecialties(listing: ProviderListing) {
 }
 
 function buildCustomerReviews(listing: ProviderListing): ProviderCustomerReview[] {
-  const imageA = listing.profileImageUrl || buildProviderPortraitSrc(listing);
-  const imageB = providerMediaUrl(listing.serviceKey, "gallery-1");
-  const imageC = providerMediaUrl(listing.serviceKey, "gallery-2");
+  return [];
+}
 
-  const reviewCopy: Record<ProviderCategoryKey, [string, string, string]> = {
-    chef: [
-      "The food was fresh, nicely presented, and tasted just like a private dining experience at home.",
-      "Chef arrived on time, kept the kitchen clean, and adjusted the menu for our family preferences.",
-      "Booked for a small birthday dinner and everyone loved the dishes. Would definitely book again.",
-    ],
-    maid: [
-      "Very tidy work and the whole house felt fresh after the session.",
-      "Laundry and kitchen were handled carefully. Communication was also very easy.",
-      "Good attention to detail and arrived exactly on time.",
-    ],
-    babysitter: [
-      "Very patient with my child and kept a calm routine throughout the evening.",
-      "Shared updates during the booking and made us feel comfortable leaving home.",
-      "Friendly, responsible, and easy for the kids to warm up to.",
-    ],
-    driver: [
-      "Smooth ride, punctual arrival, and very professional throughout the trip.",
-      "Helped with bags and kept us updated before pickup.",
-      "Safe driving and easy communication. Great overall service.",
-    ],
-    cleaner: [
-      "Bathrooms and kitchen were spotless. Really happy with the result.",
-      "Came prepared and worked efficiently without rushing the details.",
-      "The home looked refreshed and organized after the cleaning session.",
-    ],
-    tutor: [
-      "Explains clearly and helped my child feel more confident with the subject.",
-      "Lesson was structured well and easy to follow from start to finish.",
-      "Very patient teaching style and useful feedback after class.",
-    ],
-    plumber: [
-      "Solved the issue quickly and explained what caused the leak.",
-      "Brought the right tools and kept the work area neat.",
-      "Responsive, practical, and the repair has been holding up well.",
-    ],
-    electrician: [
-      "Clear explanation, careful work, and everything was tested before leaving.",
-      "Installed the fittings neatly and arrived on time.",
-      "Professional service and good communication throughout the visit.",
-    ],
-  };
+function isMissingReviewsTableError(message?: string | null) {
+  const normalized = message?.trim().toLowerCase() ?? "";
 
-  const [first, second, third] = reviewCopy[listing.serviceKey];
+  return (
+    normalized.includes("could not find the table") && normalized.includes("reviews")
+  ) || (
+    normalized.includes("relation") &&
+    normalized.includes("reviews") &&
+    normalized.includes("does not exist")
+  );
+}
 
-  return [
-    {
-      id: `${listing.id}-review-1`,
-      customerName: "Nurul S.",
-      rating: Number(listing.rating.toFixed(1)),
-      postedLabel: "2 days ago",
-      comment: first,
-      images: [imageB, imageC],
-    },
-    {
-      id: `${listing.id}-review-2`,
-      customerName: "Farid K.",
-      rating: Math.max(4.6, listing.rating - 0.1),
-      postedLabel: "1 week ago",
-      comment: second,
-      images: [imageA],
-    },
-    {
-      id: `${listing.id}-review-3`,
-      customerName: "Amanda L.",
-      rating: Math.max(4.7, listing.rating),
-      postedLabel: "2 weeks ago",
-      comment: third,
-      images: [imageC, imageA],
-    },
-  ];
+function formatReviewPostedLabel(value: string) {
+  const timestamp = new Date(value).getTime();
+
+  if (Number.isNaN(timestamp)) {
+    return "Recently";
+  }
+
+  const diffMs = Date.now() - timestamp;
+  const dayMs = 24 * 60 * 60 * 1000;
+
+  if (diffMs < dayMs) {
+    return "Today";
+  }
+
+  const days = Math.floor(diffMs / dayMs);
+
+  if (days < 7) {
+    return `${days} day${days === 1 ? "" : "s"} ago`;
+  }
+
+  const weeks = Math.floor(days / 7);
+
+  if (weeks < 5) {
+    return `${weeks} week${weeks === 1 ? "" : "s"} ago`;
+  }
+
+  return new Intl.DateTimeFormat("en-MY", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }).format(new Date(timestamp));
+}
+
+async function fetchProviderReviews(providerId: string): Promise<ProviderCustomerReview[]> {
+  const supabase = buildSupabaseAdminClient();
+
+  if (!supabase) {
+    return [];
+  }
+
+  const { data, error } = await supabase
+    .from("reviews")
+    .select("id, rating, comment, created_at, customer_id")
+    .eq("provider_id", providerId)
+    .order("created_at", { ascending: false })
+    .limit(12);
+
+  if (error) {
+    if (!isMissingReviewsTableError(error.message)) {
+      console.error("[Provider detail] Failed to load provider reviews:", error);
+    }
+    return [];
+  }
+
+  const rows = (data ?? []) as ReviewRow[];
+  const customerIds = [...new Set(
+    rows
+      .map((row) => row.customer_id)
+      .filter((value): value is string => Boolean(value)),
+  )];
+
+  let customerNameMap = new Map<string, string>();
+
+  if (customerIds.length > 0) {
+    const { data: customerProfiles, error: customerProfilesError } = await supabase
+      .from("profiles")
+      .select("id, full_name")
+      .in("id", customerIds);
+
+    if (customerProfilesError) {
+      console.error("[Provider detail] Failed to load customer names:", customerProfilesError);
+    } else {
+      customerNameMap = new Map(
+        ((customerProfiles ?? []) as CustomerProfileRow[]).map((row) => [
+          row.id,
+          row.full_name?.trim() || "Customer",
+        ]),
+      );
+    }
+  }
+
+  return rows.map((row) => ({
+    id: row.id,
+    customerName: row.customer_id
+      ? customerNameMap.get(row.customer_id) || "Customer"
+      : "Customer",
+    rating: Math.max(1, Math.min(5, Number(row.rating ?? 5))),
+    postedLabel: formatReviewPostedLabel(row.created_at),
+    comment: row.comment?.trim() || "Shared feedback",
+    images: [],
+  }));
+}
+
+async function fetchProviderAvailabilityRows(
+  providerId: string,
+): Promise<ProviderAvailabilityRow[]> {
+  const supabase = buildSupabaseAdminClient();
+
+  if (!supabase) {
+    return [];
+  }
+
+  const { data, error } = await supabase
+    .from("provider_availability")
+    .select("day_of_week, start_time, end_time")
+    .eq("provider_id", providerId);
+
+  if (error) {
+    console.error("[Provider detail] Failed to load provider availability:", error);
+    return [];
+  }
+
+  return (data ?? []) as ProviderAvailabilityRow[];
+}
+
+async function fetchProviderBookedTimeRangesByDate(
+  providerId: string,
+): Promise<Record<string, ProviderBookedTimeRange[]>> {
+  const supabase = buildSupabaseAdminClient();
+
+  if (!supabase) {
+    return {};
+  }
+
+  const today = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Kuala_Lumpur",
+  }).format(new Date());
+  const maxDate = new Date();
+  maxDate.setDate(maxDate.getDate() + 30);
+  const maxDateIso = `${maxDate.getFullYear()}-${String(maxDate.getMonth() + 1).padStart(2, "0")}-${String(maxDate.getDate()).padStart(2, "0")}`;
+
+  const { data, error } = await supabase
+    .from("bookings")
+    .select("scheduled_date, scheduled_start_time, scheduled_end_time")
+    .eq("provider_id", providerId)
+    .gte("scheduled_date", today)
+    .lte("scheduled_date", maxDateIso)
+    .not("booking_status", "in", '("declined","cancelled")')
+    .order("scheduled_date", { ascending: true })
+    .order("scheduled_start_time", { ascending: true });
+
+  if (error) {
+    console.error("[Provider detail] Failed to load provider booking windows:", error);
+    return {};
+  }
+
+  const rows = (data ?? []) as ProviderBookingWindowRow[];
+
+  return rows.reduce<Record<string, ProviderBookedTimeRange[]>>((acc, row) => {
+    const dateKey = row.scheduled_date;
+    const bookedRange = {
+      startTimeLabel: timeValueToLabel(row.scheduled_start_time),
+      endTimeLabel: timeValueToLabel(row.scheduled_end_time),
+    };
+
+    if (!bookedRange.startTimeLabel || !bookedRange.endTimeLabel) {
+      return acc;
+    }
+
+    acc[dateKey] = [...(acc[dateKey] ?? []), bookedRange];
+    return acc;
+  }, {});
+}
+
+function timeLabelToMinutes(value: string) {
+  const match = value.trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+
+  if (!match) {
+    return null;
+  }
+
+  const hour = Number(match[1]);
+  const minute = Number(match[2]);
+  const period = match[3].toUpperCase();
+  let hour24 = hour % 12;
+
+  if (period === "PM") {
+    hour24 += 12;
+  }
+
+  return hour24 * 60 + minute;
+}
+
+function buildHourlyStartOptions(startLabel: string, endLabel: string) {
+  const startMinutes = timeLabelToMinutes(startLabel);
+  const endMinutes = timeLabelToMinutes(endLabel);
+
+  if (startMinutes === null || endMinutes === null) {
+    return [];
+  }
+
+  const options: string[] = [];
+
+  for (let current = startMinutes; current < endMinutes; current += 60) {
+    const hour24 = Math.floor(current / 60);
+    const minute = current % 60;
+    const period = hour24 >= 12 ? "PM" : "AM";
+    const hour12 = hour24 % 12 === 0 ? 12 : hour24 % 12;
+    options.push(`${String(hour12).padStart(2, "0")}:${String(minute).padStart(2, "0")} ${period}`);
+  }
+
+  return options;
+}
+
+function hasOpenTimeOnDate(
+  isoDate: string,
+  slot: ProviderAvailabilitySlot,
+  bookedTimeRangesByDate: Record<string, ProviderBookedTimeRange[]>,
+) {
+  if (slot.state !== "available") {
+    return false;
+  }
+
+  const candidateStarts = buildHourlyStartOptions(
+    slot.startTimeLabel,
+    slot.endTimeLabel,
+  );
+  const bookings = bookedTimeRangesByDate[isoDate] ?? [];
+
+  return candidateStarts.some((startLabel) => {
+    const startMinutes = timeLabelToMinutes(startLabel);
+    const endMinutes = startMinutes === null ? null : startMinutes + 60;
+
+    if (startMinutes === null || endMinutes === null) {
+      return false;
+    }
+
+    return !bookings.some((booking) => {
+      const bookingStart = timeLabelToMinutes(booking.startTimeLabel);
+      const bookingEnd = timeLabelToMinutes(booking.endTimeLabel);
+
+      if (bookingStart === null || bookingEnd === null) {
+        return false;
+      }
+
+      return startMinutes < bookingEnd && endMinutes > bookingStart;
+    });
+  });
 }
 
 function buildDetailFromListing(
@@ -354,10 +623,15 @@ function buildDetailFromListing(
   overrides?: {
     profileImage?: string | null;
     gallery?: ProviderGalleryImage[];
+    customerReviews?: ProviderCustomerReview[];
+    availability?: ProviderAvailabilitySlot[];
+    availabilityLabel?: string;
+    calendarMonthLabel?: string;
+    calendarDates?: ProviderCalendarDate[];
+    bookedTimeRangesByDate?: Record<string, ProviderBookedTimeRange[]>;
   },
 ): ProviderDetail {
   const captions = galleryCaptions[listing.serviceKey];
-  const calendar = buildCalendarDates(listing.serviceKey);
   const uploadedGallery =
     overrides?.gallery && overrides.gallery.length > 0
       ? overrides.gallery
@@ -387,10 +661,12 @@ function buildDetailFromListing(
     specialties: mergeSpecialties(listing),
     gallery: uploadedGallery,
     hasUploadedGallery: uploadedGallery.length > 0,
-    availability: buildAvailability(listing.serviceKey),
-    calendarMonthLabel: calendar.monthLabel,
-    calendarDates: calendar.dates,
-    customerReviews: buildCustomerReviews(listing),
+    availability: overrides?.availability ?? [],
+    availabilityLabel: overrides?.availabilityLabel ?? listing.availabilityLabel,
+    calendarMonthLabel: overrides?.calendarMonthLabel ?? "",
+    calendarDates: overrides?.calendarDates ?? [],
+    bookedTimeRangesByDate: overrides?.bookedTimeRangesByDate ?? {},
+    customerReviews: overrides?.customerReviews ?? buildCustomerReviews(listing),
   };
 }
 
@@ -400,7 +676,36 @@ export const getProviderDetail = cache(
     const scopedMatch = scopedCatalog.listings.find((listing) => listing.id === id);
 
     if (scopedMatch) {
-      const registration = await getProviderRegistration(id);
+      const [registration, customerReviews, availabilityRows, bookedTimeRangesByDate] = await Promise.all([
+        getProviderRegistration(id),
+        fetchProviderReviews(id),
+        fetchProviderAvailabilityRows(id),
+        fetchProviderBookedTimeRangesByDate(id),
+      ]);
+      const availability = buildAvailabilityFromRows(availabilityRows);
+      const availabilityWithConflicts = availability.availability.map((slot) => ({
+        ...slot,
+        state: hasOpenTimeOnDate(slot.isoDate, slot, bookedTimeRangesByDate)
+          ? "available"
+          : "booked",
+      })) satisfies ProviderAvailabilitySlot[];
+      const calendarDatesWithConflicts = availability.calendarDates.map((date) => {
+        const matchingSlot = availability.availability.find((slot) => slot.isoDate === date.isoDate);
+
+        if (!matchingSlot) {
+          return date;
+        }
+
+        return {
+          ...date,
+          state: hasOpenTimeOnDate(date.isoDate, matchingSlot, bookedTimeRangesByDate)
+            ? "available"
+            : "booked",
+        } satisfies ProviderCalendarDate;
+      });
+      const availabilityLabel = availabilityWithConflicts.some((slot) => slot.state === "available")
+        ? "Available"
+        : "Unavailable";
       const registrationService = registration?.data.serviceDetails[
         registrationServiceLabel(scopedMatch.serviceKey)
       ];
@@ -416,6 +721,12 @@ export const getProviderDetail = cache(
       return buildDetailFromListing(scopedMatch, {
         profileImage: registration?.data.basicProfile.avatarDataUrl || null,
         gallery: registrationGallery,
+        customerReviews,
+        availability: availabilityWithConflicts,
+        availabilityLabel,
+        calendarMonthLabel: availability.calendarMonthLabel,
+        calendarDates: calendarDatesWithConflicts,
+        bookedTimeRangesByDate,
       });
     }
 
@@ -426,7 +737,36 @@ export const getProviderDetail = cache(
       return null;
     }
 
-    const registration = await getProviderRegistration(id);
+    const [registration, customerReviews, availabilityRows, bookedTimeRangesByDate] = await Promise.all([
+      getProviderRegistration(id),
+      fetchProviderReviews(id),
+      fetchProviderAvailabilityRows(id),
+      fetchProviderBookedTimeRangesByDate(id),
+    ]);
+    const availability = buildAvailabilityFromRows(availabilityRows);
+    const availabilityWithConflicts = availability.availability.map((slot) => ({
+      ...slot,
+      state: hasOpenTimeOnDate(slot.isoDate, slot, bookedTimeRangesByDate)
+        ? "available"
+        : "booked",
+    })) satisfies ProviderAvailabilitySlot[];
+    const calendarDatesWithConflicts = availability.calendarDates.map((date) => {
+      const matchingSlot = availability.availability.find((slot) => slot.isoDate === date.isoDate);
+
+      if (!matchingSlot) {
+        return date;
+      }
+
+      return {
+        ...date,
+        state: hasOpenTimeOnDate(date.isoDate, matchingSlot, bookedTimeRangesByDate)
+          ? "available"
+          : "booked",
+      } satisfies ProviderCalendarDate;
+    });
+    const availabilityLabel = availabilityWithConflicts.some((slot) => slot.state === "available")
+      ? "Available"
+      : "Unavailable";
     const registrationService = registration?.data.serviceDetails[
       registrationServiceLabel(fallbackMatch.serviceKey)
     ];
@@ -442,6 +782,12 @@ export const getProviderDetail = cache(
     return buildDetailFromListing(fallbackMatch, {
       profileImage: registration?.data.basicProfile.avatarDataUrl || null,
       gallery: registrationGallery,
+      customerReviews,
+      availability: availabilityWithConflicts,
+      availabilityLabel,
+      calendarMonthLabel: availability.calendarMonthLabel,
+      calendarDates: calendarDatesWithConflicts,
+      bookedTimeRangesByDate,
     });
   }
 );

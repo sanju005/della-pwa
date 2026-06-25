@@ -8,30 +8,24 @@ import type {
   ProfileOverviewData,
   SettingGroup,
 } from "./profile-types";
-import {
-  buildProviderDetailHref,
-  buildProviderPortraitSrc,
-  type ProviderCategoryKey,
-} from "./provider-catalog";
 
-const mockProfile: CustomerProfile = {
-  firstName: "Sanju",
-  lastName: "Kumar",
-  sex: "Male",
-  dateOfBirth: "15/04/1995",
+const emptyProfile: CustomerProfile = {
+  firstName: "",
+  lastName: "",
+  sex: "",
+  dateOfBirth: "",
   avatarUrl: "",
-  email: "sanju@gmail.com",
-  phoneNumber: "12-345 6789",
+  email: "",
+  phoneNumber: "",
   countryCode: "+60",
-  city: "Kuala Lumpur",
+  city: "",
   region: "Malaysia",
-  verified: true,
-  completion: 80,
+  verified: false,
+  completion: 0,
 };
 
-const paymentMethods = [
-  { id: "cash", label: "Cash", type: "Cash", isDefault: true },
-  { id: "online", label: "Online Payment", type: "Coming Soon", disabled: true },
+const cashOnlyPaymentMethods: ProfileOverviewData["paymentMethods"] = [
+  { id: "cash", label: "Cash", type: "Available now", isDefault: true },
 ];
 
 const paymentHistory: PaymentHistoryItem[] = [];
@@ -68,25 +62,15 @@ const settings: SettingGroup[] = [
 ];
 
 export async function getProfileOverviewData(): Promise<ProfileOverviewData> {
-  const favoriteProviders = await getFavoriteProviders();
-  const totalPaid = paymentHistory.reduce((sum, item) => sum + item.amount, 0);
-  const latestPayment = paymentHistory[0];
-
   return {
-    profile: structuredClone(mockProfile),
-    favoriteProviders,
-    paymentMethods: structuredClone(paymentMethods),
+    profile: structuredClone(emptyProfile),
+    favoriteProviders: [],
+    paymentMethods: structuredClone(cashOnlyPaymentMethods),
     paymentSummary: {
-      walletBalance: 120,
-      companyPayable: 45,
-      totalPaid,
-      lastPaymentLabel: latestPayment
-        ? `${latestPayment.serviceTitle} on ${new Intl.DateTimeFormat("en-MY", {
-            day: "numeric",
-            month: "short",
-            year: "numeric",
-          }).format(new Date(latestPayment.paidAt))}`
-        : "No payment yet",
+      walletBalance: 0,
+      companyPayable: 0,
+      totalPaid: 0,
+      lastPaymentLabel: "No payment yet",
     },
     bookingSummary: {
       pending: 0,
@@ -98,7 +82,7 @@ export async function getProfileOverviewData(): Promise<ProfileOverviewData> {
 }
 
 export async function getEditableProfileData(): Promise<CustomerProfile> {
-  return structuredClone(mockProfile);
+  return structuredClone(emptyProfile);
 }
 
 export async function getSavedAddresses(): Promise<Address[]> {

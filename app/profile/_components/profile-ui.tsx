@@ -194,6 +194,7 @@ function StickyActionBar({
 
 export function ProfileOverviewScreen({ initialData }: OverviewProps) {
   const [profile, setProfile] = useState(initialData.profile);
+  const [favoriteProviders, setFavoriteProviders] = useState(initialData.favoriteProviders);
   const [bookingSummary, setBookingSummary] = useState(initialData.bookingSummary);
   const [paymentSummary, setPaymentSummary] = useState(initialData.paymentSummary);
   const [walletPanel, setWalletPanel] = useState<"closed" | "withdraw" | "payable">("closed");
@@ -301,12 +302,21 @@ export function ProfileOverviewScreen({ initialData }: OverviewProps) {
         },
       });
 
+      const favoritesResponse = await fetch("/api/profile/favorites", {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+
       const result = (await response.json()) as
         | {
             profile: CustomerProfile;
             bookingSummary: ProfileOverviewData["bookingSummary"];
             paymentSummary: ProfileOverviewData["paymentSummary"];
           }
+        | { error?: string };
+      const favoritesResult = (await favoritesResponse.json()) as
+        | { favoriteProviders: FavoriteProvider[] }
         | { error?: string };
 
       if (!active || !response.ok || !("profile" in result)) {
@@ -316,6 +326,10 @@ export function ProfileOverviewScreen({ initialData }: OverviewProps) {
       setProfile(result.profile);
       setBookingSummary(result.bookingSummary);
       setPaymentSummary(result.paymentSummary);
+
+      if (favoritesResponse.ok && "favoriteProviders" in favoritesResult) {
+        setFavoriteProviders(favoritesResult.favoriteProviders);
+      }
     }
 
     void loadLiveProfile();
@@ -372,15 +386,27 @@ export function ProfileOverviewScreen({ initialData }: OverviewProps) {
         actionHref="/profile/favourites"
         actionLabel="View All"
       >
-        {initialData.favoriteProviders.length > 0 ? (
+        {favoriteProviders.length > 0 ? (
           <div className="flex items-start justify-between gap-3">
-            {initialData.favoriteProviders.map((provider) => (
+            {favoriteProviders.map((provider) => (
               <div key={provider.id} className="flex flex-1 flex-col items-center text-center">
-                <AvatarCircle
-                  initials={provider.initials}
-                  size="md"
-                  accent={provider.accent}
-                />
+                {provider.portraitSrc ? (
+                  <div className="relative h-14 w-14 overflow-hidden rounded-full">
+                    <Image
+                      src={provider.portraitSrc}
+                      alt={provider.name}
+                      fill
+                      unoptimized
+                      className="object-cover"
+                    />
+                  </div>
+                ) : (
+                  <AvatarCircle
+                    initials={provider.initials}
+                    size="md"
+                    accent={provider.accent}
+                  />
+                )}
                 <p className="mt-2 text-[13px] font-bold text-[#111827]">
                   {provider.name}
                 </p>
@@ -390,7 +416,7 @@ export function ProfileOverviewScreen({ initialData }: OverviewProps) {
           </div>
         ) : (
           <div className="rounded-[16px] border border-dashed border-[#d9e2dd] bg-[#fbfefc] px-4 py-5 text-center text-[13px] text-[#6b7280]">
-            No real providers available yet.
+            No favourite providers saved yet.
           </div>
         )}
       </SectionCard>
@@ -460,10 +486,102 @@ export function ProfileOverviewScreen({ initialData }: OverviewProps) {
 
 export function FavoritesScreen({ providers }: FavoritesProps) {
   const [items, setItems] = useState(providers);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadFavorites() {
+      const client = getSupabaseClient();
+
+      if (!client) {
+        return;
+      }
+
+      const {
+        data: { session },
+      } = await client.auth.getSession();
+
+      if (!active || !session) {
+        return;
+      }
+
+      const response = await fetch("/api/profile/favorites", {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+
+      const result = (await response.json()) as
+        | { favoriteProviders: FavoriteProvider[] }
+        | { error?: string };
+
+      if (!active) {
+        return;
+      }
+
+      if (!response.ok || !("favoriteProviders" in result)) {
+        setError(("error" in result ? result.error : "") || "Unable to load favourite providers right now.");
+        return;
+      }
+
+      setItems(result.favoriteProviders);
+    }
+
+    void loadFavorites();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  async function removeFavorite(providerId: string) {
+    const client = getSupabaseClient();
+
+    if (!client) {
+      setError("Supabase is not configured yet.");
+      return;
+    }
+
+    const {
+      data: { session },
+    } = await client.auth.getSession();
+
+    if (!session) {
+      setError("Your session expired. Please log in again.");
+      return;
+    }
+
+    const previousItems = items;
+    const nextItems = previousItems.filter((item) => item.id !== providerId);
+    setItems(nextItems);
+    setError("");
+
+    const response = await fetch("/api/profile/favorites", {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({ providerId }),
+    });
+
+    if (!response.ok) {
+      const result = (await response.json().catch(() => ({}))) as { error?: string };
+      setError(result.error || "Unable to remove favourite provider right now.");
+      setItems(previousItems);
+    }
+  }
 
   return (
     <ProfileShell title="Favourite Providers" showBack backHref="/profile">
       <div className="space-y-4">
+        {error ? (
+          <p className="rounded-[16px] border border-[#fecaca] bg-[#fff1f2] px-4 py-3 text-[13px] font-semibold text-[#dc2626]">
+            {error}
+          </p>
+        ) : null}
+
         {items.map((provider) => (
           <div
             key={provider.id}
@@ -500,11 +618,7 @@ export function FavoritesScreen({ providers }: FavoritesProps) {
                   <button
                     type="button"
                     aria-label={`Remove ${provider.name} from favourites`}
-                    onClick={() =>
-                      setItems((current) =>
-                        current.filter((item) => item.id !== provider.id)
-                      )
-                    }
+                    onClick={() => void removeFavorite(provider.id)}
                     className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#fff1f1] text-[#ef4444]"
                   >
                     <FavoriteHeartIcon className="h-5 w-5 fill-current" />
@@ -1498,7 +1612,7 @@ export function BookingDetailScreen({ booking }: BookingDetailProps) {
         <p className="text-[12px] font-extrabold uppercase tracking-[0.14em] text-[#8E5EB5]">
           Payment Method
         </p>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        <div className="mt-4">
           <div className="rounded-[18px] border-2 border-[#8E5EB5] bg-white px-4 py-4 shadow-[0_10px_22px_rgba(142,94,181,0.08)]">
             <div className="flex items-start justify-between gap-3">
               <div>
@@ -1510,17 +1624,9 @@ export function BookingDetailScreen({ booking }: BookingDetailProps) {
               </span>
             </div>
           </div>
-          <div className="rounded-[18px] border border-[#ebe2f8] bg-[#faf7fd] px-4 py-4 opacity-70">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-[15px] font-black text-[#1f1630]">Online Payment</p>
-                <p className="mt-1 text-[12px] text-[#6d6480]">Coming Soon</p>
-              </div>
-              <span className="rounded-full bg-[#ede7f6] px-2 py-1 text-[11px] font-bold text-[#7f7692]">
-                Locked
-              </span>
-            </div>
-          </div>
+          <p className="mt-3 text-[12px] text-[#8f86a2]">
+            Cash is the only customer payment option available for now. More payment methods can be added later.
+          </p>
         </div>
       </section>
 
@@ -1858,18 +1964,94 @@ export function BookingReviewScreen({ booking }: BookingReviewProps) {
 }
 
 export function PaymentsScreen({ payments }: PaymentsProps) {
+  const [items, setItems] = useState(payments);
   const [filterMode, setFilterMode] = useState<"month" | "custom">("month");
-  const [selectedMonth, setSelectedMonth] = useState("2026-06");
-  const [dateFrom, setDateFrom] = useState("2026-04-01");
-  const [dateTo, setDateTo] = useState("2026-06-30");
+  const [selectedMonth, setSelectedMonth] = useState(TODAY_ISO.slice(0, 7));
+  const [dateFrom, setDateFrom] = useState(() => {
+    const initial = new Date();
+    initial.setDate(initial.getDate() - 90);
+    return initial.toISOString().split("T")[0] ?? TODAY_ISO;
+  });
+  const [dateTo, setDateTo] = useState(TODAY_ISO);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadLivePayments() {
+      const client = getSupabaseClient();
+
+      if (!client) {
+        return;
+      }
+
+      const {
+        data: { session },
+      } = await client.auth.getSession();
+
+      if (!active || !session) {
+        return;
+      }
+
+      const response = await fetch("/api/profile/payments", {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+
+      const result = (await response.json()) as
+        | { payments: PaymentHistoryItem[] }
+        | { error?: string };
+
+      if (!active || !response.ok || !("payments" in result)) {
+        return;
+      }
+
+      setItems(result.payments);
+    }
+
+    void loadLivePayments();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const availableMonths = useMemo(() => {
+    const months = Array.from(
+      new Set(
+        items
+          .map((payment) => {
+            const paidDate = new Date(payment.paidAt);
+            if (Number.isNaN(paidDate.getTime())) {
+              return null;
+            }
+
+            return `${paidDate.getFullYear()}-${String(paidDate.getMonth() + 1).padStart(2, "0")}`;
+          })
+          .filter((value): value is string => Boolean(value)),
+      ),
+    );
+
+    return months.length > 0 ? months : [TODAY_ISO.slice(0, 7)];
+  }, [items]);
+
+  useEffect(() => {
+    if (!availableMonths.includes(selectedMonth)) {
+      setSelectedMonth(availableMonths[0] ?? TODAY_ISO.slice(0, 7));
+    }
+  }, [availableMonths, selectedMonth]);
 
   const filteredPayments = useMemo(() => {
-    return payments.filter((payment) => {
+    return items.filter((payment) => {
       const paidDate = new Date(payment.paidAt);
+
+      if (Number.isNaN(paidDate.getTime())) {
+        return false;
+      }
 
       if (filterMode === "month") {
         const paymentMonth = `${paidDate.getFullYear()}-${String(
-          paidDate.getMonth() + 1
+          paidDate.getMonth() + 1,
         ).padStart(2, "0")}`;
         return paymentMonth === selectedMonth;
       }
@@ -1878,10 +2060,10 @@ export function PaymentsScreen({ payments }: PaymentsProps) {
       const to = new Date(`${dateTo}T23:59:59`);
       return paidDate >= from && paidDate <= to;
     });
-  }, [dateFrom, dateTo, filterMode, payments, selectedMonth]);
+  }, [dateFrom, dateTo, filterMode, items, selectedMonth]);
 
   const totalPaid = filteredPayments.reduce((sum, payment) => sum + payment.amount, 0);
-  const leadPayment = filteredPayments[0];
+  const leadPayment = filteredPayments[0] ?? items[0];
 
   return (
     <ProfileShell title="Payment" showBack backHref="/profile">
@@ -1940,13 +2122,13 @@ export function PaymentsScreen({ payments }: PaymentsProps) {
               </span>
               <div>
                 <p className="text-[13px] font-bold text-[#24193a]">
-                  {leadPayment?.paymentMethod ?? "Payment method unavailable"}
+                  {leadPayment?.paymentMethod ?? "Cash"}
                 </p>
-                <p className="text-[11px] text-[#8f86a2]">Saved payment source</p>
+                <p className="text-[11px] text-[#8f86a2]">Only cash is available right now</p>
               </div>
             </div>
-            <span className="text-[#8E5EB5]">
-              <ChevronRightIcon className="h-4 w-4" />
+            <span className="rounded-full bg-[#f6effd] px-2 py-1 text-[11px] font-bold text-[#8E5EB5]">
+              Cash
             </span>
           </div>
         </div>
@@ -2008,10 +2190,14 @@ export function PaymentsScreen({ payments }: PaymentsProps) {
               onChange={(event) => setSelectedMonth(event.target.value)}
               className="h-11 w-full rounded-[12px] border border-[#d9e2dd] bg-white px-3 text-[14px] text-[#111827] outline-none"
             >
-              <option value="2026-06">June 2026</option>
-              <option value="2026-05">May 2026</option>
-              <option value="2026-04">April 2026</option>
-              <option value="2026-03">March 2026</option>
+              {availableMonths.map((month) => (
+                <option key={month} value={month}>
+                  {new Intl.DateTimeFormat("en-MY", {
+                    month: "long",
+                    year: "numeric",
+                  }).format(new Date(`${month}-01T00:00:00`))}
+                </option>
+              ))}
             </select>
           </div>
         ) : (
@@ -2035,7 +2221,7 @@ export function PaymentsScreen({ payments }: PaymentsProps) {
               />
             </div>
           </div>
-          )}
+        )}
       </SectionCard>
 
       <SectionCard title="Transaction ID">
@@ -2107,7 +2293,7 @@ export function PaymentsScreen({ payments }: PaymentsProps) {
 
           {filteredPayments.length === 0 ? (
             <div className="rounded-[16px] border border-dashed border-[#d9e2dd] px-4 py-6 text-center text-[13px] text-[#6b7280]">
-              No payment found for this filter.
+              No payment records found for the selected period.
             </div>
           ) : null}
         </div>

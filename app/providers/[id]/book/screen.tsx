@@ -11,7 +11,6 @@ import {
   ChevronDown,
   ChevronRight,
   Clock3,
-  Heart,
   IdCard,
   MapPin,
   Phone,
@@ -20,8 +19,9 @@ import {
   ThumbsUp,
 } from "lucide-react";
 
+import { FavoriteProviderButton } from "@/app/_components/favorite-provider-button";
 import { ProviderDistanceText } from "@/app/_components/provider-distance";
-import type { ProviderDetail } from "@/lib/provider-detail";
+import type { ProviderBookedTimeRange, ProviderDetail } from "@/lib/provider-detail";
 import {
   loadCurrentLiveLocation,
   loadSavedPlaces,
@@ -31,17 +31,6 @@ import {
 import { getSupabaseClient } from "@/lib/supabase";
 
 type BookingMode = "hourly" | "daily";
-
-const startTimeOptions = [
-  "09:00 AM",
-  "10:00 AM",
-  "11:00 AM",
-  "12:00 PM",
-  "01:00 PM",
-  "02:00 PM",
-  "03:00 PM",
-  "04:00 PM",
-];
 
 function toIsoDateFromBookingLabel(value: string) {
   const parts = value.split(",").map((part) => part.trim());
@@ -105,6 +94,35 @@ function toDateLabel(dayLabel: string, dateLabel: string) {
   return `${dayLabel}, ${dateLabel}`;
 }
 
+function buildHourlyStartOptions(startLabel: string, endLabel: string) {
+  if (!startLabel || !endLabel) {
+    return [];
+  }
+
+  const startMinutes = timeToMinutes(startLabel);
+  const endMinutes = timeToMinutes(endLabel);
+  const options: string[] = [];
+
+  for (let current = startMinutes; current < endMinutes; current += 60) {
+    options.push(minutesToTimeLabel(current));
+  }
+
+  return options;
+}
+
+function doesTimeRangeOverlap(
+  startLabel: string,
+  endLabel: string,
+  bookedRange: ProviderBookedTimeRange,
+) {
+  const startMinutes = timeToMinutes(startLabel);
+  const endMinutes = timeToMinutes(endLabel);
+  const bookedStartMinutes = timeToMinutes(bookedRange.startTimeLabel);
+  const bookedEndMinutes = timeToMinutes(bookedRange.endTimeLabel);
+
+  return startMinutes < bookedEndMinutes && endMinutes > bookedStartMinutes;
+}
+
 export function BookingFormScreen({
   detail,
   serviceQuery,
@@ -129,11 +147,13 @@ export function BookingFormScreen({
         year: "numeric",
       })}`
     : initialDateQuery ?? toDateLabel(defaultSlot.dayLabel, defaultSlot.dateLabel);
+  const defaultStartTime = defaultSlot?.startTimeLabel || "10:00 AM";
+  const defaultEndTime = defaultSlot?.endTimeLabel || addHours(defaultStartTime, 1);
 
   const [bookingMode, setBookingMode] = useState<BookingMode>("hourly");
   const [selectedDate, setSelectedDate] = useState(defaultDateLabel);
-  const [startTime, setStartTime] = useState("10:00 AM");
-  const [endTime, setEndTime] = useState("01:00 PM");
+  const [startTime, setStartTime] = useState(defaultStartTime);
+  const [endTime, setEndTime] = useState(defaultEndTime);
   const [serviceAddress, setServiceAddress] = useState("");
   const [locationNote, setLocationNote] = useState("");
   const [savedPlaces, setSavedPlaces] = useState<StoredLiveLocation[]>([]);
@@ -141,21 +161,69 @@ export function BookingFormScreen({
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const selectedDateIso = toIsoDateFromBookingLabel(selectedDate);
+  const selectedAvailabilitySlot =
+    detail.availability.find((slot) => toDateLabel(slot.dayLabel, slot.dateLabel) === selectedDate) ??
+    defaultSlot;
+  const bookedTimeRangesForSelectedDate =
+    (selectedAvailabilitySlot?.isoDate
+      ? detail.bookedTimeRangesByDate[selectedAvailabilitySlot.isoDate]
+      : []) ?? [];
+  const providerStartTime = selectedAvailabilitySlot?.startTimeLabel || "";
+  const providerEndTime = selectedAvailabilitySlot?.endTimeLabel || "";
+  const providerStartTimeOptions = useMemo(
+    () => buildHourlyStartOptions(providerStartTime, providerEndTime),
+    [providerEndTime, providerStartTime],
+  );
   const nowInKl = getCurrentKualaLumpurNow();
   const filteredStartTimeOptions = useMemo(() => {
-    if (selectedDateIso !== nowInKl.date) {
-      return startTimeOptions;
+    if (providerStartTimeOptions.length === 0) {
+      return [];
     }
 
-    return startTimeOptions.filter((option) => timeToMinutes(option) > nowInKl.minutes);
-  }, [nowInKl.date, nowInKl.minutes, selectedDateIso]);
+    if (selectedDateIso !== nowInKl.date) {
+      return providerStartTimeOptions.filter((option) => {
+        const candidateEnd = addHours(option, 1);
+        return !bookedTimeRangesForSelectedDate.some((bookedRange) =>
+          doesTimeRangeOverlap(option, candidateEnd, bookedRange),
+        );
+      });
+    }
+
+    return providerStartTimeOptions
+      .filter((option) => timeToMinutes(option) > nowInKl.minutes)
+      .filter((option) => {
+        const candidateEnd = addHours(option, 1);
+        return !bookedTimeRangesForSelectedDate.some((bookedRange) =>
+          doesTimeRangeOverlap(option, candidateEnd, bookedRange),
+        );
+      });
+  }, [bookedTimeRangesForSelectedDate, nowInKl.date, nowInKl.minutes, providerStartTimeOptions, selectedDateIso]);
 
   const endTimeOptions = useMemo(() => {
+    if (!providerEndTime) {
+      return [];
+    }
+
     const startMinutes = timeToMinutes(startTime);
-    return filteredStartTimeOptions
-      .map((option) => ({ label: option, minutes: timeToMinutes(option) }))
-      .filter((option) => option.minutes > startMinutes);
-  }, [filteredStartTimeOptions, startTime]);
+    const endBoundaryMinutes = timeToMinutes(providerEndTime);
+    const options: Array<{ label: string; minutes: number }> = [];
+
+    for (let current = startMinutes + 60; current <= endBoundaryMinutes; current += 60) {
+      const candidateEndLabel = minutesToTimeLabel(current);
+      const overlapsBooking = bookedTimeRangesForSelectedDate.some((bookedRange) =>
+        doesTimeRangeOverlap(startTime, candidateEndLabel, bookedRange),
+      );
+
+      if (!overlapsBooking) {
+        options.push({
+          label: candidateEndLabel,
+          minutes: current,
+        });
+      }
+    }
+
+    return options;
+  }, [bookedTimeRangesForSelectedDate, providerEndTime, startTime]);
 
   useEffect(() => {
     if (!filteredStartTimeOptions.includes(startTime)) {
@@ -188,9 +256,13 @@ export function BookingFormScreen({
     }
   }, [bookingMode, endTime, endTimeOptions]);
 
-  const computedEndTime = bookingMode === "daily" ? addHours(startTime, 9) : endTime;
+  const computedEndTime = bookingMode === "daily"
+    ? providerEndTime || addHours(startTime, 9)
+    : endTime;
   const durationHours =
-    bookingMode === "daily" ? 9 : hoursBetween(startTime, computedEndTime);
+    bookingMode === "daily"
+      ? hoursBetween(startTime, computedEndTime)
+      : hoursBetween(startTime, computedEndTime);
   const totalAmount =
     bookingMode === "daily"
       ? detail.dailyRate
@@ -287,13 +359,13 @@ export function BookingFormScreen({
             <h1 className="text-[15px] font-extrabold text-[#0F172A]">
               Book {detail.name}
             </h1>
-            <button
-              type="button"
-              aria-label="Save provider"
-              className="inline-flex h-10 w-10 items-center justify-center rounded-full text-[#0F172A]"
-            >
-              <Heart className="h-5 w-5" />
-            </button>
+            <FavoriteProviderButton
+              providerId={detail.id}
+              serviceKey={detail.serviceKey}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-full"
+              activeClassName="text-[#E11D48]"
+              inactiveClassName="text-[#0F172A]"
+            />
           </header>
 
           <section className="mt-4 rounded-[22px] border border-[#E7ECE8] bg-white p-3.5 shadow-[0_10px_24px_rgba(15,23,42,0.045)]">
@@ -465,13 +537,38 @@ export function BookingFormScreen({
                           ? "border-[#E5ECE7] bg-white text-[#0F172A]"
                           : "border-[#ECEFEC] bg-[#F8F9F8] text-[#98A2B3]"
                     }`}
-                  >
-                    <p className="text-[14px] font-semibold">{slot.dayLabel}</p>
-                    <p className="mt-1 text-[13px]">{slot.dateLabel}</p>
-                  </button>
+                    >
+                      <p className="text-[14px] font-semibold">{slot.dayLabel}</p>
+                      <p className="mt-1 text-[13px]">{slot.dateLabel}</p>
+                      <p className="mt-1 text-[11px] opacity-80">{slot.timeLabel}</p>
+                    </button>
                 );
               })}
             </div>
+
+            {selectedAvailabilitySlot?.state === "available" ? (
+              <p className="mt-3 text-[13px] font-medium text-[#667085]">
+                Working hours: {selectedAvailabilitySlot.timeLabel}
+              </p>
+            ) : null}
+
+            {bookedTimeRangesForSelectedDate.length > 0 ? (
+              <div className="mt-3">
+                <p className="text-[13px] font-medium text-[#667085]">
+                  Already booked
+                </p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {bookedTimeRangesForSelectedDate.map((bookedRange) => (
+                    <span
+                      key={`${selectedAvailabilitySlot?.isoDate}-${bookedRange.startTimeLabel}-${bookedRange.endTimeLabel}`}
+                      className="rounded-full border border-[#F3D6D6] bg-[#FFF6F6] px-3 py-1.5 text-[12px] font-semibold text-[#B42318]"
+                    >
+                      {bookedRange.startTimeLabel} - {bookedRange.endTimeLabel}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ) : null}
 
             <div className={`mt-5 grid gap-3 ${bookingMode === "hourly" ? "grid-cols-2" : "grid-cols-1"}`}>
               <label className="block">
@@ -542,7 +639,7 @@ export function BookingFormScreen({
             </div>
             {filteredStartTimeOptions.length === 0 ? (
               <p className="mt-3 text-[13px] font-semibold text-[#B42318]">
-                No future time slots are available for today. Please choose another date.
+                No available time slots remain for this date. Please choose another date.
               </p>
             ) : null}
           </section>

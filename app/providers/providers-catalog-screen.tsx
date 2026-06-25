@@ -12,7 +12,6 @@ import {
   ChevronDown,
   Clock3,
   Building2,
-  Heart,
   IdCard,
   MapPin,
   Phone,
@@ -24,6 +23,7 @@ import {
   UserRound,
 } from "lucide-react";
 import { EmptyState as SharedEmptyState } from "@/app/_components/della-ui";
+import { FavoriteProviderButton } from "@/app/_components/favorite-provider-button";
 
 import { LiveLocationChip } from "@/app/_components/live-location-chip";
 import {
@@ -527,13 +527,11 @@ function ProviderCard({
               </span>
             </div>
 
-            <button
-              type="button"
-              aria-label="Save provider"
-              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#eef2ef] bg-white text-[#667085] shadow-[0_8px_18px_rgba(15,23,42,0.06)]"
-            >
-              <Heart className="h-5 w-5" />
-            </button>
+            <FavoriteProviderButton
+              providerId={listing.id}
+              serviceKey={listing.serviceKey}
+              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#eef2ef] bg-white shadow-[0_8px_18px_rgba(15,23,42,0.06)]"
+            />
           </div>
         </div>
       </div>

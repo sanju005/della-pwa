@@ -114,6 +114,19 @@ type ProviderServiceRow = {
   service_type: string | null;
 };
 
+type ProviderAvailabilityRow = {
+  day_of_week: string;
+  start_time: string | null;
+  end_time: string | null;
+};
+
+type ProviderBookingConflictRow = {
+  id: string;
+  scheduled_start_time: string;
+  scheduled_end_time: string;
+  booking_status: BookingRow["booking_status"];
+};
+
 function getAdminSupabaseClient() {
   const url = getSupabaseUrl();
   const serviceRoleKey = getSupabaseServiceKey();
@@ -270,8 +283,101 @@ function parseTimeLabel(value: string) {
   return `${String(hour24).padStart(2, "0")}:${String(minute).padStart(2, "0")}:00`;
 }
 
+function formatTimeValue(value: string) {
+  const [rawHour, rawMinute] = value.slice(0, 5).split(":").map(Number);
+
+  if (!Number.isFinite(rawHour) || !Number.isFinite(rawMinute)) {
+    return value;
+  }
+
+  const period = rawHour >= 12 ? "PM" : "AM";
+  const hour12 = rawHour % 12 === 0 ? 12 : rawHour % 12;
+
+  return `${String(hour12).padStart(2, "0")}:${String(rawMinute).padStart(2, "0")} ${period}`;
+}
+
+function getWeekdayKeyFromIsoDate(value: string) {
+  return new Date(`${value}T00:00:00`).toLocaleDateString("en-MY", {
+    weekday: "long",
+  }).trim().toLowerCase();
+}
+
 function startOfDay(value: Date) {
   return new Date(value.getFullYear(), value.getMonth(), value.getDate());
+}
+
+async function validateProviderAvailabilityAndConflicts(
+  adminClient: NonNullable<ReturnType<typeof getAdminSupabaseClient>>,
+  providerId: string,
+  scheduledDate: string,
+  scheduledStartTime: string,
+  scheduledEndTime: string,
+) {
+  const weekdayKey = getWeekdayKeyFromIsoDate(scheduledDate);
+
+  const { data: availability, error: availabilityError } = await adminClient
+    .from("provider_availability")
+    .select("day_of_week, start_time, end_time")
+    .eq("provider_id", providerId)
+    .eq("day_of_week", weekdayKey)
+    .maybeSingle();
+
+  if (availabilityError) {
+    return {
+      error: availabilityError.message || "Unable to validate provider availability.",
+      status: 500 as const,
+    };
+  }
+
+  const availabilityRow = availability as ProviderAvailabilityRow | null;
+
+  if (!availabilityRow?.start_time || !availabilityRow?.end_time) {
+    return {
+      error: "This provider is not available on the selected day. Please choose another date.",
+      status: 400 as const,
+    };
+  }
+
+  const availabilityStart = availabilityRow.start_time.slice(0, 8);
+  const availabilityEnd = availabilityRow.end_time.slice(0, 8);
+
+  if (
+    scheduledStartTime < availabilityStart ||
+    scheduledEndTime > availabilityEnd
+  ) {
+    return {
+      error: `This provider works ${formatTimeValue(availabilityStart)} - ${formatTimeValue(availabilityEnd)} on the selected day. Please choose a time within that schedule.`,
+      status: 400 as const,
+    };
+  }
+
+  const { data: conflicts, error: conflictError } = await adminClient
+    .from("bookings")
+    .select("id, scheduled_start_time, scheduled_end_time, booking_status")
+    .eq("provider_id", providerId)
+    .eq("scheduled_date", scheduledDate)
+    .not("booking_status", "in", '("declined","cancelled")')
+    .lt("scheduled_start_time", scheduledEndTime)
+    .gt("scheduled_end_time", scheduledStartTime)
+    .limit(1);
+
+  if (conflictError) {
+    return {
+      error: conflictError.message || "Unable to check for booking conflicts.",
+      status: 500 as const,
+    };
+  }
+
+  const conflict = (conflicts ?? [])[0] as ProviderBookingConflictRow | undefined;
+
+  if (conflict) {
+    return {
+      error: `This provider already has a booking from ${formatTimeValue(conflict.scheduled_start_time)} to ${formatTimeValue(conflict.scheduled_end_time)} on that date. Please choose another time.`,
+      status: 400 as const,
+    };
+  }
+
+  return { error: null, status: null };
 }
 
 function getCurrentKualaLumpurDateTime() {
@@ -645,6 +751,21 @@ export async function POST(request: Request) {
     return NextResponse.json(
       { error: "This time has already passed. Please choose a future time today." },
       { status: 400 }
+    );
+  }
+
+  const availabilityValidation = await validateProviderAvailabilityAndConflicts(
+    verified.adminClient,
+    payload.providerId,
+    scheduledDate,
+    scheduledStartTime,
+    scheduledEndTime,
+  );
+
+  if (availabilityValidation.error) {
+    return NextResponse.json(
+      { error: availabilityValidation.error },
+      { status: availabilityValidation.status ?? 400 },
     );
   }
 

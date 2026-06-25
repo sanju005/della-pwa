@@ -8,7 +8,6 @@ import {
   CheckCheck,
   ChevronDown,
   ChevronRight,
-  Heart,
   MapPin,
   Share2,
   ShieldCheck,
@@ -17,6 +16,7 @@ import {
   ThumbsUp,
 } from "lucide-react";
 import { EmptyState as SharedEmptyState, SectionTitle, StatusBadge } from "@/app/_components/della-ui";
+import { FavoriteProviderButton } from "@/app/_components/favorite-provider-button";
 import { notFound } from "next/navigation";
 
 import { BookNowButton } from "./book-now-button";
@@ -49,13 +49,13 @@ export default async function ProviderDetailPage(props: {
               <ArrowLeft className="h-6 w-6" />
             </Link>
             <div className="flex items-center gap-2.5">
-              <button
-                type="button"
-                aria-label="Save provider"
-                className="inline-flex h-10 w-10 items-center justify-center rounded-full text-[#0F172A]"
-              >
-                <Heart className="h-5 w-5" />
-              </button>
+              <FavoriteProviderButton
+                providerId={detail.id}
+                serviceKey={detail.serviceKey}
+                className="inline-flex h-10 w-10 items-center justify-center rounded-full"
+                activeClassName="text-[#E11D48]"
+                inactiveClassName="text-[#0F172A]"
+              />
               <button
                 type="button"
                 aria-label="Share provider"
@@ -241,7 +241,7 @@ export default async function ProviderDetailPage(props: {
           <section className="mt-5 rounded-[20px] border border-[#E6ECE7] bg-white p-4 shadow-[0_10px_24px_rgba(15,23,42,0.04)]">
             <SectionTitle
               title="Customer Reviews"
-              subtitle="Real feedback with ratings and photos"
+              subtitle="Real feedback from completed bookings"
               action={<StatusBadge label={`${detail.rating.toFixed(1)} / 5`} tone="pending" />}
             />
 
