@@ -39,8 +39,10 @@ import { BookingMessagesPanel } from "@/app/_components/booking-messages-panel";
 import {
   disablePushNotifications,
   getPushSetupState,
+  getPushSupportDiagnostics,
   requestNotificationPermission,
   saveFCMToken,
+  type PushSupportDiagnostics,
   type PushSetupState,
 } from "@/lib/notifications";
 import { getSupabaseClient } from "@/lib/supabase";
@@ -425,19 +427,23 @@ function ProviderPushNotificationsCard() {
     permission: "default",
     hasSavedToken: false,
   });
+  const [diagnostics, setDiagnostics] = useState<PushSupportDiagnostics | null>(null);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
 
   useEffect(() => {
     let active = true;
 
-    void getPushSetupState().then((state) => {
-      if (!active) {
-        return;
-      }
+    void Promise.all([getPushSetupState(), getPushSupportDiagnostics()]).then(
+      ([state, support]) => {
+        if (!active) {
+          return;
+        }
 
-      setPushState(state);
-    });
+        setPushState(state);
+        setDiagnostics(support);
+      }
+    );
 
     return () => {
       active = false;
@@ -450,14 +456,18 @@ function ProviderPushNotificationsCard() {
 
     try {
       const token = await requestNotificationPermission();
+      const support = await getPushSupportDiagnostics();
+      setDiagnostics(support);
 
       if (!token) {
         const state = await getPushSetupState();
         setPushState(state);
         setNotice(
-          state.permission === "denied"
-            ? "Push is blocked in this browser. Please allow notifications in browser settings."
-            : "Push permission was not granted."
+          support.permission === "unsupported"
+            ? "Push is not supported on this device/browser for the current web environment."
+            : state.permission === "denied"
+              ? "Push is blocked in this browser. Please allow notifications in browser settings."
+              : "Push permission was not granted."
         );
         return;
       }
@@ -474,6 +484,8 @@ function ProviderPushNotificationsCard() {
         hasSavedToken: true,
       });
       setNotice("Push notifications enabled on this device.");
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Unable to enable push notifications.");
     } finally {
       setBusy(false);
     }
@@ -491,9 +503,15 @@ function ProviderPushNotificationsCard() {
         return;
       }
 
-      const state = await getPushSetupState();
+      const [state, support] = await Promise.all([
+        getPushSetupState(),
+        getPushSupportDiagnostics(),
+      ]);
       setPushState(state);
+      setDiagnostics(support);
       setNotice("Push notifications disabled for this device.");
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Unable to disable push notifications.");
     } finally {
       setBusy(false);
     }
@@ -526,6 +544,22 @@ function ProviderPushNotificationsCard() {
           Browser permission: {pushState.permission}
         </p>
       </div>
+
+      {diagnostics ? (
+        <div className="mt-4 rounded-[18px] border border-[#e7eee8] bg-white p-4 text-[12px] text-[#475569]">
+          <p className="font-bold uppercase tracking-[0.12em] text-[#94a3b8]">
+            Device Check
+          </p>
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            <p>Window: {diagnostics.hasWindow ? "yes" : "no"}</p>
+            <p>Notification API: {diagnostics.hasNotificationApi ? "yes" : "no"}</p>
+            <p>Service Worker: {diagnostics.hasServiceWorkerApi ? "yes" : "no"}</p>
+            <p>Push Manager: {diagnostics.hasPushManagerApi ? "yes" : "no"}</p>
+            <p>IndexedDB: {diagnostics.hasIndexedDb ? "yes" : "no"}</p>
+            <p>Permission: {diagnostics.permission}</p>
+          </div>
+        </div>
+      ) : null}
 
       {notice ? (
         <p className="mt-4 rounded-[16px] border border-[#d8ebdf] bg-[#f6fcf7] px-4 py-3 text-[13px] font-semibold text-[#166534]">

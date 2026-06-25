@@ -9,6 +9,15 @@ export type PushSetupState = {
   permission: NotificationPermission | "unsupported";
 };
 
+export type PushSupportDiagnostics = {
+  hasWindow: boolean;
+  hasNotificationApi: boolean;
+  hasServiceWorkerApi: boolean;
+  hasPushManagerApi: boolean;
+  hasIndexedDb: boolean;
+  permission: NotificationPermission | "unsupported";
+};
+
 async function ensureMessagingServiceWorker() {
   return navigator.serviceWorker.register("/firebase-messaging-sw.js").catch((error) => {
     console.error("[FCM] Service worker registration failed:", error);
@@ -25,33 +34,47 @@ async function getCurrentNotificationPermission() {
 }
 
 export async function getCurrentFCMToken() {
-  const permission = await getCurrentNotificationPermission();
+  try {
+    const permission = await getCurrentNotificationPermission();
 
-  if (permission !== "granted") {
-    console.warn(`[FCM] Cannot get token because permission is ${permission}.`);
+    if (permission !== "granted") {
+      console.warn(`[FCM] Cannot get token because permission is ${permission}.`);
+      return null;
+    }
+
+    const messaging = await getFirebaseMessaging();
+    if (!messaging) {
+      console.warn("[FCM] Firebase messaging is unavailable.");
+      return null;
+    }
+
+    if (!firebaseVapidKey) {
+      console.error("[FCM] Missing NEXT_PUBLIC_FIREBASE_VAPID_KEY.");
+      return null;
+    }
+
+    const serviceWorkerRegistration = await ensureMessagingServiceWorker().catch((error) => {
+      console.error("[FCM] Unable to register messaging service worker:", error);
+      return null;
+    });
+
+    if (!serviceWorkerRegistration) {
+      return null;
+    }
+
+    const token = await getToken(messaging, {
+      vapidKey: firebaseVapidKey,
+      serviceWorkerRegistration,
+    }).catch((error) => {
+      console.error("[FCM] Failed to get Firebase token:", error);
+      return null;
+    });
+
+    return token;
+  } catch (error) {
+    console.error("[FCM] Unexpected error while loading token:", error);
     return null;
   }
-
-  const messaging = await getFirebaseMessaging();
-  if (!messaging) {
-    console.warn("[FCM] Firebase messaging is unavailable.");
-    return null;
-  }
-
-  if (!firebaseVapidKey) {
-    console.error("[FCM] Missing NEXT_PUBLIC_FIREBASE_VAPID_KEY.");
-    return null;
-  }
-
-  const token = await getToken(messaging, {
-    vapidKey: firebaseVapidKey,
-    serviceWorkerRegistration: await ensureMessagingServiceWorker(),
-  }).catch((error) => {
-    console.error("[FCM] Failed to get Firebase token:", error);
-    return null;
-  });
-
-  return token;
 }
 
 export async function requestNotificationPermission() {
@@ -256,4 +279,18 @@ export async function getPushSetupState(): Promise<PushSetupState> {
       hasSavedToken: false,
     };
   }
+}
+
+export async function getPushSupportDiagnostics(): Promise<PushSupportDiagnostics> {
+  const permission = await getCurrentNotificationPermission();
+
+  return {
+    hasWindow: typeof window !== "undefined",
+    hasNotificationApi: typeof Notification !== "undefined",
+    hasServiceWorkerApi:
+      typeof navigator !== "undefined" && "serviceWorker" in navigator,
+    hasPushManagerApi: typeof PushManager !== "undefined",
+    hasIndexedDb: typeof indexedDB !== "undefined",
+    permission,
+  };
 }
