@@ -1273,9 +1273,11 @@ export function BookingsScreen({
   const [commissionProofDataUrl, setCommissionProofDataUrl] = useState("");
   const [commissionProofFileName, setCommissionProofFileName] = useState("");
   const [commissionProofMimeType, setCommissionProofMimeType] = useState("");
+  const [pendingInitialSelection, setPendingInitialSelection] = useState(Boolean(initialBookingId));
 
   useEffect(() => {
     setSelectedBookingId(initialBookingId);
+    setPendingInitialSelection(Boolean(initialBookingId));
   }, [initialBookingId]);
 
   useEffect(() => {
@@ -1308,6 +1310,28 @@ export function BookingsScreen({
   const selectedBookingReview = selectedBooking
     ? state.reviews.find((review) => review.customerName === selectedBooking.customerName) ?? null
     : null;
+
+  useEffect(() => {
+    if (!pendingInitialSelection || !selectedBookingId) {
+      return;
+    }
+
+    if (state.loading) {
+      return;
+    }
+
+    const matchedBooking = state.bookings.find((booking) => booking.id === selectedBookingId);
+
+    if (matchedBooking) {
+      setPendingInitialSelection(false);
+      return;
+    }
+
+    if (state.bookings.length > 0) {
+      setPendingInitialSelection(false);
+      state.setError("This booking could not be found for your provider account.");
+    }
+  }, [pendingInitialSelection, selectedBookingId, state]);
 
   useEffect(() => {
     if (!selectedBooking) {
