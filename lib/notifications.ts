@@ -3,6 +3,7 @@ import { getFirebaseMessaging } from "./firebase";
 import { getSupabaseClient } from "./supabase";
 
 const firebaseVapidKey = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY ?? "";
+let lastPushError = "";
 
 export type PushSetupState = {
   hasSavedToken: boolean;
@@ -20,6 +21,8 @@ export type PushSupportDiagnostics = {
 
 async function ensureMessagingServiceWorker() {
   return navigator.serviceWorker.register("/firebase-messaging-sw.js").catch((error) => {
+    lastPushError =
+      error instanceof Error ? error.message : "Failed to register messaging service worker.";
     console.error("[FCM] Service worker registration failed:", error);
     throw error;
   });
@@ -35,25 +38,31 @@ async function getCurrentNotificationPermission() {
 
 export async function getCurrentFCMToken() {
   try {
+    lastPushError = "";
     const permission = await getCurrentNotificationPermission();
 
     if (permission !== "granted") {
+      lastPushError = `Notification permission is ${permission}.`;
       console.warn(`[FCM] Cannot get token because permission is ${permission}.`);
       return null;
     }
 
     const messaging = await getFirebaseMessaging();
     if (!messaging) {
+      lastPushError = "Firebase messaging is unavailable in this browser.";
       console.warn("[FCM] Firebase messaging is unavailable.");
       return null;
     }
 
     if (!firebaseVapidKey) {
+      lastPushError = "Missing NEXT_PUBLIC_FIREBASE_VAPID_KEY.";
       console.error("[FCM] Missing NEXT_PUBLIC_FIREBASE_VAPID_KEY.");
       return null;
     }
 
     const serviceWorkerRegistration = await ensureMessagingServiceWorker().catch((error) => {
+      lastPushError =
+        error instanceof Error ? error.message : "Unable to register the messaging service worker.";
       console.error("[FCM] Unable to register messaging service worker:", error);
       return null;
     });
@@ -66,12 +75,20 @@ export async function getCurrentFCMToken() {
       vapidKey: firebaseVapidKey,
       serviceWorkerRegistration,
     }).catch((error) => {
+      lastPushError =
+        error instanceof Error ? error.message : "Firebase could not create a push token.";
       console.error("[FCM] Failed to get Firebase token:", error);
       return null;
     });
 
+    if (!token) {
+      lastPushError ||= "Firebase returned no token for this device.";
+    }
+
     return token;
   } catch (error) {
+    lastPushError =
+      error instanceof Error ? error.message : "Unexpected error while loading push token.";
     console.error("[FCM] Unexpected error while loading token:", error);
     return null;
   }
@@ -293,4 +310,8 @@ export async function getPushSupportDiagnostics(): Promise<PushSupportDiagnostic
     hasIndexedDb: typeof indexedDB !== "undefined",
     permission,
   };
+}
+
+export function getLastPushError() {
+  return lastPushError;
 }

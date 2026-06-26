@@ -15,6 +15,7 @@ import { BookingMessagesPanel } from "@/app/_components/booking-messages-panel";
 import { LiveLocationChip } from "@/app/_components/live-location-chip";
 import {
   disablePushNotifications,
+  getLastPushError,
   getPushSupportDiagnostics,
   getPushSetupState,
   requestNotificationPermission,
@@ -2454,7 +2455,9 @@ export function NotificationsScreen({
               : support.permission === "denied"
                 ? "Push is blocked in this browser. Please allow notifications in browser settings."
                 : support.permission === "granted"
-                  ? "Browser permission is granted, but Firebase could not create a push token on this device."
+                  ? getLastPushError()
+                    ? `Browser permission is granted, but Firebase could not create a push token on this device. ${getLastPushError()}`
+                    : "Browser permission is granted, but Firebase could not create a push token on this device."
                   : "Push permission was dismissed or not granted yet."
           );
           return;
