@@ -2,7 +2,14 @@ import { deleteToken, getToken } from "firebase/messaging";
 import { getFirebaseMessaging } from "./firebase";
 import { getSupabaseClient } from "./supabase";
 
-const firebaseVapidKey = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY ?? "";
+function getFirebaseVapidKey() {
+  if (typeof window !== "undefined" && window.__DELLA_PUBLIC_CONFIG) {
+    return window.__DELLA_PUBLIC_CONFIG.firebaseVapidKey ?? "";
+  }
+
+  return process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY ?? "";
+}
+
 let lastPushError = "";
 
 export type PushSetupState = {
@@ -53,6 +60,8 @@ export async function getCurrentFCMToken() {
       console.warn("[FCM] Firebase messaging is unavailable.");
       return null;
     }
+
+    const firebaseVapidKey = getFirebaseVapidKey();
 
     if (!firebaseVapidKey) {
       lastPushError = "Missing NEXT_PUBLIC_FIREBASE_VAPID_KEY.";

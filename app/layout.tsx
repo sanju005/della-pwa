@@ -8,6 +8,7 @@ import {
   getPublicFirebaseMessagingSenderId,
   getPublicFirebaseProjectId,
   getPublicFirebaseStorageBucket,
+  getPublicFirebaseVapidKey,
   getSupabasePublishableKey,
   getSupabaseUrl,
 } from "@/lib/supabase-env";
@@ -53,6 +54,7 @@ export default function RootLayout({
     firebaseStorageBucket: getPublicFirebaseStorageBucket(),
     firebaseMessagingSenderId: getPublicFirebaseMessagingSenderId(),
     firebaseAppId: getPublicFirebaseAppId(),
+    firebaseVapidKey: getPublicFirebaseVapidKey(),
   };
 
   return (

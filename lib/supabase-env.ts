@@ -67,3 +67,7 @@ export function getPublicFirebaseMessagingSenderId() {
 export function getPublicFirebaseAppId() {
   return process.env.NEXT_PUBLIC_FIREBASE_APP_ID ?? null;
 }
+
+export function getPublicFirebaseVapidKey() {
+  return process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY ?? null;
+}

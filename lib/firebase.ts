@@ -17,6 +17,7 @@ declare global {
       firebaseStorageBucket?: string | null;
       firebaseMessagingSenderId?: string | null;
       firebaseAppId?: string | null;
+      firebaseVapidKey?: string | null;
     };
   }
 }
