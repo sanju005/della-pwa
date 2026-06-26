@@ -2816,6 +2816,23 @@ export function ServicesScreen() {
   return (
     <PageShell title="My Services" subtitle="Manage the services and pricing visible to customers.">
       <section className="rounded-[26px] bg-white p-5 shadow-[0_18px_44px_rgba(15,23,42,0.08)] ring-1 ring-[#e6eee8]">
+        <div className="mb-5 rounded-[20px] border border-[#dbeee2] bg-[#f6fff8] p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h2 className="text-[15px] font-black text-[#0f172a]">Need to edit days and time?</h2>
+              <p className="mt-1 text-[12px] leading-5 text-[#64748b]">
+                Booking days and working hours are managed in your availability settings.
+              </p>
+            </div>
+            <Link
+              href="/provider/availability"
+              className="inline-flex h-10 shrink-0 items-center justify-center rounded-[12px] bg-[#16a34a] px-4 text-[12px] font-extrabold text-white"
+            >
+              Edit Availability
+            </Link>
+          </div>
+        </div>
+
         <div className="space-y-3">
           {data.services.length === 0 ? (
             <EmptyState
