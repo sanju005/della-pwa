@@ -2,6 +2,7 @@ import "server-only";
 
 import { createClient } from "@supabase/supabase-js";
 
+import { sendPushNotificationToUser } from "./push-notifications";
 import { getSupabaseServiceKey, getSupabaseUrl } from "./supabase-env";
 
 export type BookingConversationThread = {
@@ -24,6 +25,9 @@ export type BookingConversationMessage = {
   senderRole: "customer" | "provider" | "admin" | "system";
   senderName: string;
   messageText: string;
+  attachmentDataUrl?: string;
+  attachmentFileName?: string;
+  attachmentMimeType?: string;
   createdAt: string;
   isOwnMessage: boolean;
 };
@@ -37,6 +41,18 @@ export type BookingConversationDetail = {
   schedule: string;
   messages: BookingConversationMessage[];
   unreadCount: number;
+  canSendMessages: boolean;
+  bookingStatus:
+    | "pending"
+    | "accepted"
+    | "on_the_way"
+    | "arrived"
+    | "completed"
+    | "paid"
+    | "review_requested"
+    | "reviewed"
+    | "declined"
+    | "cancelled";
 };
 
 type ProfileRow = {
@@ -50,6 +66,17 @@ type BookingRow = {
   customer_id: string;
   provider_id: string;
   service_label: string;
+  booking_status:
+    | "pending"
+    | "accepted"
+    | "on_the_way"
+    | "arrived"
+    | "completed"
+    | "paid"
+    | "review_requested"
+    | "reviewed"
+    | "declined"
+    | "cancelled";
   location_text: string;
   scheduled_date: string;
   scheduled_start_time: string;
@@ -65,6 +92,9 @@ type MessageRow = {
   sender_id: string;
   sender_role: "customer" | "provider" | "admin" | "system";
   message_text: string;
+  attachment_data_url: string | null;
+  attachment_file_name: string | null;
+  attachment_mime_type: string | null;
   created_at: string;
 };
 
@@ -187,7 +217,28 @@ function mapSchemaError(message: string | null | undefined) {
     return "Messaging read-state schema is missing. Apply `supabase/migrations/20260701_create_booking_message_reads.sql` and refresh the Supabase schema cache.";
   }
 
+  if (
+    normalized.includes("attachment_data_url") ||
+    normalized.includes("attachment_file_name") ||
+    normalized.includes("attachment_mime_type")
+  ) {
+    return "Booking message attachment schema is missing. Apply `supabase/migrations/20260702_booking_message_attachments.sql` and refresh the Supabase schema cache.";
+  }
+
   return message || null;
+}
+
+function isConversationClosed(
+  bookingStatus: BookingRow["booking_status"],
+) {
+  return [
+    "completed",
+    "paid",
+    "review_requested",
+    "reviewed",
+    "declined",
+    "cancelled",
+  ].includes(bookingStatus);
 }
 
 async function loadParticipantNames(
@@ -251,6 +302,7 @@ export async function loadConversationThreads(
       customer_id,
       provider_id,
       service_label,
+      booking_status,
       location_text,
       scheduled_date,
       scheduled_start_time,
@@ -280,7 +332,7 @@ export async function loadConversationThreads(
     bookingIds.length > 0
       ? adminClient
           .from("booking_messages")
-          .select("id, booking_id, sender_id, sender_role, message_text, created_at")
+          .select("id, booking_id, sender_id, sender_role, message_text, attachment_data_url, attachment_file_name, attachment_mime_type, created_at")
           .in("booking_id", bookingIds)
           .order("created_at", { ascending: false })
       : Promise.resolve({ data: [] as MessageRow[], error: null }),
@@ -330,7 +382,10 @@ export async function loadConversationThreads(
         booking.scheduled_start_time,
         booking.scheduled_end_time,
       ),
-      preview: latestMessage?.message_text?.trim() || fallbackText,
+      preview:
+        latestMessage?.message_text?.trim() ||
+        (latestMessage?.attachment_data_url ? "Attachment" : "") ||
+        fallbackText,
       lastMessageAt: latestMessage?.created_at || booking.created_at,
       lastSenderRole:
         latestMessage?.sender_role ||
@@ -365,6 +420,7 @@ export async function loadConversationDetail(
       customer_id,
       provider_id,
       service_label,
+      booking_status,
       location_text,
       scheduled_date,
       scheduled_start_time,
@@ -389,7 +445,7 @@ export async function loadConversationDetail(
     loadParticipantNames(adminClient, [viewer.id, counterpartId]),
     adminClient
       .from("booking_messages")
-      .select("id, booking_id, sender_id, sender_role, message_text, created_at")
+      .select("id, booking_id, sender_id, sender_role, message_text, attachment_data_url, attachment_file_name, attachment_mime_type, created_at")
       .eq("booking_id", bookingId)
       .order("created_at", { ascending: true }),
     loadReadStates(adminClient, viewer.id, [bookingId]),
@@ -427,6 +483,9 @@ export async function loadConversationDetail(
             ? "Provider"
             : "System"),
       messageText: message.message_text,
+      attachmentDataUrl: message.attachment_data_url ?? undefined,
+      attachmentFileName: message.attachment_file_name ?? undefined,
+      attachmentMimeType: message.attachment_mime_type ?? undefined,
       createdAt: message.created_at,
       isOwnMessage: message.sender_id === viewer.id,
     })),
@@ -437,6 +496,8 @@ export async function loadConversationDetail(
 
       return !lastReadAt || new Date(message.created_at).getTime() > new Date(lastReadAt).getTime();
     }).length,
+    canSendMessages: !isConversationClosed(bookingRow.booking_status),
+    bookingStatus: bookingRow.booking_status,
   } satisfies BookingConversationDetail;
 }
 
@@ -467,23 +528,40 @@ export async function sendConversationMessage(
   viewerRole: "customer" | "provider",
   bookingId: string,
   messageText: string,
+  attachment?: {
+    attachmentDataUrl?: string;
+    attachmentFileName?: string;
+    attachmentMimeType?: string;
+  },
 ) {
   const participantColumn = viewerRole === "customer" ? "customer_id" : "provider_id";
   const trimmedMessage = messageText.trim();
+  const trimmedAttachmentDataUrl = attachment?.attachmentDataUrl?.trim() ?? "";
+  const trimmedAttachmentFileName = attachment?.attachmentFileName?.trim() ?? "";
+  const trimmedAttachmentMimeType = attachment?.attachmentMimeType?.trim() ?? "";
 
-  if (!trimmedMessage) {
+  if (!trimmedMessage && !trimmedAttachmentDataUrl) {
     throw new Error("Message cannot be empty.");
   }
 
   const { data: booking, error: bookingError } = await adminClient
     .from("bookings")
-    .select("id")
+    .select("id, customer_id, provider_id, service_label, booking_status")
     .eq("id", bookingId)
     .eq(participantColumn, viewer.id)
     .maybeSingle();
 
   if (bookingError || !booking) {
     throw new Error("Booking conversation was not found.");
+  }
+
+  const bookingRow = booking as Pick<
+    BookingRow,
+    "id" | "customer_id" | "provider_id" | "service_label" | "booking_status"
+  >;
+
+  if (isConversationClosed(bookingRow.booking_status)) {
+    throw new Error("Messaging is closed for this booking.");
   }
 
   const { error } = await adminClient
@@ -493,11 +571,52 @@ export async function sendConversationMessage(
       sender_id: viewer.id,
       sender_role: viewerRole,
       message_text: trimmedMessage,
+      attachment_data_url: trimmedAttachmentDataUrl || null,
+      attachment_file_name: trimmedAttachmentDataUrl ? trimmedAttachmentFileName || "Attachment" : null,
+      attachment_mime_type: trimmedAttachmentDataUrl ? trimmedAttachmentMimeType || null : null,
     });
 
   if (error) {
-    throw new Error(error.message || "Unable to send message.");
+    throw new Error(mapSchemaError(error.message) || error.message || "Unable to send message.");
   }
 
   await markConversationRead(adminClient, viewer.id, bookingId);
+
+  const recipientId =
+    viewerRole === "customer" ? bookingRow.provider_id : bookingRow.customer_id;
+  const recipientPath =
+    viewerRole === "customer"
+      ? `/provider/messages?booking=${bookingId}`
+      : `/profile/messages?booking=${bookingId}`;
+  const senderName =
+    viewer.full_name?.trim() || (viewerRole === "customer" ? "Customer" : "Provider");
+  const pushTitle = `New message from ${senderName}`;
+  const pushBody = trimmedMessage
+    ? trimmedMessage.length > 120
+      ? `${trimmedMessage.slice(0, 117)}...`
+      : trimmedMessage
+    : `${senderName} sent an attachment in your ${bookingRow.service_label} booking chat.`;
+
+  const { error: notificationError } = await adminClient.from("notifications").insert({
+    user_id: recipientId,
+    booking_id: bookingId,
+    notification_type: "booking_message",
+    title: pushTitle,
+    body: pushBody,
+  });
+
+  if (notificationError) {
+    console.error("[Booking messages] Failed to store message notification:", notificationError);
+  }
+
+  try {
+    await sendPushNotificationToUser(recipientId, {
+      title: pushTitle,
+      body: pushBody,
+      bookingId,
+      path: recipientPath,
+    });
+  } catch (pushError) {
+    console.error("[Booking messages] Failed to send push notification:", pushError);
+  }
 }

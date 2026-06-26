@@ -1,11 +1,16 @@
 "use client";
 
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition, type ChangeEvent } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { CalendarDays, MapPin, MessageCircleMore, SendHorizonal } from "lucide-react";
+import { CalendarDays, FileText, MapPin, MessageCircleMore, Paperclip, SendHorizonal } from "lucide-react";
 
 import { getSupabaseClient } from "@/lib/supabase";
+import {
+  isPaymentProofMimeType,
+  PAYMENT_PROOF_MAX_BYTES,
+  readFileAsDataUrl,
+} from "@/lib/upload-proof";
 
 type Thread = {
   bookingId: string;
@@ -27,6 +32,9 @@ type MessageItem = {
   senderRole: "customer" | "provider" | "admin" | "system";
   senderName: string;
   messageText: string;
+  attachmentDataUrl?: string;
+  attachmentFileName?: string;
+  attachmentMimeType?: string;
   createdAt: string;
   isOwnMessage: boolean;
 };
@@ -40,6 +48,18 @@ type ThreadDetail = {
   schedule: string;
   messages: MessageItem[];
   unreadCount: number;
+  canSendMessages: boolean;
+  bookingStatus:
+    | "pending"
+    | "accepted"
+    | "on_the_way"
+    | "arrived"
+    | "completed"
+    | "paid"
+    | "review_requested"
+    | "reviewed"
+    | "declined"
+    | "cancelled";
 };
 
 type Theme = {
@@ -93,6 +113,14 @@ function formatTimestamp(value: string) {
   }).format(new Date(value));
 }
 
+function isPdfAttachment(mimeType?: string, fileName?: string) {
+  return mimeType === "application/pdf" || fileName?.toLowerCase().endsWith(".pdf");
+}
+
+function attachmentLabel(message: MessageItem) {
+  return message.attachmentFileName || "Attachment";
+}
+
 export function BookingMessagesPanel({
   role,
   basePath,
@@ -119,6 +147,9 @@ export function BookingMessagesPanel({
   const [loading, setLoading] = useState(true);
   const [threadLoading, setThreadLoading] = useState(false);
   const [draft, setDraft] = useState("");
+  const [attachmentDataUrl, setAttachmentDataUrl] = useState("");
+  const [attachmentFileName, setAttachmentFileName] = useState("");
+  const [attachmentMimeType, setAttachmentMimeType] = useState("");
   const [error, setError] = useState("");
   const [isSending, startSending] = useTransition();
 
@@ -316,7 +347,7 @@ export function BookingMessagesPanel({
 
   function sendMessage() {
     const nextMessage = draft.trim();
-    if (!selectedBookingId || !nextMessage) {
+    if (!selectedBookingId || (!nextMessage && !attachmentDataUrl) || !threadDetail?.canSendMessages) {
       return;
     }
 
@@ -330,7 +361,12 @@ export function BookingMessagesPanel({
               "Content-Type": "application/json",
               Authorization: `Bearer ${accessToken}`,
             },
-            body: JSON.stringify({ messageText: nextMessage }),
+            body: JSON.stringify({
+              messageText: nextMessage,
+              attachmentDataUrl,
+              attachmentFileName,
+              attachmentMimeType,
+            }),
           });
 
           const result = (await response.json()) as
@@ -345,6 +381,9 @@ export function BookingMessagesPanel({
         });
 
         setDraft("");
+        setAttachmentDataUrl("");
+        setAttachmentFileName("");
+        setAttachmentMimeType("");
         setThreadDetail(thread);
         const refreshedThreads = await loadThreads().catch(() => null);
         if (!selectedBookingId && refreshedThreads?.[0]?.bookingId) {
@@ -354,6 +393,35 @@ export function BookingMessagesPanel({
         setError(caughtError instanceof Error ? caughtError.message : "Unable to send message.");
       }
     });
+  }
+
+  async function handleAttachmentChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+
+    if (!file) {
+      return;
+    }
+
+    if (file.size > PAYMENT_PROOF_MAX_BYTES) {
+      setError("Attachment must be 5MB or smaller.");
+      return;
+    }
+
+    if (!isPaymentProofMimeType(file.type)) {
+      setError("Attachment must be JPG, PNG, GIF, WebP, or PDF.");
+      return;
+    }
+
+    try {
+      const dataUrl = await readFileAsDataUrl(file);
+      setAttachmentDataUrl(dataUrl);
+      setAttachmentFileName(file.name);
+      setAttachmentMimeType(file.type);
+      setError("");
+    } catch {
+      setError("Unable to read attachment.");
+    }
   }
 
   if (loading) {
@@ -486,7 +554,32 @@ export function BookingMessagesPanel({
                     }`}
                   >
                     <p className="text-[11px] font-bold opacity-80">{message.senderName}</p>
-                    <p className="mt-1 text-[13px] leading-6">{message.messageText}</p>
+                    {message.messageText ? (
+                      <p className="mt-1 text-[13px] leading-6">{message.messageText}</p>
+                    ) : null}
+                    {message.attachmentDataUrl ? (
+                      <div className="mt-3 rounded-[14px] border border-white/20 bg-white/10 p-3">
+                        {isPdfAttachment(message.attachmentMimeType, message.attachmentFileName) ? (
+                          <a
+                            href={message.attachmentDataUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="flex items-center gap-2 text-[12px] font-bold underline"
+                          >
+                            <FileText className="h-4 w-4" />
+                            {attachmentLabel(message)}
+                          </a>
+                        ) : (
+                          <a href={message.attachmentDataUrl} target="_blank" rel="noreferrer">
+                            <img
+                              src={message.attachmentDataUrl}
+                              alt={attachmentLabel(message)}
+                              className="max-h-52 w-full rounded-[12px] object-cover"
+                            />
+                          </a>
+                        )}
+                      </div>
+                    ) : null}
                     <p className="mt-2 text-[10px] opacity-70">{formatTimestamp(message.createdAt)}</p>
                   </div>
                 </div>
@@ -499,6 +592,11 @@ export function BookingMessagesPanel({
           </div>
 
           <div className="mt-4 border-t border-[#edf1ef] pt-4">
+            {!threadDetail?.canSendMessages ? (
+              <p className="mb-3 rounded-[14px] border border-[#e5e7eb] bg-[#f8fafc] px-4 py-3 text-[13px] font-semibold text-[#64748b]">
+                Messaging is closed for this booking because the task is completed or closed.
+              </p>
+            ) : null}
             <label className="block">
               <span className="mb-2 block text-[13px] font-semibold text-[#111827]">
                 Send message
@@ -507,9 +605,40 @@ export function BookingMessagesPanel({
                 value={draft}
                 onChange={(event) => setDraft(event.target.value)}
                 placeholder="Type a message about this booking..."
+                disabled={!threadDetail?.canSendMessages}
                 className="min-h-[6rem] w-full rounded-[16px] border border-[#d9e2dd] bg-white px-4 py-3 text-[14px] text-[#111827] outline-none placeholder:text-[#98A2B3]"
               />
             </label>
+            <div className="mt-3 flex flex-wrap items-center gap-3">
+              <label className={`inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-[12px] border border-[#d9e2dd] px-4 text-[13px] font-bold text-[#111827] ${!threadDetail?.canSendMessages ? "pointer-events-none opacity-60" : ""}`}>
+                <Paperclip className="h-4 w-4" />
+                Attach file
+                <input
+                  type="file"
+                  accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,application/pdf,image/jpeg,image/png,image/gif,image/webp"
+                  className="hidden"
+                  disabled={!threadDetail?.canSendMessages}
+                  onChange={(event) => void handleAttachmentChange(event)}
+                />
+              </label>
+              {attachmentDataUrl ? (
+                <div className="flex min-w-0 items-center gap-2 rounded-[12px] bg-[#f8fafc] px-3 py-2 text-[12px] text-[#475569]">
+                  <FileText className="h-4 w-4 shrink-0" />
+                  <span className="truncate font-semibold">{attachmentFileName || "Attachment ready"}</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAttachmentDataUrl("");
+                      setAttachmentFileName("");
+                      setAttachmentMimeType("");
+                    }}
+                    className="font-bold text-[#dc2626]"
+                  >
+                    Remove
+                  </button>
+                </div>
+              ) : null}
+            </div>
             <div className="mt-3 flex items-center justify-between gap-3">
               <Link
                 href={role === "customer" ? `/profile/bookings/${selectedThreadSummary.bookingId}` : `/provider/bookings/${selectedThreadSummary.bookingId}`}
@@ -520,7 +649,7 @@ export function BookingMessagesPanel({
               <button
                 type="button"
                 onClick={sendMessage}
-                disabled={isSending || !draft.trim()}
+                disabled={isSending || (!draft.trim() && !attachmentDataUrl) || !threadDetail?.canSendMessages}
                 className={`inline-flex h-11 items-center justify-center gap-2 rounded-[12px] px-4 text-[13px] font-extrabold text-white disabled:opacity-60 ${theme.composerButton}`}
               >
                 <SendHorizonal className="h-4 w-4" />

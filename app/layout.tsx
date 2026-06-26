@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { ChunkLoadRecovery } from "@/app/_components/chunk-load-recovery";
+import { GlobalPushListener } from "@/app/_components/global-push-listener";
 import {
   getAppBaseUrl,
   getPublicFirebaseApiKey,
@@ -67,6 +68,7 @@ export default function RootLayout({
           }}
         />
         <ChunkLoadRecovery />
+        <GlobalPushListener />
         {children}
       </body>
     </html>

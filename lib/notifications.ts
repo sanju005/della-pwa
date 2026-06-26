@@ -43,6 +43,8 @@ async function getCurrentNotificationPermission() {
   return Notification.permission;
 }
 
+export { getCurrentNotificationPermission };
+
 export async function getCurrentFCMToken() {
   try {
     lastPushError = "";

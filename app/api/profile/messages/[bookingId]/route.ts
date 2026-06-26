@@ -52,7 +52,12 @@ export async function POST(
   }
 
   const params = await context.params;
-  const payload = (await request.json().catch(() => ({}))) as { messageText?: string };
+  const payload = (await request.json().catch(() => ({}))) as {
+    messageText?: string;
+    attachmentDataUrl?: string;
+    attachmentFileName?: string;
+    attachmentMimeType?: string;
+  };
 
   try {
     await sendConversationMessage(
@@ -61,6 +66,11 @@ export async function POST(
       "customer",
       params.bookingId,
       payload.messageText ?? "",
+      {
+        attachmentDataUrl: payload.attachmentDataUrl,
+        attachmentFileName: payload.attachmentFileName,
+        attachmentMimeType: payload.attachmentMimeType,
+      },
     );
 
     const thread = await loadConversationDetail(
