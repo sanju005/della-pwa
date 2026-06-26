@@ -951,10 +951,10 @@ export function DashboardScreen() {
             </div>
           </div>
 
-          <Link
-            href="/provider/payments"
-            className="relative mt-5 block overflow-hidden rounded-[22px] border border-[#eadcf7] bg-[linear-gradient(135deg,#ffffff_0%,#fcfaff_72%,#f3eafd_100%)] p-5 shadow-[0_12px_28px_rgba(142,94,181,0.08)]"
-          >
+            <Link
+              href="/provider/bookings?tab=pending"
+              className="relative mt-5 block overflow-hidden rounded-[22px] border border-[#eadcf7] bg-[linear-gradient(135deg,#ffffff_0%,#fcfaff_72%,#f3eafd_100%)] p-5 shadow-[0_12px_28px_rgba(142,94,181,0.08)]"
+            >
             <div className="absolute -bottom-10 -right-6 h-28 w-36 rounded-full bg-[radial-gradient(circle,rgba(179,136,235,0.18)_0%,rgba(179,136,235,0)_72%)]" />
             <div className="relative flex items-center justify-between gap-4">
               <div className="flex items-center gap-4">
@@ -978,10 +978,10 @@ export function DashboardScreen() {
           </Link>
 
           <div className="mt-4 grid grid-cols-2 gap-3">
-            <Link
-              href="/provider/payments"
-              className="relative overflow-hidden rounded-[20px] border border-[#eadcf7] bg-[linear-gradient(135deg,#ffffff_0%,#fcfaff_72%,#f3eafd_100%)] p-3.5 shadow-[0_10px_20px_rgba(142,94,181,0.05)]"
-            >
+              <Link
+                href="/provider/bookings?tab=ongoing"
+                className="relative overflow-hidden rounded-[20px] border border-[#eadcf7] bg-[linear-gradient(135deg,#ffffff_0%,#fcfaff_72%,#f3eafd_100%)] p-3.5 shadow-[0_10px_20px_rgba(142,94,181,0.05)]"
+              >
               <div className="absolute -bottom-8 -right-4 h-20 w-24 rounded-full bg-[radial-gradient(circle,rgba(179,136,235,0.15)_0%,rgba(179,136,235,0)_72%)]" />
               <span className="relative inline-flex h-12 w-12 items-center justify-center rounded-[16px] bg-[#f5effd] text-[#7c3aed]">
                 <Clock3 className="h-6 w-6" />
@@ -990,10 +990,10 @@ export function DashboardScreen() {
               <p className="relative mt-2 text-[14px] font-black text-[#1f1630]">On Going</p>
               <p className="relative mt-1 text-[11px] leading-5 text-[#7b728a]">Take live task actions</p>
             </Link>
-            <Link
-              href="/provider/payments"
-              className="relative overflow-hidden rounded-[20px] border border-[#eadcf7] bg-[linear-gradient(135deg,#ffffff_0%,#fcfaff_72%,#f3eafd_100%)] p-3.5 shadow-[0_10px_20px_rgba(142,94,181,0.05)]"
-            >
+              <Link
+                href="/provider/bookings?tab=pending"
+                className="relative overflow-hidden rounded-[20px] border border-[#eadcf7] bg-[linear-gradient(135deg,#ffffff_0%,#fcfaff_72%,#f3eafd_100%)] p-3.5 shadow-[0_10px_20px_rgba(142,94,181,0.05)]"
+              >
               <div className="absolute -bottom-8 -right-4 h-20 w-24 rounded-full bg-[radial-gradient(circle,rgba(179,136,235,0.15)_0%,rgba(179,136,235,0)_72%)]" />
               <span className="relative inline-flex h-12 w-12 items-center justify-center rounded-[16px] bg-[#f5effd] text-[#7c3aed]">
                 <Bell className="h-6 w-6" />
@@ -1002,10 +1002,10 @@ export function DashboardScreen() {
               <p className="relative mt-2 text-[14px] font-black text-[#1f1630]">Pending Task</p>
               <p className="relative mt-1 text-[11px] leading-5 text-[#7b728a]">Pending for today</p>
             </Link>
-            <Link
-              href="/provider/payments"
-              className="relative overflow-hidden rounded-[20px] border border-[#eadcf7] bg-[linear-gradient(135deg,#ffffff_0%,#fcfaff_72%,#f3eafd_100%)] p-3.5 shadow-[0_10px_20px_rgba(142,94,181,0.05)]"
-            >
+              <Link
+                href="/provider/bookings?tab=completes"
+                className="relative overflow-hidden rounded-[20px] border border-[#eadcf7] bg-[linear-gradient(135deg,#ffffff_0%,#fcfaff_72%,#f3eafd_100%)] p-3.5 shadow-[0_10px_20px_rgba(142,94,181,0.05)]"
+              >
               <div className="absolute -bottom-8 -right-4 h-20 w-24 rounded-full bg-[radial-gradient(circle,rgba(179,136,235,0.15)_0%,rgba(179,136,235,0)_72%)]" />
               <span className="relative inline-flex h-12 w-12 items-center justify-center rounded-[16px] bg-[#f5effd] text-[#7c3aed]">
                 <CalendarDays className="h-6 w-6" />
@@ -2033,12 +2033,12 @@ export function BookingsScreen({
                 ) : null}
                 {tab === "upcoming" ? (
                   <div className="mt-4 flex gap-3">
-                    <AppButton
-                      className="flex-1"
-                      onClick={() => router.push("/provider/payments")}
-                    >
-                      Manage In Task Panel
-                    </AppButton>
+                      <AppButton
+                        className="flex-1"
+                        onClick={() => router.push("/provider/bookings?tab=ongoing")}
+                      >
+                        Manage In Task Panel
+                      </AppButton>
                     <AppButton
                       tone="secondary"
                       className="flex-1"
@@ -2730,7 +2730,7 @@ export function PaymentsScreen() {
 }
 
 export function TasksScreen() {
-  return <PaymentsScreen />;
+  return <BookingsScreen />;
 }
 
 export function ServicesScreen() {
