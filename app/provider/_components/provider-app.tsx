@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 
 import { BottomNav } from "@/app/_components/della-ui";
+import { subscribeToForegroundPush } from "@/lib/notifications";
 import { getSupabaseClient } from "@/lib/supabase";
 
 export type ProviderDashboardData = {
@@ -345,6 +346,7 @@ export function useProviderAppData() {
   useEffect(() => {
     let active = true;
     const client = getSupabaseClient();
+    let unsubscribeForegroundPush: (() => void) | undefined;
 
     async function load() {
       if (!client) {
@@ -373,12 +375,17 @@ export function useProviderAppData() {
       }
 
       await loadWorkspace(session.access_token);
+
+      unsubscribeForegroundPush = await subscribeToForegroundPush((path) => {
+        router.push(path);
+      });
     }
 
     void load();
 
     return () => {
       active = false;
+      unsubscribeForegroundPush?.();
     };
   }, [router]);
 

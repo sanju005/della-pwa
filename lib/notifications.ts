@@ -1,4 +1,4 @@
-import { deleteToken, getToken } from "firebase/messaging";
+import { deleteToken, getToken, onMessage } from "firebase/messaging";
 import { getFirebaseMessaging } from "./firebase";
 import { getSupabaseClient } from "./supabase";
 
@@ -323,4 +323,45 @@ export async function getPushSupportDiagnostics(): Promise<PushSupportDiagnostic
 
 export function getLastPushError() {
   return lastPushError;
+}
+
+export async function subscribeToForegroundPush(
+  onNotificationClick?: (path: string) => void,
+) {
+  const permission = await getCurrentNotificationPermission();
+
+  if (permission !== "granted") {
+    return () => undefined;
+  }
+
+  const messaging = await getFirebaseMessaging();
+
+  if (!messaging) {
+    return () => undefined;
+  }
+
+  return onMessage(messaging, (payload) => {
+    const title = payload.notification?.title || "DELLA";
+    const body = payload.notification?.body || "You have a new update.";
+    const path = payload.data?.path || "/profile/notifications";
+
+    if (typeof Notification !== "undefined" && Notification.permission === "granted") {
+      const notification = new Notification(title, {
+        body,
+        icon: "/icon.png",
+      });
+
+      notification.onclick = () => {
+        notification.close();
+        if (onNotificationClick) {
+          onNotificationClick(path);
+          return;
+        }
+
+        if (typeof window !== "undefined") {
+          window.location.href = path;
+        }
+      };
+    }
+  });
 }

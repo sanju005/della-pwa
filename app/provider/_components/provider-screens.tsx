@@ -952,7 +952,11 @@ export function DashboardScreen() {
           </div>
 
             <Link
-              href="/provider/bookings?tab=pending"
+              href={
+                pendingRequest
+                  ? `/provider/bookings?tab=pending&booking=${pendingRequest.id}`
+                  : "/provider/bookings?tab=pending"
+              }
               className="relative mt-5 block overflow-hidden rounded-[22px] border border-[#eadcf7] bg-[linear-gradient(135deg,#ffffff_0%,#fcfaff_72%,#f3eafd_100%)] p-5 shadow-[0_12px_28px_rgba(142,94,181,0.08)]"
             >
             <div className="absolute -bottom-10 -right-6 h-28 w-36 rounded-full bg-[radial-gradient(circle,rgba(179,136,235,0.18)_0%,rgba(179,136,235,0)_72%)]" />
@@ -1259,7 +1263,7 @@ export function BookingsScreen({
 }) {
   const router = useRouter();
   const state = useProviderAppData();
-  const [tab, setTab] = useState<"ongoing" | "upcoming" | "pending" | "canceled" | "completes">("upcoming");
+  const [tab, setTab] = useState<"all" | "ongoing" | "upcoming" | "pending" | "canceled" | "completes">("all");
   const [dateFilter, setDateFilter] = useState<"all" | "today" | "calendar">("all");
   const [calendarMonth, setCalendarMonth] = useState(() => {
     const now = new Date();
@@ -1275,6 +1279,31 @@ export function BookingsScreen({
     setSelectedBookingId(initialBookingId);
   }, [initialBookingId]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    const queryTab = params.get("tab");
+    const queryBookingId = params.get("booking");
+
+    if (
+      queryTab === "all" ||
+      queryTab === "ongoing" ||
+      queryTab === "upcoming" ||
+      queryTab === "pending" ||
+      queryTab === "canceled" ||
+      queryTab === "completes"
+    ) {
+      setTab(queryTab);
+    }
+
+    if (queryBookingId) {
+      setSelectedBookingId(queryBookingId);
+    }
+  }, []);
+
   const selectedBooking =
     state.bookings.find((booking) => booking.id === selectedBookingId) ?? null;
   const selectedBookingReview = selectedBooking
@@ -1287,18 +1316,7 @@ export function BookingsScreen({
     }
 
     const bookingTab = getBookingTab(selectedBooking);
-
-    if (bookingTab === "canceled") {
-      setTab("canceled");
-      return;
-    }
-
-    if (bookingTab === "completes") {
-      setTab("completes");
-      return;
-    }
-
-    setTab("upcoming");
+    setTab(bookingTab);
   }, [selectedBooking]);
 
   const fallback = LoadingOrError(state);
@@ -1405,16 +1423,74 @@ export function BookingsScreen({
   const bookingCountForDate = (dateKey: string) =>
     state.bookings.filter((booking) => booking.scheduledDate === dateKey).length;
 
+  const pendingBookings = state.bookings.filter(
+    (booking) => booking.bucket === "requests" || booking.bookingStatus === "pending",
+  );
+
+  const activeDateContext =
+    dateFilter === "today"
+      ? "current"
+      : dateFilter === "calendar"
+        ? calendarDate < todayKey
+          ? "past"
+          : calendarDate > todayKey
+            ? "future"
+            : "current"
+        : "all";
+
+  const tabOptions =
+    activeDateContext === "past"
+      ? [
+          ["all", "All"],
+          ["completes", "Completed"],
+          ["canceled", "Canceled"],
+        ]
+      : activeDateContext === "future"
+        ? [
+            ["all", "All"],
+            ["upcoming", "Upcoming"],
+            ["canceled", "Canceled"],
+          ]
+        : activeDateContext === "current"
+          ? [
+              ["all", "All"],
+              ["ongoing", "On Going"],
+              ["completes", "Completed"],
+              ["canceled", "Canceled"],
+            ]
+          : [
+              ["all", "All"],
+              ["pending", "Pending"],
+              ["upcoming", "Upcoming"],
+              ["ongoing", "On Going"],
+              ["completes", "Completed"],
+              ["canceled", "Canceled"],
+            ];
+
+  useEffect(() => {
+    if (!tabOptions.some(([value]) => value === tab)) {
+      setTab(tabOptions[0][0] as typeof tab);
+    }
+  }, [tab, tabOptions]);
+
   const items = state.bookings.filter((booking) => {
-    if (tab === "upcoming") {
+    if (tab === "pending") {
+      if (!(booking.bucket === "requests" || booking.bookingStatus === "pending")) {
+        return false;
+      }
+    } else if (tab === "upcoming") {
       if (!(booking.bookingStatus === "accepted" && booking.scheduledDate >= todayKey)) {
+        return false;
+      }
+    } else if (tab === "ongoing") {
+      if (!["accepted", "on_the_way", "arrived"].includes(booking.bookingStatus)) {
         return false;
       }
     } else if (tab === "canceled") {
       if (!(booking.bookingStatus === "declined" || booking.bookingStatus === "cancelled")) {
         return false;
       }
-    } else if (!["completed", "paid", "review_requested", "reviewed"].includes(booking.bookingStatus)) {
+    } else if (tab === "completes" && !["completed", "paid", "review_requested", "reviewed"].includes(booking.bookingStatus)) {
       return false;
     }
 
@@ -1437,7 +1513,17 @@ export function BookingsScreen({
       <section className="rounded-[24px] border border-[#eee5f7] bg-white p-5 shadow-[0_14px_32px_rgba(86,38,135,0.08)]">
         <button
           type="button"
-          onClick={() => router.push("/provider/payments")}
+          onClick={() => {
+            if (pendingBookings[0]) {
+              setSelectedBookingId(pendingBookings[0].id);
+              setTab("pending");
+              router.push(`/provider/bookings?tab=pending&booking=${pendingBookings[0].id}`);
+              return;
+            }
+
+            setTab("pending");
+            router.push("/provider/bookings?tab=pending");
+          }}
           className="flex w-full items-start justify-between gap-3 text-left"
         >
           <div>
@@ -1875,11 +1961,7 @@ export function BookingsScreen({
         ) : null}
 
         <div className="mt-4 flex flex-wrap gap-2">
-          {[
-            ["upcoming", "Upcoming"],
-            ["canceled", "Canceled"],
-            ["completes", "Completed"],
-          ].map(([value, label]) => (
+          {tabOptions.map(([value, label]) => (
             <button
               key={value}
               type="button"
@@ -1897,11 +1979,17 @@ export function BookingsScreen({
           {items.length === 0 ? (
             <EmptyState
               title={
-                tab === "upcoming"
+                tab === "pending"
+                  ? "No pending requests"
+                  : tab === "upcoming"
                   ? "No upcoming bookings"
+                  : tab === "ongoing"
+                    ? "No ongoing bookings"
                   : tab === "canceled"
                     ? "No canceled bookings"
-                    : "No completed bookings"
+                    : tab === "all"
+                      ? "No bookings found"
+                      : "No completed bookings"
               }
               description={
                 dateFilter === "today"
@@ -2008,7 +2096,7 @@ export function BookingsScreen({
                       tone="secondary"
                       onClick={() => openBooking(booking.id)}
                     >
-                      View Booking
+                      View Details
                     </AppButton>
                     <AppButton
                       className="flex-1"
