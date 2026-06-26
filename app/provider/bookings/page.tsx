@@ -1,5 +1,5 @@
-import { BookingsScreen } from "../_components/provider-screens";
+import { ProviderBookingsScreen } from "./provider-bookings-screen";
 
 export default function ProviderBookingsPage() {
-  return <BookingsScreen />;
+  return <ProviderBookingsScreen />;
 }

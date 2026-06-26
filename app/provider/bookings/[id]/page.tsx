@@ -1,4 +1,4 @@
-import { BookingsScreen } from "../../_components/provider-screens";
+import { ProviderBookingsScreen } from "../provider-bookings-screen";
 
 export default async function ProviderBookingDetailPage({
   params,
@@ -7,5 +7,5 @@ export default async function ProviderBookingDetailPage({
 }) {
   const { id } = await params;
 
-  return <BookingsScreen initialBookingId={id} />;
+  return <ProviderBookingsScreen initialBookingId={id} />;
 }
