@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   BriefcaseBusiness,
@@ -323,37 +323,6 @@ export function ProviderBookingsScreen({
     }
   }, []);
 
-  if (state.loading) {
-    return (
-      <MobilePage className="pb-28">
-        <LoadingState
-          title="Loading bookings"
-          description="We are preparing your provider booking workspace."
-        />
-        <ProviderBottomNav />
-      </MobilePage>
-    );
-  }
-
-  if (!state.data) {
-    return (
-      <MobilePage className="pb-28">
-        <section className="rounded-[28px] border border-[#dbe8df] bg-white p-5 shadow-[0_20px_60px_rgba(22,163,74,0.08)]">
-          <h1 className="text-[28px] font-extrabold tracking-[-0.05em] text-[#16a34a]">
-            Provider Bookings
-          </h1>
-          <p className="mt-3 text-[14px] leading-6 text-[#6b7280]">
-            {state.error || "We couldn't load your bookings right now."}
-          </p>
-          <AppButton className="mt-6" href="/provider/profile">
-            Back to profile
-          </AppButton>
-        </section>
-        <ProviderBottomNav />
-      </MobilePage>
-    );
-  }
-
   const todayKey = getTodayKey();
   const selectedBooking =
     state.bookings.find((booking) => booking.id === selectedBookingId) ?? null;
@@ -381,7 +350,7 @@ export function ProviderBookingsScreen({
   const dateContext =
     selectedDate < todayKey ? "past" : selectedDate > todayKey ? "future" : "current";
 
-  const tabOptions = useMemo(() => {
+  const tabOptions = (() => {
     if (dateContext === "past") {
       return [
         ["all", "All"],
@@ -404,32 +373,27 @@ export function ProviderBookingsScreen({
       ["canceled", "Canceled"],
       ["completes", "Completed"],
     ] as Array<[BookingTab, string]>;
-  }, [dateContext]);
-
-  useEffect(() => {
-    if (!tabOptions.some(([value]) => value === tab)) {
-      setTab(tabOptions[0][0]);
-    }
-  }, [tab, tabOptions]);
+  })();
+  const activeTab = tabOptions.some(([value]) => value === tab) ? tab : tabOptions[0][0];
 
   const items = state.bookings.filter((booking) => {
     if (booking.scheduledDate !== selectedDate) {
       return false;
     }
 
-    if (tab === "pending") {
+    if (activeTab === "pending") {
       return booking.bucket === "requests" || booking.bookingStatus === "pending";
     }
 
-    if (tab === "ongoing") {
+    if (activeTab === "ongoing") {
       return isOngoingStatus(booking.bookingStatus);
     }
 
-    if (tab === "canceled") {
+    if (activeTab === "canceled") {
       return isCanceledStatus(booking.bookingStatus);
     }
 
-    if (tab === "completes") {
+    if (activeTab === "completes") {
       return isCompletedStatus(booking.bookingStatus);
     }
 
@@ -464,6 +428,37 @@ export function ProviderBookingsScreen({
 
   function handleArrived(bookingId: string) {
     state.handleBookingAction(bookingId, "arrived", "Provider arrived at customer location");
+  }
+
+  if (state.loading) {
+    return (
+      <MobilePage className="pb-28">
+        <LoadingState
+          title="Loading bookings"
+          description="We are preparing your provider booking workspace."
+        />
+        <ProviderBottomNav />
+      </MobilePage>
+    );
+  }
+
+  if (!state.data) {
+    return (
+      <MobilePage className="pb-28">
+        <section className="rounded-[28px] border border-[#dbe8df] bg-white p-5 shadow-[0_20px_60px_rgba(22,163,74,0.08)]">
+          <h1 className="text-[28px] font-extrabold tracking-[-0.05em] text-[#16a34a]">
+            Provider Bookings
+          </h1>
+          <p className="mt-3 text-[14px] leading-6 text-[#6b7280]">
+            {state.error || "We couldn't load your bookings right now."}
+          </p>
+          <AppButton className="mt-6" href="/provider/profile">
+            Back to profile
+          </AppButton>
+        </section>
+        <ProviderBottomNav />
+      </MobilePage>
+    );
   }
 
   return (
@@ -612,7 +607,7 @@ export function ProviderBookingsScreen({
                 type="button"
                 onClick={() => setTab(value)}
                 className={`inline-flex min-h-[44px] items-center justify-center rounded-[14px] px-5 py-2.5 text-[13px] font-medium transition ${
-                  tab === value
+                  activeTab === value
                     ? "border border-[#e8d9fb] bg-white text-[#8E5EB5] shadow-[0_10px_20px_rgba(142,94,181,0.10)]"
                     : "bg-[#f7f1fc] text-[#746b88]"
                 }`}
