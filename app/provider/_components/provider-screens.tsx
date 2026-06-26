@@ -1264,7 +1264,6 @@ export function BookingsScreen({
   const router = useRouter();
   const state = useProviderAppData();
   const [tab, setTab] = useState<"all" | "ongoing" | "upcoming" | "pending" | "canceled" | "completes">("all");
-  const [dateFilter, setDateFilter] = useState<"all" | "today" | "calendar">("all");
   const [calendarMonth, setCalendarMonth] = useState(() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
@@ -1428,15 +1427,11 @@ export function BookingsScreen({
   );
 
   const activeDateContext =
-    dateFilter === "today"
-      ? "current"
-      : dateFilter === "calendar"
-        ? calendarDate < todayKey
-          ? "past"
-          : calendarDate > todayKey
-            ? "future"
-            : "current"
-        : "all";
+    calendarDate < todayKey
+      ? "past"
+      : calendarDate > todayKey
+        ? "future"
+        : "current";
 
   const tabOptions =
     activeDateContext === "past"
@@ -1448,24 +1443,15 @@ export function BookingsScreen({
       : activeDateContext === "future"
         ? [
             ["all", "All"],
-            ["upcoming", "Upcoming"],
+            ["pending", "Pending"],
             ["canceled", "Canceled"],
           ]
-        : activeDateContext === "current"
-          ? [
-              ["all", "All"],
-              ["ongoing", "On Going"],
-              ["completes", "Completed"],
-              ["canceled", "Canceled"],
-            ]
-          : [
-              ["all", "All"],
-              ["pending", "Pending"],
-              ["upcoming", "Upcoming"],
-              ["ongoing", "On Going"],
-              ["completes", "Completed"],
-              ["canceled", "Canceled"],
-            ];
+        : [
+            ["ongoing", "On Going"],
+            ["pending", "Pending"],
+            ["canceled", "Canceled"],
+            ["completes", "Completed"],
+          ];
 
   useEffect(() => {
     if (!tabOptions.some(([value]) => value === tab)) {
@@ -1494,15 +1480,7 @@ export function BookingsScreen({
       return false;
     }
 
-    if (dateFilter === "today") {
-      return booking.scheduledDate === todayKey;
-    }
-
-    if (dateFilter === "calendar") {
-      return booking.scheduledDate === calendarDate;
-    }
-
-    return true;
+    return booking.scheduledDate === calendarDate;
   });
 
   return (
@@ -1879,86 +1857,60 @@ export function BookingsScreen({
       ) : null}
 
       <section className="rounded-[24px] border border-[#eee5f7] bg-white p-5 shadow-[0_14px_32px_rgba(86,38,135,0.08)]">
-        <div className="flex flex-wrap gap-2">
-          {[
-            ["all", "All"],
-            ["today", "Today"],
-            ["calendar", "Calendar"],
-          ].map(([value, label]) => (
+        <div className="mt-4 rounded-[20px] border border-[#eee5f7] bg-[#fcfaff] p-4">
+          <div className="flex items-center justify-between gap-3">
             <button
-              key={value}
               type="button"
-              onClick={() => {
-                setDateFilter(value as typeof dateFilter);
-                if (value === "today") {
-                  setCalendarDate(todayKey);
-                }
-              }}
-              className={`inline-flex min-h-[44px] items-center justify-center rounded-[14px] px-5 py-2.5 text-[13px] font-medium transition ${
-                dateFilter === value ? "border border-[#e8d9fb] bg-white text-[#8E5EB5] shadow-[0_10px_20px_rgba(142,94,181,0.10)]" : "bg-[#f7f1fc] text-[#746b88]"
-              }`}
+              onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1))}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white text-[#8E5EB5]"
             >
-              {label}
+              <ChevronLeft className="h-4 w-4" />
             </button>
-          ))}
-        </div>
-
-        {dateFilter === "calendar" ? (
-          <div className="mt-4 rounded-[20px] border border-[#eee5f7] bg-[#fcfaff] p-4">
-            <div className="flex items-center justify-between gap-3">
-              <button
-                type="button"
-                onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1))}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white text-[#8E5EB5]"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </button>
-              <div className="text-center">
-                <p className="text-[15px] font-black text-[#1f1630]">{calendarMonthLabel}</p>
-                <p className="mt-1 text-[12px] text-[#7b728a]">Dates show the total number of bookings.</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1))}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white text-[#8E5EB5]"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </button>
+            <div className="text-center">
+              <p className="text-[15px] font-black text-[#1f1630]">{calendarMonthLabel}</p>
+              <p className="mt-1 text-[12px] text-[#7b728a]">Select a date to load booking cards below.</p>
             </div>
-
-            <div className="mt-4 grid grid-cols-7 gap-2 text-center text-[11px] font-bold text-[#94a3b8]">
-              {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((label) => (
-                <span key={label}>{label}</span>
-              ))}
-            </div>
-
-            <div className="mt-3 grid grid-cols-7 gap-2">
-              {calendarCells.map((cell, index) => {
-                const count = cell.key ? bookingCountForDate(cell.key) : 0;
-                const isActive = cell.key === calendarDate;
-
-                return (
-                  <button
-                    key={cell.key ?? `bookings-calendar-${index}`}
-                    type="button"
-                    disabled={!cell.key}
-                    onClick={() => cell.key && setCalendarDate(cell.key)}
-                    className={`flex h-14 flex-col items-center justify-center rounded-[14px] text-[12px] font-bold ${
-                      isActive ? "bg-[#8E5EB5] text-white" : "bg-white text-[#1f1630] disabled:bg-transparent disabled:text-transparent"
-                    }`}
-                  >
-                    <span>{cell.label}</span>
-                    {cell.key ? (
-                      <span className={`mt-1 text-[10px] ${isActive ? "text-white/85" : count > 0 ? "text-[#8E5EB5]" : "text-[#c4b7d8]"}`}>
-                        {count}
-                      </span>
-                    ) : null}
-                  </button>
-                );
-              })}
-            </div>
+            <button
+              type="button"
+              onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1))}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white text-[#8E5EB5]"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
           </div>
-        ) : null}
+
+          <div className="mt-4 grid grid-cols-7 gap-2 text-center text-[11px] font-bold text-[#94a3b8]">
+            {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((label) => (
+              <span key={label}>{label}</span>
+            ))}
+          </div>
+
+          <div className="mt-3 grid grid-cols-7 gap-2">
+            {calendarCells.map((cell, index) => {
+              const count = cell.key ? bookingCountForDate(cell.key) : 0;
+              const isActive = cell.key === calendarDate;
+
+              return (
+                <button
+                  key={cell.key ?? `bookings-calendar-${index}`}
+                  type="button"
+                  disabled={!cell.key}
+                  onClick={() => cell.key && setCalendarDate(cell.key)}
+                  className={`flex h-14 flex-col items-center justify-center rounded-[14px] text-[12px] font-bold ${
+                    isActive ? "bg-[#8E5EB5] text-white" : "bg-white text-[#1f1630] disabled:bg-transparent disabled:text-transparent"
+                  }`}
+                >
+                  <span>{cell.label}</span>
+                  {cell.key ? (
+                    <span className={`mt-1 text-[10px] ${isActive ? "text-white/85" : count > 0 ? "text-[#8E5EB5]" : "text-[#c4b7d8]"}`}>
+                      {count}
+                    </span>
+                  ) : null}
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
         <div className="mt-4 flex flex-wrap gap-2">
           {tabOptions.map(([value, label]) => (
@@ -1992,11 +1944,7 @@ export function BookingsScreen({
                       : "No completed bookings"
               }
               description={
-                dateFilter === "today"
-                  ? "No bookings found for today in this section."
-                  : dateFilter === "calendar"
-                    ? "No bookings found for the selected calendar date."
-                    : "This list will fill automatically as bookings move through their status."
+                "No bookings found for the selected calendar date in this section."
               }
               icon={<CalendarDays className="h-6 w-6" />}
             />
