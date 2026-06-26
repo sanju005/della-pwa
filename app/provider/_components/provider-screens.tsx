@@ -1333,15 +1333,6 @@ export function BookingsScreen({
     }
   }, [pendingInitialSelection, selectedBookingId, state]);
 
-  useEffect(() => {
-    if (!selectedBooking) {
-      return;
-    }
-
-    const bookingTab = getBookingTab(selectedBooking);
-    setTab(bookingTab);
-  }, [selectedBooking]);
-
   const fallback = LoadingOrError(state);
 
   if (fallback) {
@@ -1482,6 +1473,26 @@ export function BookingsScreen({
       setTab(tabOptions[0][0] as typeof tab);
     }
   }, [tab, tabOptions]);
+
+  useEffect(() => {
+    if (!selectedBooking) {
+      return;
+    }
+
+    const bookingTab = getBookingTab(selectedBooking);
+    const validTabs = new Set(tabOptions.map(([value]) => value));
+
+    if (validTabs.has(bookingTab)) {
+      if (tab !== bookingTab) {
+        setTab(bookingTab);
+      }
+      return;
+    }
+
+    if (!validTabs.has(tab) && tabOptions[0]?.[0] && tab !== tabOptions[0][0]) {
+      setTab(tabOptions[0][0] as typeof tab);
+    }
+  }, [selectedBooking, tab, tabOptions]);
 
   const items = state.bookings.filter((booking) => {
     if (tab === "pending") {
