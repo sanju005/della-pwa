@@ -490,22 +490,18 @@ export function BottomNav({
     label: string;
     icon: ReactNode;
     active?: boolean;
+    hardNavigate?: boolean;
   }>;
 }) {
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-[430px] border-t border-[#e8ece8] bg-white/97 px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-2.5 backdrop-blur">
       <div className="flex items-center justify-between gap-1 text-[10.5px] font-medium text-[#8a94a6]">
-        {items.map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            className={cx(
-              "flex min-w-[3.1rem] flex-col items-center gap-1",
-              item.active ? "text-[#16a34a]" : "text-[#8a94a6]"
-            )}
-          >
-            {item.icon}
-            <span>{item.label}</span>
+        {items.map((item) => {
+          const navClassName = cx(
+            "flex min-w-[3.1rem] flex-col items-center gap-1",
+            item.active ? "text-[#16a34a]" : "text-[#8a94a6]"
+          );
+          const indicator = (
             <span className="flex h-3 items-end">
               <span
                 className={cx(
@@ -514,8 +510,26 @@ export function BottomNav({
                 )}
               />
             </span>
-          </Link>
-        ))}
+          );
+
+          if (item.hardNavigate) {
+            return (
+              <a key={item.href} href={item.href} className={navClassName}>
+                {item.icon}
+                <span>{item.label}</span>
+                {indicator}
+              </a>
+            );
+          }
+
+          return (
+            <Link key={item.href} href={item.href} className={navClassName}>
+              {item.icon}
+              <span>{item.label}</span>
+              {indicator}
+            </Link>
+          );
+        })}
       </div>
     </nav>
   );

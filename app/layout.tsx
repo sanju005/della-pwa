@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { ChunkLoadRecovery } from "@/app/_components/chunk-load-recovery";
 import {
   getAppBaseUrl,
   getPublicFirebaseApiKey,
@@ -65,6 +66,7 @@ export default function RootLayout({
             __html: `window.__DELLA_PUBLIC_CONFIG = ${JSON.stringify(publicRuntimeConfig)};`,
           }}
         />
+        <ChunkLoadRecovery />
         {children}
       </body>
     </html>

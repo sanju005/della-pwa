@@ -583,18 +583,21 @@ export function ProviderBottomNav() {
           label: "Home",
           icon: <BriefcaseBusiness className="h-5 w-5" />,
           active: pathname === "/provider/dashboard",
+          hardNavigate: true,
         },
         {
           href: "/provider/bookings",
           label: "Bookings",
           icon: <CalendarDays className="h-5 w-5" />,
           active: pathname === "/provider/bookings" || pathname === "/provider/calendar",
+          hardNavigate: true,
         },
         {
           href: "/provider/messages",
           label: "Messages",
           icon: <MessageCircleMore className="h-5 w-5" />,
           active: pathname === "/provider/messages",
+          hardNavigate: true,
         },
         {
           href: "/provider/payments",
@@ -604,12 +607,14 @@ export function ProviderBottomNav() {
             pathname === "/provider/payments" ||
             pathname === "/provider/tasks" ||
             pathname === "/provider/earnings",
+          hardNavigate: true,
         },
         {
           href: "/provider/profile",
           label: "Profile",
           icon: <UserRound className="h-5 w-5" />,
           active: pathname === "/provider/profile" || pathname === "/provider/more",
+          hardNavigate: true,
         },
       ]}
     />
