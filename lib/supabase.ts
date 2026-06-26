@@ -9,6 +9,12 @@ declare global {
       supabaseUrl?: string | null;
       supabasePublishableKey?: string | null;
       appBaseUrl?: string | null;
+      firebaseApiKey?: string | null;
+      firebaseAuthDomain?: string | null;
+      firebaseProjectId?: string | null;
+      firebaseStorageBucket?: string | null;
+      firebaseMessagingSenderId?: string | null;
+      firebaseAppId?: string | null;
     };
   }
 }

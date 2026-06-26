@@ -43,3 +43,27 @@ export function getFirebaseClientEmail() {
 export function getFirebasePrivateKey() {
   return process.env.FIREBASE_PRIVATE_KEY ?? null;
 }
+
+export function getPublicFirebaseApiKey() {
+  return process.env.NEXT_PUBLIC_FIREBASE_API_KEY ?? null;
+}
+
+export function getPublicFirebaseAuthDomain() {
+  return process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN ?? null;
+}
+
+export function getPublicFirebaseProjectId() {
+  return process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ?? null;
+}
+
+export function getPublicFirebaseStorageBucket() {
+  return process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET ?? null;
+}
+
+export function getPublicFirebaseMessagingSenderId() {
+  return process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID ?? null;
+}
+
+export function getPublicFirebaseAppId() {
+  return process.env.NEXT_PUBLIC_FIREBASE_APP_ID ?? null;
+}

@@ -2,6 +2,12 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import {
   getAppBaseUrl,
+  getPublicFirebaseApiKey,
+  getPublicFirebaseAppId,
+  getPublicFirebaseAuthDomain,
+  getPublicFirebaseMessagingSenderId,
+  getPublicFirebaseProjectId,
+  getPublicFirebaseStorageBucket,
   getSupabasePublishableKey,
   getSupabaseUrl,
 } from "@/lib/supabase-env";
@@ -41,6 +47,12 @@ export default function RootLayout({
     supabaseUrl: getSupabaseUrl(),
     supabasePublishableKey: getSupabasePublishableKey(),
     appBaseUrl: getAppBaseUrl(),
+    firebaseApiKey: getPublicFirebaseApiKey(),
+    firebaseAuthDomain: getPublicFirebaseAuthDomain(),
+    firebaseProjectId: getPublicFirebaseProjectId(),
+    firebaseStorageBucket: getPublicFirebaseStorageBucket(),
+    firebaseMessagingSenderId: getPublicFirebaseMessagingSenderId(),
+    firebaseAppId: getPublicFirebaseAppId(),
   };
 
   return (
