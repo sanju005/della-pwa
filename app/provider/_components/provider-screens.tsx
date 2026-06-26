@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useEffect, useState, type ChangeEvent } from "react";
+import { useEffect, useMemo, useState, type ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
 import {
   Bell,
@@ -1263,6 +1263,10 @@ export function BookingsScreen({
 }) {
   const router = useRouter();
   const state = useProviderAppData();
+  const bookings = state.bookings;
+  const reviews = state.reviews;
+  const isLoading = state.loading;
+  const setAppError = state.setError;
   const [tab, setTab] = useState<"all" | "ongoing" | "upcoming" | "pending" | "canceled" | "completes">("all");
   const [calendarMonth, setCalendarMonth] = useState(() => {
     const now = new Date();
@@ -1306,9 +1310,9 @@ export function BookingsScreen({
   }, []);
 
   const selectedBooking =
-    state.bookings.find((booking) => booking.id === selectedBookingId) ?? null;
+    bookings.find((booking) => booking.id === selectedBookingId) ?? null;
   const selectedBookingReview = selectedBooking
-    ? state.reviews.find((review) => review.customerName === selectedBooking.customerName) ?? null
+    ? reviews.find((review) => review.customerName === selectedBooking.customerName) ?? null
     : null;
 
   useEffect(() => {
@@ -1316,22 +1320,22 @@ export function BookingsScreen({
       return;
     }
 
-    if (state.loading) {
+    if (isLoading) {
       return;
     }
 
-    const matchedBooking = state.bookings.find((booking) => booking.id === selectedBookingId);
+    const matchedBooking = bookings.find((booking) => booking.id === selectedBookingId);
 
     if (matchedBooking) {
       setPendingInitialSelection(false);
       return;
     }
 
-    if (state.bookings.length > 0) {
+    if (bookings.length > 0) {
       setPendingInitialSelection(false);
-      state.setError("This booking could not be found for your provider account.");
+      setAppError("This booking could not be found for your provider account.");
     }
-  }, [pendingInitialSelection, selectedBookingId, state]);
+  }, [bookings, isLoading, pendingInitialSelection, selectedBookingId, setAppError]);
 
   const fallback = LoadingOrError(state);
 
@@ -1435,9 +1439,9 @@ export function BookingsScreen({
   }
 
   const bookingCountForDate = (dateKey: string) =>
-    state.bookings.filter((booking) => booking.scheduledDate === dateKey).length;
+    bookings.filter((booking) => booking.scheduledDate === dateKey).length;
 
-  const pendingBookings = state.bookings.filter(
+  const pendingBookings = bookings.filter(
     (booking) => booking.bucket === "requests" || booking.bookingStatus === "pending",
   );
 
@@ -1448,25 +1452,28 @@ export function BookingsScreen({
         ? "future"
         : "current";
 
-  const tabOptions =
-    activeDateContext === "past"
-      ? [
-          ["all", "All"],
-          ["completes", "Completed"],
-          ["canceled", "Canceled"],
-        ]
-      : activeDateContext === "future"
+  const tabOptions = useMemo(
+    () =>
+      activeDateContext === "past"
         ? [
             ["all", "All"],
-            ["pending", "Pending"],
+            ["completes", "Completed"],
             ["canceled", "Canceled"],
           ]
-        : [
-            ["ongoing", "On Going"],
-            ["pending", "Pending"],
-            ["canceled", "Canceled"],
-            ["completes", "Completed"],
-          ];
+        : activeDateContext === "future"
+          ? [
+              ["all", "All"],
+              ["pending", "Pending"],
+              ["canceled", "Canceled"],
+            ]
+          : [
+              ["ongoing", "On Going"],
+              ["pending", "Pending"],
+              ["canceled", "Canceled"],
+              ["completes", "Completed"],
+            ],
+    [activeDateContext],
+  );
 
   useEffect(() => {
     if (!tabOptions.some(([value]) => value === tab)) {
@@ -1494,7 +1501,7 @@ export function BookingsScreen({
     }
   }, [selectedBooking, tab, tabOptions]);
 
-  const items = state.bookings.filter((booking) => {
+  const items = bookings.filter((booking) => {
     if (tab === "pending") {
       if (!(booking.bucket === "requests" || booking.bookingStatus === "pending")) {
         return false;
@@ -1553,7 +1560,7 @@ export function BookingsScreen({
           <div className="rounded-[18px] bg-[#f7f1fc] px-4 py-3 text-center">
             <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#8E5EB5]">New Request</p>
             <p className="mt-1 text-[1.5rem] font-black text-[#1f1630]">
-              {state.bookings.filter((booking) => booking.bookingStatus === "pending").length}
+              {bookings.filter((booking) => booking.bookingStatus === "pending").length}
             </p>
           </div>
         </button>
