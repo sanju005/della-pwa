@@ -459,18 +459,20 @@ function ProviderPushNotificationsCard() {
       const support = await getPushSupportDiagnostics();
       setDiagnostics(support);
 
-      if (!token) {
-        const state = await getPushSetupState();
-        setPushState(state);
-        setNotice(
-          support.permission === "unsupported"
-            ? "Push is not supported on this device/browser for the current web environment."
-            : state.permission === "denied"
-              ? "Push is blocked in this browser. Please allow notifications in browser settings."
-              : "Push permission was not granted."
-        );
-        return;
-      }
+        if (!token) {
+          const state = await getPushSetupState();
+          setPushState(state);
+          setNotice(
+            support.permission === "unsupported"
+              ? "Push is not supported on this device/browser for the current web environment."
+              : support.permission === "denied"
+                ? "Push is blocked in this browser. Please allow notifications in browser settings."
+                : support.permission === "granted"
+                  ? "Browser permission is granted, but Firebase could not create a push token. Please check the Device Check values below."
+                  : "Push permission was dismissed or not granted yet."
+          );
+          return;
+        }
 
       const result = await saveFCMToken(token);
 

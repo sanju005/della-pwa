@@ -15,6 +15,7 @@ import { BookingMessagesPanel } from "@/app/_components/booking-messages-panel";
 import { LiveLocationChip } from "@/app/_components/live-location-chip";
 import {
   disablePushNotifications,
+  getPushSupportDiagnostics,
   getPushSetupState,
   requestNotificationPermission,
   saveFCMToken,
@@ -2440,19 +2441,24 @@ export function NotificationsScreen({
     setPushBusy(true);
     setPushNotice("");
 
-    try {
-      const token = await requestNotificationPermission();
+      try {
+        const token = await requestNotificationPermission();
 
-      if (!token) {
-        const state = await getPushSetupState();
-        setPushState(state);
-        setPushNotice(
-          state.permission === "denied"
-            ? "Push is blocked in this browser. Please allow notifications in browser settings."
-            : "Push permission was not granted."
-        );
-        return;
-      }
+        if (!token) {
+          const support = await getPushSupportDiagnostics();
+          const state = await getPushSetupState();
+          setPushState(state);
+          setPushNotice(
+            support.permission === "unsupported"
+              ? "Push is not supported on this device/browser for the current web environment."
+              : support.permission === "denied"
+                ? "Push is blocked in this browser. Please allow notifications in browser settings."
+                : support.permission === "granted"
+                  ? "Browser permission is granted, but Firebase could not create a push token on this device."
+                  : "Push permission was dismissed or not granted yet."
+          );
+          return;
+        }
 
       const result = await saveFCMToken(token);
 
