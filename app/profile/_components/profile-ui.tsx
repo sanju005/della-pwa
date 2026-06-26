@@ -94,8 +94,130 @@ type BookingReviewProps = {
   booking: Booking;
 };
 
+type TaskStepState = "done" | "current" | "waiting";
+
 function isPdfProof(mimeType?: string, fileName?: string) {
   return mimeType === "application/pdf" || fileName?.toLowerCase().endsWith(".pdf");
+}
+
+function formatStepDate(value?: string) {
+  if (!value) {
+    return "";
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  return new Intl.DateTimeFormat("en-MY", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  }).format(date);
+}
+
+function formatStepTime(value?: string) {
+  if (!value) {
+    return "";
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  return new Intl.DateTimeFormat("en-MY", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  }).format(date);
+}
+
+function StepTimelineCard({
+  number,
+  title,
+  description,
+  state,
+  dateLabel,
+  timeLabel,
+  expanded = false,
+  children,
+}: {
+  number: number;
+  title: string;
+  description?: string;
+  state: TaskStepState;
+  dateLabel?: string;
+  timeLabel?: string;
+  expanded?: boolean;
+  children?: React.ReactNode;
+}) {
+  const done = state === "done";
+  const current = state === "current";
+
+  return (
+    <div className="relative flex gap-4">
+      <div className="flex w-14 flex-col items-center">
+        <span
+          className={`inline-flex h-12 w-12 items-center justify-center rounded-full border-4 text-lg font-black ${
+            done || current
+              ? "border-[#8E5EB5] bg-[#8E5EB5] text-white"
+              : "border-[#e5e7eb] bg-white text-[#94a3b8]"
+          }`}
+        >
+          {done ? <CheckCircleIcon className="h-6 w-6" /> : number}
+        </span>
+        <span className={`mt-2 h-full min-h-16 w-[2px] ${done || current ? "bg-[#8E5EB5]" : "bg-[#e5e7eb]"}`} />
+      </div>
+      <div
+        className={`flex-1 rounded-[24px] border p-5 shadow-[0_16px_34px_rgba(106,69,160,0.08)] ${
+          current
+            ? "border-[#dcc7f7] bg-[linear-gradient(180deg,#fcf7ff_0%,#fffefe_100%)]"
+            : "border-[#ebe2f8] bg-white"
+        }`}
+      >
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h3 className="text-[1.1rem] font-black tracking-[-0.04em] text-[#1f1630]">
+              {number}. {title}
+            </h3>
+            {(dateLabel || timeLabel) ? (
+              <div className="mt-2 flex flex-wrap items-center gap-4 text-[12px] text-[#6d6480]">
+                {dateLabel ? (
+                  <span className="inline-flex items-center gap-2">
+                    <CalendarIcon className="h-4 w-4" />
+                    {dateLabel}
+                  </span>
+                ) : null}
+                {timeLabel ? (
+                  <span className="inline-flex items-center gap-2">
+                    <ClockIcon className="h-4 w-4" />
+                    {timeLabel}
+                  </span>
+                ) : null}
+              </div>
+            ) : null}
+            {description ? (
+              <p className="mt-3 text-[13px] leading-6 text-[#6d6480]">{description}</p>
+            ) : null}
+          </div>
+          <span
+            className={`inline-flex items-center rounded-full px-4 py-2 text-[12px] font-bold ${
+              done
+                ? "bg-[#eef9f0] text-[#16a34a]"
+                : current
+                  ? "bg-[#f3e8ff] text-[#8E5EB5]"
+                  : "bg-[#f3f4f6] text-[#6b7280]"
+            }`}
+          >
+            {done ? "Done" : current ? "Current Step" : "Waiting"}
+          </span>
+        </div>
+        {expanded ? <div className="mt-4">{children}</div> : null}
+      </div>
+    </div>
+  );
 }
 
 function PaymentProofPreview({
@@ -1369,7 +1491,6 @@ export function SettingsScreen({ groups }: SettingsProps) {
 }
 
 export function BookingDetailScreen({ booking }: BookingDetailProps) {
-  const progressSteps = booking.activitySteps ?? [];
   const router = useRouter();
   const searchParams = useSearchParams();
   const [paymentError, setPaymentError] = useState("");
@@ -1394,6 +1515,64 @@ export function BookingDetailScreen({ booking }: BookingDetailProps) {
           : canReview
             ? "Task Completed"
             : "Awaiting Payment";
+  const confirmedDate = formatStepDate(booking.acceptedAt || booking.createdAt);
+  const confirmedTime = formatStepTime(booking.acceptedAt || booking.createdAt);
+  const onTheWayDate = formatStepDate(booking.onTheWayAt);
+  const onTheWayTime = formatStepTime(booking.onTheWayAt);
+  const arrivedDate = formatStepDate(booking.arrivedAt);
+  const arrivedTime = formatStepTime(booking.arrivedAt);
+  const jobDoneDate = formatStepDate(booking.completedAt);
+  const jobDoneTime = formatStepTime(booking.completedAt);
+  const paymentDoneDate = formatStepDate(booking.paidAt);
+  const paymentDoneTime = formatStepTime(booking.paidAt);
+  const completedDate = formatStepDate(booking.reviewRequestedAt);
+  const completedTime = formatStepTime(booking.reviewRequestedAt);
+  const reviewDate = formatStepDate(booking.reviewedAt);
+  const reviewTime = formatStepTime(booking.reviewedAt);
+  const stepState = {
+    confirmed:
+      ["accepted", "on_the_way", "arrived", "completed", "paid", "review_requested", "reviewed"].includes(booking.workflowStatus)
+        ? "done"
+        : booking.workflowStatus === "pending"
+          ? "current"
+          : "waiting",
+    onTheWay:
+      ["on_the_way", "arrived", "completed", "paid", "review_requested", "reviewed"].includes(booking.workflowStatus)
+        ? "done"
+        : booking.workflowStatus === "accepted"
+          ? "current"
+          : "waiting",
+    arrived:
+      ["arrived", "completed", "paid", "review_requested", "reviewed"].includes(booking.workflowStatus)
+        ? "done"
+        : booking.workflowStatus === "on_the_way"
+          ? "current"
+          : "waiting",
+    jobDone:
+      ["completed", "paid", "review_requested", "reviewed"].includes(booking.workflowStatus)
+        ? "done"
+        : booking.workflowStatus === "arrived"
+          ? "current"
+          : "waiting",
+    paymentRequest:
+      booking.workflowStatus === "completed"
+        ? "current"
+        : ["paid", "review_requested", "reviewed"].includes(booking.workflowStatus)
+          ? "done"
+          : "waiting",
+    userCompleted:
+      booking.workflowStatus === "paid"
+        ? "current"
+        : ["review_requested", "reviewed"].includes(booking.workflowStatus)
+          ? "done"
+          : "waiting",
+    review:
+      booking.workflowStatus === "review_requested"
+        ? "current"
+        : booking.workflowStatus === "reviewed"
+          ? "done"
+          : "waiting",
+  } as const;
 
   useEffect(() => {
     if (searchParams.get("payment") === "success") {
@@ -1523,76 +1702,131 @@ export function BookingDetailScreen({ booking }: BookingDetailProps) {
   }
 
   return (
-    <ProfileShell title="Task Progress" showBack backHref="/profile/bookings">
-      <div className="rounded-[24px] border border-[#ebe2f8] bg-white p-4 shadow-[0_16px_34px_rgba(106,69,160,0.08)]">
-        <div className="flex gap-4">
-          <div className="rounded-[18px] border border-[#f1e7fb] bg-[#fffdfd] p-1">
-            <BookingThumb kind={booking.thumbnail} imageSrc={booking.imageSrc} service={booking.service} />
-          </div>
-          <div className="min-w-0 flex-1">
-            <h2 className="text-[16px] font-black text-[#1f1630]">
-              {booking.provider}
-            </h2>
-            <p className="mt-1 text-[12px] font-semibold text-[#6d6480]">{booking.service}</p>
-            <p className="mt-1 text-[11px] text-[#8f86a2]">{booking.schedule}</p>
-            <span className={`mt-3 inline-flex rounded-full px-3 py-1 text-[11px] font-bold ${badgeToneClass(booking.badgeTone)}`}>
-              {booking.statusLabel}
-            </span>
-          </div>
-        </div>
+    <ProfileShell title="User Task Path" showBack backHref="/profile/bookings">
+      <div className="rounded-[28px] border border-[#ebe2f8] bg-white p-5 text-center shadow-[0_20px_48px_rgba(106,69,160,0.08)]">
+        <p className="text-[1.15rem] font-black tracking-[0.2em] text-[#8E5EB5]">DELLA</p>
+        <h2 className="mt-2 text-[2rem] font-black tracking-[-0.06em] text-[#1f1630]">USER TASK PATH</h2>
+        <p className="mt-2 text-[14px] text-[#6d6480]">Track service, pay cash, and complete the job</p>
       </div>
 
-      <section className="mt-4 rounded-[24px] border border-[#ebe2f8] bg-white p-4 shadow-[0_14px_30px_rgba(106,69,160,0.07)]">
-        <p className="text-[12px] font-extrabold uppercase tracking-[0.14em] text-[#8E5EB5]">
-          Task Path
-        </p>
-        <div className="mt-4 space-y-4">
-          {progressSteps.map((step, index, steps) => (
-            <div key={step.label} className="flex gap-3">
-              <div className="flex flex-col items-center">
-                <span
-                  className={`inline-flex h-6 w-6 items-center justify-center rounded-full border-2 ${
-                    step.status === "done"
-                      ? "border-[#8E5EB5] bg-[#8E5EB5] text-white"
-                      : step.status === "current"
-                        ? "border-[#8E5EB5] bg-white text-[#8E5EB5]"
-                        : "border-[#ddd4ea] bg-white text-[#98a2b3]"
-                  }`}
+      <div className="mt-4 space-y-4">
+        <StepTimelineCard number={1} title="Confirmed" state={stepState.confirmed} dateLabel={confirmedDate} timeLabel={confirmedTime} />
+        <StepTimelineCard number={2} title="On The Way" state={stepState.onTheWay} dateLabel={onTheWayDate} timeLabel={onTheWayTime} />
+        <StepTimelineCard number={3} title="Arrived" state={stepState.arrived} dateLabel={arrivedDate} timeLabel={arrivedTime} />
+        <StepTimelineCard
+          number={4}
+          title="Job Completed"
+          state={stepState.jobDone}
+          dateLabel={jobDoneDate}
+          timeLabel={jobDoneTime}
+          description="Provider has completed the service."
+        />
+        <StepTimelineCard
+          number={5}
+          title="Payment Request"
+          state={stepState.paymentRequest}
+          description="Provider has sent the final payment."
+          expanded={stepState.paymentRequest === "current" || stepState.paymentRequest === "done"}
+        >
+          <div className="rounded-[20px] border border-[#ebe2f8] bg-white p-4">
+            <p className="text-[15px] font-black text-[#8E5EB5]">Payment Summary</p>
+            <div className="mt-4 space-y-3 text-[14px] text-[#24193a]">
+              <div className="flex items-center justify-between gap-3">
+                <span>Booking Price</span>
+                <span className="font-semibold">RM {booking.baseAmount ?? booking.paymentAmount ?? 0}</span>
+              </div>
+              {typeof booking.additionalCharge === "number" && booking.additionalCharge > 0 ? (
+                <div className="space-y-2">
+                  <p className="font-semibold">Additional Charges</p>
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p>{booking.additionalChargeDescription || "Additional charge"}</p>
+                      {booking.paymentNote ? (
+                        <p className="text-[12px] text-[#7f7692]">{booking.paymentNote}</p>
+                      ) : null}
+                    </div>
+                    <span className="font-semibold">RM {booking.additionalCharge}</span>
+                  </div>
+                </div>
+              ) : null}
+              <div className="border-t border-dashed border-[#ddd4ea] pt-3">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-[1rem] font-black text-[#8E5EB5]">Total Amount</span>
+                  <span className="text-[1.6rem] font-black text-[#8E5EB5]">RM {booking.paymentAmount ?? 0}</span>
+                </div>
+              </div>
+            </div>
+            {canPayNow ? (
+              <div className="mt-4 space-y-3">
+                <button
+                  type="button"
+                  onClick={handleCashPaid}
+                  disabled={paymentLoading}
+                  className="inline-flex h-12 w-full items-center justify-center rounded-[14px] bg-[#8E5EB5] text-[16px] font-extrabold text-white shadow-[0_16px_30px_rgba(142,94,181,0.24)] disabled:opacity-70"
                 >
-                  {step.status === "done" ? (
-                    <CheckCircleIcon className="h-3.5 w-3.5" />
-                  ) : (
-                    <span className="h-2 w-2 rounded-full bg-current" />
-                  )}
-                </span>
-                {index < steps.length - 1 ? (
-                  <span
-                    className={`mt-1 h-8 w-[2px] ${
-                      step.status === "done" ? "bg-[#8E5EB5]" : "bg-[#e5e7eb]"
-                    }`}
+                  {paymentLoading ? "Paying..." : "Pay by Cash"}
+                </button>
+                <label className="flex cursor-pointer items-center justify-between rounded-[16px] border border-[#d9c7ef] bg-white px-4 py-4 text-[14px] font-semibold text-[#8E5EB5]">
+                  <span>Attach images or take photo</span>
+                  <span className="text-[12px] text-[#7f7692]">JPG, PNG, GIF, WebP, PDF</span>
+                  <input
+                    type="file"
+                    accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,application/pdf,image/jpeg,image/png,image/gif,image/webp"
+                    className="hidden"
+                    onChange={(event) => void handlePaymentProofChange(event)}
+                  />
+                </label>
+                {paymentProofDataUrl ? (
+                  <PaymentProofPreview
+                    title="New Payment Proof"
+                    dataUrl={paymentProofDataUrl}
+                    fileName={paymentProofFileName}
+                    mimeType={paymentProofMimeType}
                   />
                 ) : null}
               </div>
-              <div className="pt-0.5">
-                <p
-                  className={`text-[14px] font-semibold ${
-                    step.status === "pending" ? "text-[#98a2b3]" : "text-[#261a3d]"
-                  }`}
-                >
-                  {step.label}
-                </p>
-                <p className="mt-1 text-[12px] text-[#7f7692]">
-                  {step.status === "done"
-                    ? "Completed"
-                    : step.status === "current"
-                      ? booking.schedule
-                      : "Waiting"}
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
+            ) : null}
+          </div>
+        </StepTimelineCard>
+        <StepTimelineCard
+          number={6}
+          title="User Job Completed"
+          state={stepState.userCompleted}
+          dateLabel={completedDate}
+          timeLabel={completedTime}
+          description="Tap this after you have paid the amount to the provider."
+          expanded={stepState.userCompleted === "current"}
+        >
+          {canMarkCompleted ? (
+            <button
+              type="button"
+              onClick={handleMarkCompleted}
+              disabled={completionLoading}
+              className="inline-flex h-12 w-full items-center justify-center rounded-[14px] bg-[#8E5EB5] text-[16px] font-extrabold text-white shadow-[0_16px_30px_rgba(142,94,181,0.24)] disabled:opacity-70"
+            >
+              {completionLoading ? "Completing..." : "Mark as Completed"}
+            </button>
+          ) : null}
+        </StepTimelineCard>
+        <StepTimelineCard
+          number={7}
+          title="Review"
+          state={stepState.review}
+          dateLabel={reviewDate}
+          timeLabel={reviewTime}
+          description="Review popup will appear after both sides complete the job. You can add photos while submitting your review."
+          expanded={canReview}
+        >
+          {canReview ? (
+            <Link
+              href={`/profile/bookings/${booking.id}/review`}
+              className="inline-flex h-12 w-full items-center justify-center rounded-[14px] bg-[#8E5EB5] text-[16px] font-extrabold text-white shadow-[0_16px_30px_rgba(142,94,181,0.24)]"
+            >
+              Review This Service
+            </Link>
+          ) : null}
+        </StepTimelineCard>
+      </div>
 
       <PaymentProofPreview
         title="Customer Payment Proof"
@@ -1730,68 +1964,6 @@ export function BookingDetailScreen({ booking }: BookingDetailProps) {
         </p>
       </SectionCard>
 
-      {canPayNow ? (
-        <StickyActionBar>
-          <div className="flex w-full flex-col gap-3">
-            <label className="rounded-[16px] border border-dashed border-[#d9c7ef] bg-white px-4 py-3 text-[13px] font-semibold text-[#6d6480]">
-              Attach payment proof (optional): cash photo or transfer slip, JPG/PNG/GIF/WebP/PDF up to 5MB.
-              <input
-                type="file"
-                accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,application/pdf,image/jpeg,image/png,image/gif,image/webp"
-                className="mt-3 block w-full text-[12px] text-[#6d6480]"
-                onChange={(event) => void handlePaymentProofChange(event)}
-              />
-            </label>
-            {paymentProofDataUrl ? (
-              <PaymentProofPreview
-                title="New Payment Proof"
-                dataUrl={paymentProofDataUrl}
-                fileName={paymentProofFileName}
-                mimeType={paymentProofMimeType}
-              />
-            ) : null}
-            <button
-              type="button"
-              onClick={() => setPaymentError("Please contact support if the service or final amount is incorrect.")}
-              className="inline-flex h-11 w-full items-center justify-center rounded-[12px] border border-[#e6daf4] bg-white text-[14px] font-extrabold text-[#8E5EB5]"
-            >
-              Issue With Amount
-            </button>
-            <button
-              type="button"
-              onClick={handleCashPaid}
-              disabled={paymentLoading}
-              className="inline-flex h-11 w-full items-center justify-center rounded-[12px] bg-[#8E5EB5] text-[15px] font-extrabold text-white shadow-[0_16px_30px_rgba(142,94,181,0.24)] disabled:cursor-not-allowed disabled:opacity-70"
-            >
-              {paymentLoading ? "Confirming..." : "Agree & Pay Cash"}
-            </button>
-          </div>
-        </StickyActionBar>
-      ) : null}
-
-      {canReview ? (
-        <StickyActionBar>
-          <Link
-            href={`/profile/bookings/${booking.id}/review`}
-            className="inline-flex h-11 w-full items-center justify-center rounded-[12px] bg-[#8E5EB5] text-[15px] font-extrabold text-white shadow-[0_16px_30px_rgba(142,94,181,0.24)]"
-          >
-            Review This Service
-          </Link>
-        </StickyActionBar>
-      ) : null}
-
-      {canMarkCompleted ? (
-        <StickyActionBar>
-          <button
-            type="button"
-            onClick={handleMarkCompleted}
-            disabled={completionLoading}
-            className="inline-flex h-11 w-full items-center justify-center rounded-[12px] bg-[#8E5EB5] text-[15px] font-extrabold text-white shadow-[0_16px_30px_rgba(142,94,181,0.24)] disabled:cursor-not-allowed disabled:opacity-70"
-          >
-            {completionLoading ? "Completing..." : "Complete Task"}
-          </button>
-        </StickyActionBar>
-      ) : null}
     </ProfileShell>
   );
 }
@@ -3595,6 +3767,15 @@ function CalendarIcon({ className }: { className?: string }) {
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={iconClass(className)}>
       <rect x="3" y="5" width="18" height="16" rx="2" />
       <path d="M16 3v4M8 3v4M3 10h18" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function ClockIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={iconClass(className)}>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M12 7.5v5l3 2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }

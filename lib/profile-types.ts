@@ -110,6 +110,14 @@ export type Booking = {
   notes?: string;
   cancelledBy?: string;
   cancellationReason?: string;
+  createdAt?: string;
+  acceptedAt?: string;
+  onTheWayAt?: string;
+  arrivedAt?: string;
+  completedAt?: string;
+  paidAt?: string;
+  reviewRequestedAt?: string;
+  reviewedAt?: string;
   activitySteps?: Array<{
     label: string;
     status: "done" | "current" | "pending";

@@ -93,6 +93,13 @@ export type ProviderBookingItem = {
   additionalChargeDescription: string;
   paymentNote: string;
   createdAt: string;
+  acceptedAt?: string;
+  onTheWayAt?: string;
+  arrivedAt?: string;
+  completedAt?: string;
+  paidAt?: string;
+  reviewRequestedAt?: string;
+  reviewedAt?: string;
   customerStatusLabel: string;
 };
 

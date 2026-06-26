@@ -90,6 +90,13 @@ type BookingRow = {
   decline_reason: string | null;
   quoted_amount: number | null;
   created_at: string;
+  accepted_at?: string | null;
+  on_the_way_at?: string | null;
+  arrived_at?: string | null;
+  completed_at?: string | null;
+  paid_at?: string | null;
+  review_requested_at?: string | null;
+  reviewed_at?: string | null;
   payment_records?: Array<{
     amount: number | null;
     payment_method: string | null;
@@ -608,6 +615,14 @@ function mapLiveBookingToUi(
     notes: row.customer_note ?? "",
     cancelledBy: row.booking_status === "declined" ? "Service provider" : "User",
     cancellationReason: row.decline_reason ?? "",
+    createdAt: row.created_at,
+    acceptedAt: row.accepted_at ?? "",
+    onTheWayAt: row.on_the_way_at ?? "",
+    arrivedAt: row.arrived_at ?? "",
+    completedAt: row.completed_at ?? "",
+    paidAt: row.paid_at ?? paymentRecord?.paid_at ?? "",
+    reviewRequestedAt: row.review_requested_at ?? "",
+    reviewedAt: row.reviewed_at ?? "",
     activitySteps: buildUserActivitySteps(row.booking_status),
   };
 }
@@ -658,6 +673,13 @@ export async function GET(request: Request) {
       decline_reason,
       quoted_amount,
       created_at,
+      accepted_at,
+      on_the_way_at,
+      arrived_at,
+      completed_at,
+      paid_at,
+      review_requested_at,
+      reviewed_at,
       payment_records:payments(amount, payment_method, payment_option, status, paid_at, company_commission_amount, provider_net_amount, company_payment_status, customer_payment_proof_data_url, customer_payment_proof_file_name, customer_payment_proof_mime_type, provider_company_payment_proof_data_url, provider_company_payment_proof_file_name, provider_company_payment_proof_mime_type, created_at)
     `)
     .eq("customer_id", verified.profile.id)
