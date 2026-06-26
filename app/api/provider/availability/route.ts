@@ -38,6 +38,12 @@ type AvailabilityPayload = {
   startTime?: string;
   endTime?: string;
   timeMode?: string;
+  entries?: Array<{
+    day?: string;
+    startTime?: string;
+    endTime?: string;
+    timeMode?: string;
+  }>;
 };
 
 function isProviderRole(role: string | null | undefined) {
@@ -175,15 +181,52 @@ export async function PUT(request: Request) {
 
   const payload = (await request.json()) as AvailabilityPayload;
   const enabled = Boolean(payload.enabled);
-  const selectedDays = [...new Set((payload.days ?? []).map(normalizeDay))]
-    .filter((day): day is (typeof DAY_ORDER)[number] => DAY_ORDER.includes(day as (typeof DAY_ORDER)[number]));
-  const startTime = payload.startTime?.trim() || "08:00";
-  const endTime = payload.endTime?.trim() || "20:00";
-  const timeMode = payload.timeMode?.trim() || "custom";
+  const normalizedEntries = (payload.entries ?? [])
+    .map((entry) => ({
+      day: normalizeDay(entry.day ?? ""),
+      startTime: entry.startTime?.trim() || "08:00",
+      endTime: entry.endTime?.trim() || "20:00",
+      timeMode: entry.timeMode?.trim() || "custom",
+    }))
+    .filter(
+      (entry): entry is {
+        day: (typeof DAY_ORDER)[number];
+        startTime: string;
+        endTime: string;
+        timeMode: string;
+      } => DAY_ORDER.includes(entry.day as (typeof DAY_ORDER)[number]),
+    );
 
-  if (enabled && selectedDays.length === 0) {
+  const fallbackSelectedDays = [...new Set((payload.days ?? []).map(normalizeDay))]
+    .filter((day): day is (typeof DAY_ORDER)[number] => DAY_ORDER.includes(day as (typeof DAY_ORDER)[number]));
+  const fallbackStartTime = payload.startTime?.trim() || "08:00";
+  const fallbackEndTime = payload.endTime?.trim() || "20:00";
+  const fallbackTimeMode = payload.timeMode?.trim() || "custom";
+
+  const selectedEntries =
+    normalizedEntries.length > 0
+      ? normalizedEntries
+      : fallbackSelectedDays.map((day) => ({
+          day,
+          startTime: fallbackStartTime,
+          endTime: fallbackEndTime,
+          timeMode: fallbackTimeMode,
+        }));
+
+  if (enabled && selectedEntries.length === 0) {
     return NextResponse.json(
       { error: "Select at least one day before saving availability." },
+      { status: 400 },
+    );
+  }
+
+  const hasInvalidRange = selectedEntries.some(
+    (entry) => entry.startTime >= entry.endTime,
+  );
+
+  if (enabled && hasInvalidRange) {
+    return NextResponse.json(
+      { error: "Each selected day must have an end time later than the start time." },
       { status: 400 },
     );
   }
@@ -200,13 +243,13 @@ export async function PUT(request: Request) {
     );
   }
 
-  if (enabled && selectedDays.length > 0) {
-    const insertRows = selectedDays.map((day) => ({
+  if (enabled && selectedEntries.length > 0) {
+    const insertRows = selectedEntries.map((entry) => ({
       provider_id: verified.profile.id,
-      day_of_week: day,
-      time_mode: timeMode,
-      start_time: startTime,
-      end_time: endTime,
+      day_of_week: entry.day,
+      time_mode: entry.timeMode,
+      start_time: entry.startTime,
+      end_time: entry.endTime,
     }));
 
     const insertResult = await verified.adminClient

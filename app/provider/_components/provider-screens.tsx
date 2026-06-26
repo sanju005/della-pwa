@@ -48,6 +48,7 @@ import {
   type PushSetupState,
 } from "@/lib/notifications";
 import { getSupabaseClient } from "@/lib/supabase";
+import { serviceSpecialties } from "@/lib/provider-registration-config";
 import { isPaymentProofMimeType, PAYMENT_PROOF_MAX_BYTES, readFileAsDataUrl } from "@/lib/upload-proof";
 
 import {
@@ -75,6 +76,12 @@ const ALL_DAYS = [
   "Saturday",
   "Sunday",
 ] as const;
+
+const PROVIDER_SERVICE_OPTIONS = Object.keys(serviceSpecialties);
+
+function normalizeServiceFormValue(value: string) {
+  return value.trim().toLowerCase().replace(/\s+/g, "_");
+}
 
 async function getProviderAccessToken() {
   const client = getSupabaseClient();
@@ -2833,7 +2840,7 @@ export function ServicesScreen() {
                     onClick={() => {
                       setEditingServiceId(service.id);
                       setForm({
-                        serviceType: formatServiceLabel(service.serviceType),
+                        serviceType: service.serviceType,
                         yearsExperience: service.yearsExperience,
                         hourlyRate: String(service.hourlyRate),
                         dailyRate: String(service.dailyRate),
@@ -2891,13 +2898,31 @@ export function ServicesScreen() {
           <div className="mt-4 grid grid-cols-1 gap-3">
             <label className="rounded-[18px] border border-[#e7eee8] bg-white p-4">
               <span className="text-[12px] font-bold text-[#64748b]">Service Type</span>
-              <input
-                value={form.serviceType}
-                onChange={(event) => setForm((current) => ({ ...current, serviceType: event.target.value }))}
-                readOnly={Boolean(editingServiceId)}
-                className="mt-2 block w-full bg-transparent text-[14px] font-semibold text-[#0f172a] outline-none read-only:text-[#94a3b8]"
-                placeholder="Chef, Maid, Driver"
-              />
+              {editingServiceId ? (
+                <input
+                  value={formatServiceLabel(form.serviceType)}
+                  readOnly
+                  className="mt-2 block w-full bg-transparent text-[14px] font-semibold text-[#0f172a] outline-none read-only:text-[#94a3b8]"
+                />
+              ) : (
+                <select
+                  value={form.serviceType}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      serviceType: normalizeServiceFormValue(event.target.value),
+                    }))
+                  }
+                  className="mt-2 block w-full bg-transparent text-[14px] font-semibold text-[#0f172a] outline-none"
+                >
+                  <option value="">Select service type</option>
+                  {PROVIDER_SERVICE_OPTIONS.map((option) => (
+                    <option key={option} value={normalizeServiceFormValue(option)}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              )}
             </label>
             <div className="grid grid-cols-2 gap-3">
               <label className="rounded-[18px] border border-[#e7eee8] bg-white p-4">
@@ -2957,29 +2982,29 @@ export function ServicesScreen() {
 export function AvailabilityScreen() {
   const state = useProviderAppData();
   const [enabled, setEnabled] = useState(true);
-  const [days, setDays] = useState<Record<string, boolean>>(
-    Object.fromEntries(ALL_DAYS.map((day) => [day, false])) as Record<string, boolean>,
+  const [daySettings, setDaySettings] = useState<Record<string, { selected: boolean; startTime: string; endTime: string }>>(
+    Object.fromEntries(
+      ALL_DAYS.map((day) => [day, { selected: false, startTime: "08:00", endTime: "20:00" }]),
+    ) as Record<string, { selected: boolean; startTime: string; endTime: string }>,
   );
-  const [startTime, setStartTime] = useState("08:00");
-  const [endTime, setEndTime] = useState("20:00");
   const [saved, setSaved] = useState("");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    const nextDays = Object.fromEntries(ALL_DAYS.map((day) => [day, false])) as Record<string, boolean>;
+    const nextDaySettings = Object.fromEntries(
+      ALL_DAYS.map((day) => [day, { selected: false, startTime: "08:00", endTime: "20:00" }]),
+    ) as Record<string, { selected: boolean; startTime: string; endTime: string }>;
 
     state.availability.forEach((entry) => {
-      nextDays[entry.day] = true;
+      nextDaySettings[entry.day] = {
+        selected: true,
+        startTime: entry.startTime,
+        endTime: entry.endTime,
+      };
     });
 
-    setDays(nextDays);
+    setDaySettings(nextDaySettings);
     setEnabled(state.availabilityEnabled);
-
-    const firstEntry = state.availability[0];
-    if (firstEntry) {
-      setStartTime(firstEntry.startTime);
-      setEndTime(firstEntry.endTime);
-    }
   }, [state.availability, state.availabilityEnabled]);
 
   const fallback = LoadingOrError(state);
@@ -3008,10 +3033,12 @@ export function AvailabilityScreen() {
       },
       body: JSON.stringify({
         enabled,
-        days: ALL_DAYS.filter((day) => days[day]),
-        startTime,
-        endTime,
-        timeMode: "custom",
+        entries: ALL_DAYS.filter((day) => daySettings[day]?.selected).map((day) => ({
+          day,
+          startTime: daySettings[day].startTime,
+          endTime: daySettings[day].endTime,
+          timeMode: "custom",
+        })),
       }),
     });
 
@@ -3064,9 +3091,17 @@ export function AvailabilityScreen() {
             <button
               type="button"
               onClick={() =>
-                setDays({
-                  ...Object.fromEntries(ALL_DAYS.map((day) => [day, true])),
-                })
+                setDaySettings((current) =>
+                  Object.fromEntries(
+                    ALL_DAYS.map((day) => [
+                      day,
+                      {
+                        ...current[day],
+                        selected: true,
+                      },
+                    ]),
+                  ) as Record<string, { selected: boolean; startTime: string; endTime: string }>,
+                )
               }
               className="text-[12px] font-bold text-[#16a34a]"
             >
@@ -3074,44 +3109,73 @@ export function AvailabilityScreen() {
             </button>
           </div>
           <div className="mt-3 space-y-2">
-            {Object.entries(days).map(([day, checked]) => (
-              <label
+            {ALL_DAYS.map((day) => (
+              <div
                 key={day}
-                className="flex items-center justify-between rounded-[18px] border border-[#e7eee8] bg-[#fbfffc] px-4 py-3"
+                className={`rounded-[18px] border px-4 py-3 ${
+                  daySettings[day]?.selected
+                    ? "border-[#b7e4c4] bg-[#f6fff8]"
+                    : "border-[#e7eee8] bg-[#fbfffc]"
+                }`}
               >
-                <span className="text-[14px] font-semibold text-[#0f172a]">{day}</span>
-                <input
-                  type="checkbox"
-                  checked={checked}
-                  onChange={(event) =>
-                    setDays((current) => ({ ...current, [day]: event.target.checked }))
-                  }
-                  className="h-4 w-4 accent-[#16a34a]"
-                />
-              </label>
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-[14px] font-semibold text-[#0f172a]">{day}</span>
+                  <input
+                    type="checkbox"
+                    checked={daySettings[day]?.selected ?? false}
+                    onChange={(event) =>
+                      setDaySettings((current) => ({
+                        ...current,
+                        [day]: {
+                          ...current[day],
+                          selected: event.target.checked,
+                        },
+                      }))
+                    }
+                    className="h-4 w-4 accent-[#16a34a]"
+                  />
+                </div>
+                {daySettings[day]?.selected ? (
+                  <div className="mt-3 grid grid-cols-2 gap-3">
+                    <label className="rounded-[16px] border border-[#dbeee2] bg-white p-3">
+                      <span className="text-[11px] font-bold text-[#64748b]">Start</span>
+                      <input
+                        type="time"
+                        value={daySettings[day].startTime}
+                        onChange={(event) =>
+                          setDaySettings((current) => ({
+                            ...current,
+                            [day]: {
+                              ...current[day],
+                              startTime: event.target.value,
+                            },
+                          }))
+                        }
+                        className="mt-2 block w-full bg-transparent text-[14px] font-semibold text-[#0f172a] outline-none"
+                      />
+                    </label>
+                    <label className="rounded-[16px] border border-[#dbeee2] bg-white p-3">
+                      <span className="text-[11px] font-bold text-[#64748b]">End</span>
+                      <input
+                        type="time"
+                        value={daySettings[day].endTime}
+                        onChange={(event) =>
+                          setDaySettings((current) => ({
+                            ...current,
+                            [day]: {
+                              ...current[day],
+                              endTime: event.target.value,
+                            },
+                          }))
+                        }
+                        className="mt-2 block w-full bg-transparent text-[14px] font-semibold text-[#0f172a] outline-none"
+                      />
+                    </label>
+                  </div>
+                ) : null}
+              </div>
             ))}
           </div>
-        </div>
-
-        <div className="mt-5 grid grid-cols-2 gap-3">
-          <label className="rounded-[18px] border border-[#e7eee8] bg-[#fbfffc] p-4">
-            <span className="text-[12px] font-bold text-[#64748b]">Start Time</span>
-            <input
-              type="time"
-              value={startTime}
-              onChange={(event) => setStartTime(event.target.value)}
-              className="mt-2 block w-full bg-transparent text-[14px] font-semibold text-[#0f172a] outline-none"
-            />
-          </label>
-          <label className="rounded-[18px] border border-[#e7eee8] bg-[#fbfffc] p-4">
-            <span className="text-[12px] font-bold text-[#64748b]">End Time</span>
-            <input
-              type="time"
-              value={endTime}
-              onChange={(event) => setEndTime(event.target.value)}
-              className="mt-2 block w-full bg-transparent text-[14px] font-semibold text-[#0f172a] outline-none"
-            />
-          </label>
         </div>
 
         {saved ? (
