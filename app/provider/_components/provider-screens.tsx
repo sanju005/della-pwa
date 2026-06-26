@@ -36,6 +36,7 @@ import {
   StatusBadge,
 } from "@/app/_components/della-ui";
 import { BookingMessagesPanel } from "@/app/_components/booking-messages-panel";
+import { getFirebaseClientConfig } from "@/lib/firebase";
 import {
   disablePushNotifications,
   getLastPushError,
@@ -429,11 +430,38 @@ function ProviderPushNotificationsCard() {
     hasSavedToken: false,
   });
   const [diagnostics, setDiagnostics] = useState<PushSupportDiagnostics | null>(null);
+  const [clientDebug, setClientDebug] = useState<{
+    apiKey: string;
+    authDomain: string;
+    projectId: string;
+    storageBucket: string;
+    messagingSenderId: string;
+    appId: string;
+    href: string;
+    origin: string;
+    isStandalone: boolean;
+    userAgent: string;
+  } | null>(null);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
 
   useEffect(() => {
     let active = true;
+
+    if (typeof window !== "undefined") {
+      const media = window.matchMedia("(display-mode: standalone)");
+      const isStandalone =
+        media.matches ||
+        (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
+
+      setClientDebug({
+        ...getFirebaseClientConfig(),
+        href: window.location.href,
+        origin: window.location.origin,
+        isStandalone,
+        userAgent: window.navigator.userAgent,
+      });
+    }
 
     void Promise.all([getPushSetupState(), getPushSupportDiagnostics()]).then(
       ([state, support]) => {
@@ -538,7 +566,7 @@ function ProviderPushNotificationsCard() {
         <Bell className="h-5 w-5 text-[#16a34a]" />
       </div>
 
-      <div className="mt-4 rounded-[18px] border border-[#e7eee8] bg-[#fbfffc] p-4">
+        <div className="mt-4 rounded-[18px] border border-[#e7eee8] bg-[#fbfffc] p-4">
         <p className="text-[12px] font-bold uppercase tracking-[0.12em] text-[#94a3b8]">
           Status
         </p>
@@ -548,9 +576,9 @@ function ProviderPushNotificationsCard() {
         <p className="mt-1 text-[12px] text-[#64748b]">
           Browser permission: {pushState.permission}
         </p>
-      </div>
+        </div>
 
-      {diagnostics ? (
+        {diagnostics ? (
         <div className="mt-4 rounded-[18px] border border-[#e7eee8] bg-white p-4 text-[12px] text-[#475569]">
           <p className="font-bold uppercase tracking-[0.12em] text-[#94a3b8]">
             Device Check
@@ -563,10 +591,30 @@ function ProviderPushNotificationsCard() {
             <p>IndexedDB: {diagnostics.hasIndexedDb ? "yes" : "no"}</p>
             <p>Permission: {diagnostics.permission}</p>
           </div>
-        </div>
-      ) : null}
+          </div>
+        ) : null}
 
-      {notice ? (
+        {clientDebug ? (
+          <div className="mt-4 rounded-[18px] border border-[#e7eee8] bg-[#fffdf7] p-4 text-[12px] text-[#475569]">
+            <p className="font-bold uppercase tracking-[0.12em] text-[#b08900]">
+              Firebase Debug
+            </p>
+            <div className="mt-2 space-y-1 break-all">
+              <p>projectId: {clientDebug.projectId || "(empty)"}</p>
+              <p>authDomain: {clientDebug.authDomain || "(empty)"}</p>
+              <p>storageBucket: {clientDebug.storageBucket || "(empty)"}</p>
+              <p>messagingSenderId: {clientDebug.messagingSenderId || "(empty)"}</p>
+              <p>appId: {clientDebug.appId || "(empty)"}</p>
+              <p>apiKey: {clientDebug.apiKey ? `${clientDebug.apiKey.slice(0, 10)}...` : "(empty)"}</p>
+              <p>origin: {clientDebug.origin}</p>
+              <p>href: {clientDebug.href}</p>
+              <p>standalone: {clientDebug.isStandalone ? "yes" : "no"}</p>
+              <p>userAgent: {clientDebug.userAgent}</p>
+            </div>
+          </div>
+        ) : null}
+
+        {notice ? (
         <p className="mt-4 rounded-[16px] border border-[#d8ebdf] bg-[#f6fcf7] px-4 py-3 text-[13px] font-semibold text-[#166534]">
           {notice}
         </p>
