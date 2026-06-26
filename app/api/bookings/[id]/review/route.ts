@@ -180,13 +180,11 @@ export async function POST(
   const bookingRow = booking as BookingRow;
 
   if (
-    bookingRow.booking_status !== "completed" &&
-    bookingRow.booking_status !== "paid" &&
     bookingRow.booking_status !== "review_requested" &&
     bookingRow.booking_status !== "reviewed"
   ) {
     return NextResponse.json(
-      { error: "This booking is not ready for review yet." },
+      { error: "This booking can be reviewed only after the task is completed." },
       { status: 400 },
     );
   }

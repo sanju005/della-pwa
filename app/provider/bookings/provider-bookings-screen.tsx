@@ -55,7 +55,7 @@ function getTaskSteps(status: ProviderBookingItem["bookingStatus"]) {
         : -1;
 
   return [
-    { label: "Accepted", status: currentIndex >= 0 ? "done" : "current" },
+    { label: "Confirmed", status: currentIndex >= 0 ? "done" : "current" },
     {
       label: "On The Way",
       status: currentIndex >= 1 ? "done" : currentIndex === 0 ? "current" : "pending",
@@ -69,11 +69,11 @@ function getTaskSteps(status: ProviderBookingItem["bookingStatus"]) {
       status: currentIndex >= 3 ? "done" : currentIndex === 2 ? "current" : "pending",
     },
     {
-      label: "Cash Confirmed",
+      label: "Payment Done",
       status: currentIndex >= 4 ? "done" : currentIndex === 3 ? "current" : "pending",
     },
     {
-      label: "Review",
+      label: "Completed",
       status: currentIndex >= 5 ? "done" : currentIndex === 4 ? "current" : "pending",
     },
   ] as Array<{ label: string; status: "done" | "current" | "pending" }>;

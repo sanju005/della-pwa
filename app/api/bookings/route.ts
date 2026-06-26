@@ -448,11 +448,11 @@ function userStatusLabel(status: BookingRow["booking_status"]) {
     case "arrived":
       return "Arrived";
     case "completed":
-      return "Task Completed";
+      return "Job Done";
     case "paid":
-      return "Paid";
+      return "Payment Done";
     case "review_requested":
-      return "Review";
+      return "Completed";
     case "reviewed":
       return "Reviewed";
     case "declined":
@@ -506,9 +506,9 @@ function buildUserActivitySteps(status: BookingRow["booking_status"]): Booking["
     "Confirmed",
     "On the Way",
     "Arrived",
-    "Task Completed",
-    "Paid",
-    "Review",
+    "Job Done",
+    "Payment Done",
+    "Completed",
   ];
 
   const currentIndex = stepOrder.indexOf(

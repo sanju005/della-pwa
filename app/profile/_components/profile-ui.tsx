@@ -1375,12 +1375,13 @@ export function BookingDetailScreen({ booking }: BookingDetailProps) {
   const [paymentError, setPaymentError] = useState("");
   const [paymentNotice, setPaymentNotice] = useState("");
   const [paymentLoading, startPaymentTransition] = useTransition();
+  const [completionLoading, startCompletionTransition] = useTransition();
   const [paymentProofDataUrl, setPaymentProofDataUrl] = useState("");
   const [paymentProofFileName, setPaymentProofFileName] = useState("");
   const [paymentProofMimeType, setPaymentProofMimeType] = useState("");
   const canPayNow = booking.workflowStatus === "completed";
+  const canMarkCompleted = booking.workflowStatus === "paid";
   const canReview =
-    booking.workflowStatus === "paid" ||
     booking.workflowStatus === "review_requested" ||
     booking.workflowStatus === "reviewed";
   const paidDateLabel =
@@ -1388,9 +1389,11 @@ export function BookingDetailScreen({ booking }: BookingDetailProps) {
       ? "Awaiting Customer Payment"
       : booking.status === "ongoing"
         ? "Payment Pending"
-        : canReview
-          ? "Payment Completed"
-          : "Awaiting Payment";
+        : canMarkCompleted
+          ? "Payment Done"
+          : canReview
+            ? "Task Completed"
+            : "Awaiting Payment";
 
   useEffect(() => {
     if (searchParams.get("payment") === "success") {
@@ -1443,6 +1446,49 @@ export function BookingDetailScreen({ booking }: BookingDetailProps) {
 
       setPaymentNotice("Cash payment confirmed successfully.");
       router.replace(`/profile/bookings/${booking.id}?payment=success`);
+      router.refresh();
+    });
+  }
+
+  function handleMarkCompleted() {
+    const client = getSupabaseClient();
+
+    startCompletionTransition(async () => {
+      setPaymentError("");
+      setPaymentNotice("");
+
+      if (!client) {
+        setPaymentError("Supabase is not configured yet.");
+        return;
+      }
+
+      const {
+        data: { session },
+      } = await client.auth.getSession();
+
+      if (!session) {
+        setPaymentError("Your session expired. Please log in again.");
+        return;
+      }
+
+      const response = await fetch(`/api/bookings/${booking.id}/complete`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      }).catch(() => null);
+
+      const result = response
+        ? ((await response.json().catch(() => ({}))) as { success?: boolean; error?: string })
+        : null;
+
+      if (!response || !response.ok || !result?.success) {
+        setPaymentError(result?.error || "Unable to complete task.");
+        return;
+      }
+
+      setPaymentNotice("Task completed successfully. Please leave your review.");
+      router.replace(`/profile/bookings/${booking.id}/review`);
       router.refresh();
     });
   }
@@ -1731,6 +1777,19 @@ export function BookingDetailScreen({ booking }: BookingDetailProps) {
           >
             Review This Service
           </Link>
+        </StickyActionBar>
+      ) : null}
+
+      {canMarkCompleted ? (
+        <StickyActionBar>
+          <button
+            type="button"
+            onClick={handleMarkCompleted}
+            disabled={completionLoading}
+            className="inline-flex h-11 w-full items-center justify-center rounded-[12px] bg-[#8E5EB5] text-[15px] font-extrabold text-white shadow-[0_16px_30px_rgba(142,94,181,0.24)] disabled:cursor-not-allowed disabled:opacity-70"
+          >
+            {completionLoading ? "Completing..." : "Complete Task"}
+          </button>
         </StickyActionBar>
       ) : null}
     </ProfileShell>

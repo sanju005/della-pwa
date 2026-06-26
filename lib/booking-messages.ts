@@ -232,8 +232,6 @@ function isConversationClosed(
   bookingStatus: BookingRow["booking_status"],
 ) {
   return [
-    "completed",
-    "paid",
     "review_requested",
     "reviewed",
     "declined",
