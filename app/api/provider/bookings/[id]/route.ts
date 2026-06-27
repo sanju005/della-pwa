@@ -305,8 +305,6 @@ function notificationTypeForStatus(status: BookingStatus) {
       return "payment_received_by_provider";
     case "completed":
       return "task_completed";
-    case "review_requested":
-      return "review_requested";
     case "cancelled":
       return "booking_cancelled";
     default:
@@ -388,6 +386,17 @@ export async function PATCH(
     typeof payload.finalAmount === "number" && Number.isFinite(payload.finalAmount)
       ? Math.max(0, payload.finalAmount)
       : null;
+  const paymentBreakdown = (payload.paymentBreakdown ?? [])
+    .map((row) => ({
+      description: row.description?.trim() || "Charge",
+      amount: Number(row.amount ?? 0),
+    }))
+    .filter((row) => Number.isFinite(row.amount));
+  const paymentTotal =
+    finalAmount ??
+    (paymentBreakdown.length > 0
+      ? paymentBreakdown.reduce((sum, row) => sum + row.amount, 0)
+      : null);
 
   if (!nextStatus) {
     return NextResponse.json(
@@ -398,7 +407,7 @@ export async function PATCH(
 
   const { data: booking, error: bookingError } = await verified.adminClient
     .from("bookings")
-    .select("id, customer_id, provider_id, booking_status, service_label, quoted_amount")
+    .select("id, customer_id, provider_id, booking_status, service_label, quoted_amount, booking_price")
     .eq("id", params.id)
     .eq("provider_id", verified.profile.id)
     .maybeSingle();
@@ -413,8 +422,8 @@ export async function PATCH(
   const current = booking as BookingOwnerRow;
 
   if (current.booking_status === nextStatus) {
-    if (nextStatus === "completed") {
-      const amount = finalAmount ?? Number(current.quoted_amount ?? 0);
+    if (nextStatus === "final_payment_sent") {
+      const amount = paymentTotal ?? Number(current.quoted_amount ?? 0);
       const { error: paymentUpsertError } = await ensurePaymentRequest(
         verified.adminClient,
         current,
@@ -440,14 +449,14 @@ export async function PATCH(
     );
   }
 
-  if (nextStatus === "completed" && finalAmount === null) {
+  if (nextStatus === "final_payment_sent" && paymentTotal === null) {
     return NextResponse.json(
       { error: "Final amount is required before sending the cash payment request." },
       { status: 400 }
     );
   }
 
-  const updatePayload: Record<string, string | number | BookingStatus> = {
+  const updatePayload: Record<string, unknown> = {
     booking_status: nextStatus,
   };
 
@@ -456,7 +465,7 @@ export async function PATCH(
     updatePayload.provider_response_note = note;
   }
 
-  if (nextStatus === "declined") {
+  if (nextStatus === "declined_by_provider") {
     updatePayload.decline_reason = note || "Provider declined booking.";
   }
 
@@ -468,18 +477,44 @@ export async function PATCH(
     updatePayload.arrived_at = new Date().toISOString();
   }
 
+  if (nextStatus === "work_finished_by_provider") {
+    updatePayload.work_finished_at = new Date().toISOString();
+    updatePayload.work_finished_images = payload.workFinishedImages ?? [];
+    updatePayload.provider_response_note = note || "Provider marked work as finished.";
+  }
+
+  if (nextStatus === "final_payment_sent") {
+    const amount = paymentTotal ?? Number(current.quoted_amount ?? 0);
+    const bookingPrice = Number(current.booking_price ?? current.quoted_amount ?? 0);
+    const extraRows = paymentBreakdown.filter((row, index) => index > 0 || row.description !== "Booking Price");
+
+    updatePayload.payment_sent_at = new Date().toISOString();
+    updatePayload.payment_breakdown =
+      paymentBreakdown.length > 0
+        ? paymentBreakdown
+        : [{ description: "Booking Price", amount: bookingPrice }];
+    updatePayload.booking_price = bookingPrice;
+    updatePayload.additional_charges = extraRows.filter((row) => row.amount > 0);
+    updatePayload.discount_amount = Math.abs(extraRows.filter((row) => row.amount < 0).reduce((sum, row) => sum + row.amount, 0));
+    updatePayload.final_amount = amount;
+    updatePayload.quoted_amount = amount;
+    updatePayload.provider_response_note = buildPaymentBreakdownNote({
+      baseAmount: bookingPrice,
+      finalAmount: amount,
+      additionalCharge: extraRows.reduce((sum, row) => sum + row.amount, 0),
+      chargeDescription: extraRows.map((row) => row.description).join(", "),
+      note: note || "Final cash payment sent.",
+      rows: paymentBreakdown,
+      discountAmount: Number(updatePayload.discount_amount),
+    });
+  }
+
+  if (nextStatus === "payment_received_by_provider") {
+    updatePayload.payment_received_by_provider_at = new Date().toISOString();
+  }
+
   if (nextStatus === "completed") {
     updatePayload.completed_at = new Date().toISOString();
-    updatePayload.provider_response_note = note || "Provider sent final cash amount for approval.";
-    updatePayload.quoted_amount = finalAmount ?? Number(current.quoted_amount ?? 0);
-  }
-
-  if (nextStatus === "paid") {
-    updatePayload.paid_at = new Date().toISOString();
-  }
-
-  if (nextStatus === "review_requested") {
-    updatePayload.review_requested_at = new Date().toISOString();
   }
 
   if (nextStatus === "cancelled") {
@@ -515,11 +550,11 @@ export async function PATCH(
     );
   }
 
-  if (nextStatus === "completed") {
+  if (nextStatus === "final_payment_sent") {
     const { error: paymentUpsertError } = await ensurePaymentRequest(
       verified.adminClient,
       current,
-      finalAmount ?? Number(current.quoted_amount ?? 0),
+      paymentTotal ?? Number(current.quoted_amount ?? 0),
     );
 
     if (paymentUpsertError) {

@@ -57,7 +57,9 @@ export type ProviderBookingItem = {
   location: string;
   bookingMode: "hourly" | "daily";
   bookingStatus:
+    | "pending"
     | "pending_provider_response"
+    | "declined"
     | "declined_by_provider"
     | "accepted"
     | "on_the_way"
@@ -68,6 +70,9 @@ export type ProviderBookingItem = {
     | "cash_paid_by_user"
     | "payment_received_by_provider"
     | "completed"
+    | "paid"
+    | "review_requested"
+    | "reviewed"
     | "cancelled";
   statusLabel: string;
   bucket: "requests" | "active" | "completed" | "closed";
@@ -112,6 +117,9 @@ export type ProviderBookingItem = {
   cashPaidByUserAt?: string;
   paymentReceivedByProviderAt?: string;
   completedAt?: string;
+  paidAt?: string;
+  reviewRequestedAt?: string;
+  reviewedAt?: string;
   providerReviewRating?: number;
   providerReviewComment?: string;
   providerReviewedAt?: string;
@@ -242,13 +250,15 @@ export function providerStatusTone(status: ProviderBookingItem["bookingStatus"])
     case "accepted":
     case "on_the_way":
     case "arrived":
+    case "work_finished_by_provider":
+    case "work_confirmed_by_user":
+    case "final_payment_sent":
+    case "cash_paid_by_user":
+    case "payment_received_by_provider":
       return "accepted" as const;
     case "completed":
-    case "paid":
-    case "review_requested":
-    case "reviewed":
       return "completed" as const;
-    case "declined":
+    case "declined_by_provider":
       return "declined" as const;
     case "cancelled":
       return "cancelled" as const;
@@ -497,7 +507,7 @@ export function useProviderAppData() {
       setNotice(
         status === "accepted"
           ? "Booking accepted."
-          : status === "declined"
+          : status === "declined_by_provider"
             ? "Booking declined."
             : "Booking updated.",
       );

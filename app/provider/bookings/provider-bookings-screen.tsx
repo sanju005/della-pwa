@@ -41,11 +41,20 @@ function isCompletedStatus(status: ProviderBookingItem["bookingStatus"]) {
 }
 
 function isCanceledStatus(status: ProviderBookingItem["bookingStatus"]) {
-  return status === "declined" || status === "cancelled";
+  return status === "declined_by_provider" || status === "declined" || status === "cancelled";
 }
 
 function isOngoingStatus(status: ProviderBookingItem["bookingStatus"]) {
-  return ["accepted", "on_the_way", "arrived"].includes(status);
+  return [
+    "accepted",
+    "on_the_way",
+    "arrived",
+    "work_finished_by_provider",
+    "work_confirmed_by_user",
+    "final_payment_sent",
+    "cash_paid_by_user",
+    "payment_received_by_provider",
+  ].includes(status);
 }
 
 function formatStepDate(value?: string) {
@@ -317,6 +326,7 @@ function BookingDetails({
   onDecline,
   onOnTheWay,
   onArrived,
+  onWorkFinished,
   onSendPaymentRequest,
   onConfirmPaymentReceived,
   onCompleteProviderJob,
@@ -329,20 +339,21 @@ function BookingDetails({
   onDecline: (bookingId: string) => void;
   onOnTheWay: (bookingId: string) => void;
   onArrived: (bookingId: string) => void;
+  onWorkFinished: (bookingId: string) => void;
   onSendPaymentRequest: (booking: ProviderBookingItem) => void;
   onConfirmPaymentReceived: (bookingId: string) => void;
   onCompleteProviderJob: (bookingId: string) => void;
   onOpenReview: (booking: ProviderBookingItem) => void;
 }) {
   const stepState = {
-    confirmed: ["accepted", "on_the_way", "arrived", "completed", "paid", "review_requested", "reviewed"].includes(booking.bookingStatus) ? "done" : booking.bookingStatus === "pending" ? "current" : "waiting",
-    onTheWay: ["on_the_way", "arrived", "completed", "paid", "review_requested", "reviewed"].includes(booking.bookingStatus) ? "done" : booking.bookingStatus === "accepted" ? "current" : "waiting",
-    arrived: ["arrived", "completed", "paid", "review_requested", "reviewed"].includes(booking.bookingStatus) ? "done" : booking.bookingStatus === "on_the_way" ? "current" : "waiting",
-    jobDone: ["completed", "paid", "review_requested", "reviewed"].includes(booking.bookingStatus) ? "done" : booking.bookingStatus === "arrived" ? "current" : "waiting",
-    finalizePayment: booking.bookingStatus === "arrived" ? "current" : ["completed", "paid", "review_requested", "reviewed"].includes(booking.bookingStatus) ? "done" : "waiting",
-    paymentWaiting: booking.bookingStatus === "completed" ? "current" : ["paid", "review_requested", "reviewed"].includes(booking.bookingStatus) ? "done" : "waiting",
-    userCompleted: booking.bookingStatus === "paid" ? "current" : ["review_requested", "reviewed"].includes(booking.bookingStatus) ? "done" : "waiting",
-    review: booking.providerReviewedAt ? "done" : ["review_requested", "reviewed"].includes(booking.bookingStatus) ? "current" : "waiting",
+    confirmed: ["accepted", "on_the_way", "arrived", "work_finished_by_provider", "work_confirmed_by_user", "final_payment_sent", "cash_paid_by_user", "payment_received_by_provider", "completed", "paid", "review_requested", "reviewed"].includes(booking.bookingStatus) ? "done" : booking.bookingStatus === "pending_provider_response" || booking.bookingStatus === "pending" ? "current" : "waiting",
+    onTheWay: ["on_the_way", "arrived", "work_finished_by_provider", "work_confirmed_by_user", "final_payment_sent", "cash_paid_by_user", "payment_received_by_provider", "completed", "paid", "review_requested", "reviewed"].includes(booking.bookingStatus) ? "done" : booking.bookingStatus === "accepted" ? "current" : "waiting",
+    arrived: ["arrived", "work_finished_by_provider", "work_confirmed_by_user", "final_payment_sent", "cash_paid_by_user", "payment_received_by_provider", "completed", "paid", "review_requested", "reviewed"].includes(booking.bookingStatus) ? "done" : booking.bookingStatus === "on_the_way" ? "current" : "waiting",
+    jobDone: ["work_finished_by_provider", "work_confirmed_by_user", "final_payment_sent", "cash_paid_by_user", "payment_received_by_provider", "completed", "paid", "review_requested", "reviewed"].includes(booking.bookingStatus) ? "done" : booking.bookingStatus === "arrived" ? "current" : "waiting",
+    finalizePayment: booking.bookingStatus === "work_confirmed_by_user" ? "current" : ["final_payment_sent", "cash_paid_by_user", "payment_received_by_provider", "completed", "paid", "review_requested", "reviewed"].includes(booking.bookingStatus) ? "done" : "waiting",
+    paymentWaiting: booking.bookingStatus === "final_payment_sent" ? "current" : ["cash_paid_by_user", "payment_received_by_provider", "completed", "paid", "review_requested", "reviewed"].includes(booking.bookingStatus) ? "done" : "waiting",
+    userCompleted: booking.bookingStatus === "cash_paid_by_user" ? "current" : ["payment_received_by_provider", "completed", "review_requested", "reviewed"].includes(booking.bookingStatus) ? "done" : "waiting",
+    review: booking.providerReviewedAt ? "done" : booking.bookingStatus === "completed" || booking.bookingStatus === "review_requested" || booking.bookingStatus === "reviewed" ? "current" : "waiting",
   } as const;
   return (
     <section className="rounded-[24px] border border-[#eee5f7] bg-white p-5 shadow-[0_14px_32px_rgba(86,38,135,0.08)]">
@@ -381,7 +392,7 @@ function BookingDetails({
                 ) : null}
                 <div className="border-t border-dashed border-[#ddd4ea] pt-3"><div className="flex items-center justify-between gap-3"><span className="text-[1rem] font-black text-[#8E5EB5]">Total Amount</span><span className="text-[1.6rem] font-black text-[#8E5EB5]">RM {booking.quotedAmount}</span></div></div>
               </div>
-              {booking.bookingStatus === "arrived" ? (
+              {booking.bookingStatus === "work_confirmed_by_user" ? (
                 <button type="button" onClick={() => onSendPaymentRequest(booking)} className="mt-4 inline-flex h-12 w-full items-center justify-center rounded-[14px] bg-[#8E5EB5] text-[16px] font-extrabold text-white shadow-[0_16px_30px_rgba(142,94,181,0.24)]">
                   Send Payment Request
                 </button>
@@ -395,7 +406,7 @@ function BookingDetails({
             dateLabel={formatStepDate(booking.paidAt || booking.completedAt)}
             timeLabel={formatStepTime(booking.paidAt || booking.completedAt)}
             description={
-              booking.bookingStatus === "completed" && booking.paymentStatus === "paid"
+              booking.bookingStatus === "cash_paid_by_user"
                 ? "The customer marked cash as paid. Confirm once you receive the payment."
                 : "Waiting for the user to pay the amount in cash."
             }
@@ -411,7 +422,7 @@ function BookingDetails({
                 View customer payment proof
               </a>
             ) : null}
-            {booking.bookingStatus === "completed" && booking.paymentStatus === "paid" ? (
+            {booking.bookingStatus === "cash_paid_by_user" ? (
               <button
                 type="button"
                 onClick={() => onConfirmPaymentReceived(booking.id)}
@@ -430,7 +441,7 @@ function BookingDetails({
             description="Complete the provider side after payment is received."
             expanded={stepState.userCompleted === "current" || stepState.userCompleted === "done"}
           >
-            {booking.bookingStatus === "paid" ? (
+            {booking.bookingStatus === "payment_received_by_provider" ? (
               <button
                 type="button"
                 onClick={() => onCompleteProviderJob(booking.id)}
@@ -520,6 +531,18 @@ function BookingDetails({
             onClick={() => onArrived(booking.id)}
           >
             Mark Arrived
+          </AppButton>
+        </div>
+      ) : null}
+
+      {booking.bookingStatus === "arrived" ? (
+        <div className="mt-4">
+          <AppButton
+            className="w-full"
+            disabled={actionBookingId === booking.id}
+            onClick={() => onWorkFinished(booking.id)}
+          >
+            Mark Work Finished
           </AppButton>
         </div>
       ) : null}
@@ -670,7 +693,7 @@ export function ProviderBookingsScreen({
   }
 
   function handleDecline(bookingId: string) {
-    state.handleBookingAction(bookingId, "declined", "Provider declined booking");
+    state.handleBookingAction(bookingId, "declined_by_provider", "Provider declined booking");
   }
 
   function handleOnTheWay(bookingId: string) {
@@ -679,6 +702,10 @@ export function ProviderBookingsScreen({
 
   function handleArrived(bookingId: string) {
     state.handleBookingAction(bookingId, "arrived", "Provider arrived at customer location");
+  }
+
+  function handleWorkFinished(bookingId: string) {
+    state.handleBookingAction(bookingId, "work_finished_by_provider", "Provider marked work as finished.");
   }
 
   function handleSendPaymentRequest(booking: ProviderBookingItem) {
@@ -709,18 +736,18 @@ export function ProviderBookingsScreen({
 
     state.handleBookingAction(
       booking.id,
-      "completed",
+      "final_payment_sent",
       note.trim(),
       { finalAmount },
     );
   }
 
   function handleConfirmPaymentReceived(bookingId: string) {
-    state.handleBookingAction(bookingId, "paid", "Provider confirmed cash payment received.");
+    state.handleBookingAction(bookingId, "payment_received_by_provider", "Provider confirmed cash payment received.");
   }
 
   function handleCompleteProviderJob(bookingId: string) {
-    state.handleBookingAction(bookingId, "review_requested", "Provider completed the booking and opened reviews.");
+    state.handleBookingAction(bookingId, "completed", "Provider completed the booking and opened reviews.");
   }
 
   function openReviewModal(booking: ProviderBookingItem) {
@@ -884,6 +911,7 @@ export function ProviderBookingsScreen({
             onDecline={handleDecline}
             onOnTheWay={handleOnTheWay}
             onArrived={handleArrived}
+            onWorkFinished={handleWorkFinished}
             onSendPaymentRequest={handleSendPaymentRequest}
             onConfirmPaymentReceived={handleConfirmPaymentReceived}
             onCompleteProviderJob={handleCompleteProviderJob}
@@ -1026,7 +1054,7 @@ export function ProviderBookingsScreen({
                       View Details
                     </AppButton>
 
-                    {booking.bookingStatus === "pending" ? (
+                    {booking.bookingStatus === "pending_provider_response" || booking.bookingStatus === "pending" ? (
                       <>
                         <AppButton
                           className="flex-1"
@@ -1060,11 +1088,17 @@ export function ProviderBookingsScreen({
                       >
                         Arrived
                       </AppButton>
+                    ) : booking.bookingStatus === "arrived" ? (
+                      <AppButton
+                        className="flex-1"
+                        disabled={state.actionBookingId === booking.id}
+                        onClick={() => handleWorkFinished(booking.id)}
+                      >
+                        Work Finished
+                      </AppButton>
                     ) : (
                       <div className="flex flex-1 items-center rounded-[14px] bg-white px-4 text-[13px] font-semibold text-[#64748b]">
-                        {booking.bookingStatus === "arrived"
-                          ? "Waiting final amount step"
-                          : isCompletedStatus(booking.bookingStatus)
+                        {isCompletedStatus(booking.bookingStatus)
                             ? "Completed flow"
                             : isCanceledStatus(booking.bookingStatus)
                               ? "Canceled flow"

@@ -19,15 +19,17 @@ type BookingRow = {
   provider_id: string;
   service_label: string;
   booking_status:
-    | "pending"
+    | "pending_provider_response"
+    | "declined_by_provider"
     | "accepted"
     | "on_the_way"
     | "arrived"
+    | "work_finished_by_provider"
+    | "work_confirmed_by_user"
+    | "final_payment_sent"
+    | "cash_paid_by_user"
+    | "payment_received_by_provider"
     | "completed"
-    | "paid"
-    | "review_requested"
-    | "reviewed"
-    | "declined"
     | "cancelled";
 };
 
@@ -127,9 +129,9 @@ export async function POST(
 
   const bookingRow = booking as BookingRow;
 
-  if (bookingRow.booking_status !== "paid") {
+  if (bookingRow.booking_status !== "work_finished_by_provider") {
     return NextResponse.json(
-      { error: "You can complete the task only after payment is done." },
+      { error: "You can confirm work completion only after the provider marks the work as finished." },
       { status: 400 },
     );
   }
@@ -139,8 +141,8 @@ export async function POST(
   const { error: updateError } = await verified.adminClient
     .from("bookings")
     .update({
-      booking_status: "review_requested",
-      review_requested_at: completedAt,
+      booking_status: "work_confirmed_by_user",
+      work_confirmed_by_user_at: completedAt,
     })
     .eq("id", bookingRow.id)
     .eq("customer_id", verified.profile.id);
@@ -149,7 +151,7 @@ export async function POST(
     const fallbackWrite = await verified.adminClient
       .from("bookings")
       .update({
-        booking_status: "review_requested",
+        booking_status: "work_confirmed_by_user",
       })
       .eq("id", bookingRow.id)
       .eq("customer_id", verified.profile.id);
@@ -162,22 +164,22 @@ export async function POST(
     }
   }
 
-  const providerBody = `${verified.profile.full_name?.trim() || "A customer"} marked the ${bookingRow.service_label} booking as completed.`;
-  const customerBody = `Your ${bookingRow.service_label} booking is fully completed. Please leave your review now.`;
+  const providerBody = `${verified.profile.full_name?.trim() || "A customer"} confirmed the ${bookingRow.service_label} work is completed.`;
+  const customerBody = `You confirmed the ${bookingRow.service_label} work. The provider can now prepare the final cash payment.`;
 
   await verified.adminClient.from("notifications").insert([
     {
       user_id: bookingRow.provider_id,
       booking_id: bookingRow.id,
-      notification_type: "booking_completed",
-      title: "Booking completed",
+      notification_type: "user_work_confirmed",
+      title: "Work confirmed by user",
       body: providerBody,
     },
     {
       user_id: bookingRow.customer_id,
       booking_id: bookingRow.id,
-      notification_type: "review_requested",
-      title: "Leave your review",
+      notification_type: "user_work_confirmed",
+      title: "Work confirmation saved",
       body: customerBody,
     },
   ]);
@@ -185,16 +187,16 @@ export async function POST(
   try {
     await Promise.all([
       sendPushNotificationToUser(bookingRow.provider_id, {
-        title: "Booking completed",
+        title: "Work confirmed by user",
         body: providerBody,
         bookingId: bookingRow.id,
         path: `/provider/bookings/${bookingRow.id}`,
       }),
       sendPushNotificationToUser(bookingRow.customer_id, {
-        title: "Leave your review",
+        title: "Work confirmation saved",
         body: customerBody,
         bookingId: bookingRow.id,
-        path: `/profile/bookings/${bookingRow.id}/review`,
+        path: `/profile/bookings/${bookingRow.id}`,
       }),
     ]);
   } catch (pushError) {

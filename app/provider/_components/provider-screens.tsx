@@ -2199,7 +2199,7 @@ export function BookingsScreen({
   );
 }
 
-function getProviderTaskSteps(status: "accepted" | "on_the_way" | "arrived" | "completed" | "paid" | "review_requested" | "reviewed" | "pending" | "declined" | "cancelled") {
+function getProviderTaskSteps(status: ProviderBookingItem["bookingStatus"]) {
   const labels = [
     "Booking accepted",
     "On the way",

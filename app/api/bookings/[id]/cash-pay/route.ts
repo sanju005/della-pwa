@@ -19,15 +19,17 @@ type BookingRow = {
   provider_id: string;
   service_label: string;
   booking_status:
-    | "pending"
+    | "pending_provider_response"
+    | "declined_by_provider"
     | "accepted"
     | "on_the_way"
     | "arrived"
+    | "work_finished_by_provider"
+    | "work_confirmed_by_user"
+    | "final_payment_sent"
+    | "cash_paid_by_user"
+    | "payment_received_by_provider"
     | "completed"
-    | "paid"
-    | "review_requested"
-    | "reviewed"
-    | "declined"
     | "cancelled";
 };
 
@@ -134,7 +136,7 @@ export async function POST(
 
   const bookingRow = booking as BookingRow;
 
-  if (bookingRow.booking_status !== "completed") {
+  if (bookingRow.booking_status !== "final_payment_sent") {
     return NextResponse.json(
       { error: "Cash payment can only be confirmed after the provider sends the final amount." },
       { status: 400 },
@@ -167,7 +169,9 @@ export async function POST(
   const { error: bookingUpdateError } = await verified.adminClient
     .from("bookings")
     .update({
-      paid_at: timestamp,
+      booking_status: "cash_paid_by_user",
+      cash_paid_by_user_at: timestamp,
+      cash_payment_proof_images: payload.proofDataUrl?.trim() ? [payload.proofDataUrl.trim()] : [],
     })
     .eq("id", bookingRow.id)
     .eq("customer_id", verified.profile.id);

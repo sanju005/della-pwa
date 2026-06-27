@@ -1502,22 +1502,16 @@ export function BookingDetailScreen({ booking }: BookingDetailProps) {
   const [paymentProofMimeType, setPaymentProofMimeType] = useState("");
   const paymentMarkedPaid =
     booking.paymentStatus === "paid" ||
-    booking.workflowStatus === "paid" ||
-    booking.workflowStatus === "review_requested" ||
-    booking.workflowStatus === "reviewed";
-  const canPayNow = booking.workflowStatus === "completed" && !paymentMarkedPaid;
-  const canMarkCompleted = false;
-  const canReview =
-    booking.workflowStatus === "review_requested" ||
-    booking.workflowStatus === "reviewed";
+    ["cash_paid_by_user", "payment_received_by_provider", "completed"].includes(booking.workflowStatus);
+  const canPayNow = booking.workflowStatus === "final_payment_sent" && !paymentMarkedPaid;
+  const canConfirmWork = booking.workflowStatus === "work_finished_by_provider";
+  const canReview = booking.workflowStatus === "completed" && booking.userReviewStatus !== "submitted";
   const paidDateLabel =
     canPayNow
       ? "Awaiting Customer Payment"
       : booking.status === "ongoing"
         ? "Payment Pending"
-        : canMarkCompleted
-          ? "Payment Done"
-          : canReview
+        : canReview
             ? "Task Completed"
             : "Awaiting Payment";
   const confirmedDate = formatStepDate(booking.acceptedAt || booking.createdAt);
@@ -1526,55 +1520,73 @@ export function BookingDetailScreen({ booking }: BookingDetailProps) {
   const onTheWayTime = formatStepTime(booking.onTheWayAt);
   const arrivedDate = formatStepDate(booking.arrivedAt);
   const arrivedTime = formatStepTime(booking.arrivedAt);
-  const jobDoneDate = formatStepDate(booking.completedAt);
-  const jobDoneTime = formatStepTime(booking.completedAt);
-  const paymentDoneDate = formatStepDate(booking.paidAt);
-  const paymentDoneTime = formatStepTime(booking.paidAt);
-  const completedDate = formatStepDate(booking.reviewRequestedAt);
-  const completedTime = formatStepTime(booking.reviewRequestedAt);
-  const reviewDate = formatStepDate(booking.reviewedAt);
-  const reviewTime = formatStepTime(booking.reviewedAt);
+  const workFinishedDate = formatStepDate(booking.workFinishedAt);
+  const workFinishedTime = formatStepTime(booking.workFinishedAt);
+  const workConfirmedDate = formatStepDate(booking.workConfirmedByUserAt);
+  const workConfirmedTime = formatStepTime(booking.workConfirmedByUserAt);
+  const paymentSentDate = formatStepDate(booking.paymentSentAt);
+  const paymentSentTime = formatStepTime(booking.paymentSentAt);
+  const cashPaidDate = formatStepDate(booking.cashPaidByUserAt || booking.paidAt);
+  const cashPaidTime = formatStepTime(booking.cashPaidByUserAt || booking.paidAt);
+  const paymentReceivedDate = formatStepDate(booking.paymentReceivedByProviderAt);
+  const paymentReceivedTime = formatStepTime(booking.paymentReceivedByProviderAt);
+  const completedDate = formatStepDate(booking.completedAt);
+  const completedTime = formatStepTime(booking.completedAt);
   const stepState = {
     confirmed:
-      ["accepted", "on_the_way", "arrived", "completed", "paid", "review_requested", "reviewed"].includes(booking.workflowStatus)
+      ["accepted", "on_the_way", "arrived", "work_finished_by_provider", "work_confirmed_by_user", "final_payment_sent", "cash_paid_by_user", "payment_received_by_provider", "completed"].includes(booking.workflowStatus)
         ? "done"
-        : booking.workflowStatus === "pending"
+        : booking.workflowStatus === "pending_provider_response"
           ? "current"
           : "waiting",
     onTheWay:
-      ["on_the_way", "arrived", "completed", "paid", "review_requested", "reviewed"].includes(booking.workflowStatus)
+      ["on_the_way", "arrived", "work_finished_by_provider", "work_confirmed_by_user", "final_payment_sent", "cash_paid_by_user", "payment_received_by_provider", "completed"].includes(booking.workflowStatus)
         ? "done"
         : booking.workflowStatus === "accepted"
           ? "current"
           : "waiting",
     arrived:
-      ["arrived", "completed", "paid", "review_requested", "reviewed"].includes(booking.workflowStatus)
+      ["arrived", "work_finished_by_provider", "work_confirmed_by_user", "final_payment_sent", "cash_paid_by_user", "payment_received_by_provider", "completed"].includes(booking.workflowStatus)
         ? "done"
         : booking.workflowStatus === "on_the_way"
           ? "current"
           : "waiting",
-    jobDone:
-      ["completed", "paid", "review_requested", "reviewed"].includes(booking.workflowStatus)
+    workFinished:
+      ["work_finished_by_provider", "work_confirmed_by_user", "final_payment_sent", "cash_paid_by_user", "payment_received_by_provider", "completed"].includes(booking.workflowStatus)
         ? "done"
         : booking.workflowStatus === "arrived"
           ? "current"
           : "waiting",
+    workConfirmed:
+      booking.workflowStatus === "work_finished_by_provider"
+        ? "current"
+        : ["work_confirmed_by_user", "final_payment_sent", "cash_paid_by_user", "payment_received_by_provider", "completed"].includes(booking.workflowStatus)
+          ? "done"
+          : "waiting",
     paymentRequest:
-      booking.workflowStatus === "completed" && !paymentMarkedPaid
+      booking.workflowStatus === "final_payment_sent" && !paymentMarkedPaid
         ? "current"
-        : paymentMarkedPaid
+        : ["cash_paid_by_user", "payment_received_by_provider", "completed"].includes(booking.workflowStatus)
           ? "done"
           : "waiting",
-    userCompleted:
-      booking.workflowStatus === "review_requested"
+    cashPaid:
+      booking.workflowStatus === "cash_paid_by_user"
         ? "current"
-        : booking.workflowStatus === "reviewed"
+        : ["payment_received_by_provider", "completed"].includes(booking.workflowStatus)
           ? "done"
           : "waiting",
+    providerPaymentConfirmation:
+      booking.workflowStatus === "cash_paid_by_user"
+        ? "current"
+        : ["payment_received_by_provider", "completed"].includes(booking.workflowStatus)
+          ? "done"
+          : "waiting",
+    completed:
+      booking.workflowStatus === "completed" ? "done" : "waiting",
     review:
-      booking.workflowStatus === "review_requested"
+      booking.workflowStatus === "completed" && booking.userReviewStatus !== "submitted"
         ? "current"
-        : booking.workflowStatus === "reviewed"
+        : booking.userReviewStatus === "submitted"
           ? "done"
           : "waiting",
   } as const;
@@ -1715,21 +1727,36 @@ export function BookingDetailScreen({ booking }: BookingDetailProps) {
       </div>
 
       <div className="mt-4 space-y-4">
-        <StepTimelineCard number={1} title="Confirmed" state={stepState.confirmed} dateLabel={confirmedDate} timeLabel={confirmedTime} />
-        <StepTimelineCard number={2} title="On The Way" state={stepState.onTheWay} dateLabel={onTheWayDate} timeLabel={onTheWayTime} />
-        <StepTimelineCard number={3} title="Arrived" state={stepState.arrived} dateLabel={arrivedDate} timeLabel={arrivedTime} />
-        <StepTimelineCard
-          number={4}
-          title="Job Completed"
-          state={stepState.jobDone}
-          dateLabel={jobDoneDate}
-          timeLabel={jobDoneTime}
-          description="Provider has completed the service."
-        />
+        <StepTimelineCard number={1} title="Booking Sent" state="done" dateLabel={formatStepDate(booking.createdAt)} timeLabel={formatStepTime(booking.createdAt)} />
+        <StepTimelineCard number={2} title="Provider Accepted" state={stepState.confirmed} dateLabel={confirmedDate} timeLabel={confirmedTime} />
+        <StepTimelineCard number={3} title="Provider On The Way" state={stepState.onTheWay} dateLabel={onTheWayDate} timeLabel={onTheWayTime} />
+        <StepTimelineCard number={4} title="Provider Arrived" state={stepState.arrived} dateLabel={arrivedDate} timeLabel={arrivedTime} />
         <StepTimelineCard
           number={5}
-          title="Payment Request"
+          title="Confirm Work Completion"
+          state={stepState.workConfirmed}
+          dateLabel={workConfirmedDate || workFinishedDate}
+          timeLabel={workConfirmedTime || workFinishedTime}
+          description="Provider marked the work as finished. Confirm only after checking the service."
+          expanded={stepState.workConfirmed === "current"}
+        >
+          {canConfirmWork ? (
+            <button
+              type="button"
+              onClick={handleMarkCompleted}
+              disabled={completionLoading}
+              className="inline-flex h-12 w-full items-center justify-center rounded-[14px] bg-[#8E5EB5] text-[16px] font-extrabold text-white shadow-[0_16px_30px_rgba(142,94,181,0.24)] disabled:opacity-70"
+            >
+              {completionLoading ? "Confirming..." : "Accept Work Completed"}
+            </button>
+          ) : null}
+        </StepTimelineCard>
+        <StepTimelineCard
+          number={6}
+          title="Payment Requested"
           state={stepState.paymentRequest}
+          dateLabel={paymentSentDate}
+          timeLabel={paymentSentTime}
           description="Provider has sent the final payment."
           expanded={stepState.paymentRequest === "current" || stepState.paymentRequest === "done"}
         >
@@ -1793,36 +1820,15 @@ export function BookingDetailScreen({ booking }: BookingDetailProps) {
             ) : null}
           </div>
         </StepTimelineCard>
+        <StepTimelineCard number={7} title="Paid by Cash" state={stepState.cashPaid} dateLabel={cashPaidDate} timeLabel={cashPaidTime} />
+        <StepTimelineCard number={8} title="Waiting Provider Payment Confirmation" state={stepState.providerPaymentConfirmation} dateLabel={paymentReceivedDate} timeLabel={paymentReceivedTime} />
+        <StepTimelineCard number={9} title="Task Completed" state={stepState.completed} dateLabel={completedDate} timeLabel={completedTime} />
         <StepTimelineCard
-          number={6}
-          title="User Job Completed"
-          state={stepState.userCompleted}
+          number={10}
+          title="Optional Review Provider"
+          state={stepState.review}
           dateLabel={completedDate}
           timeLabel={completedTime}
-          description={
-            paymentMarkedPaid
-              ? "Waiting for the provider to confirm the received cash and complete the provider side."
-              : "Complete this after the payment steps are fully finished."
-          }
-          expanded={stepState.userCompleted === "current"}
-        >
-          {canMarkCompleted ? (
-            <button
-              type="button"
-              onClick={handleMarkCompleted}
-              disabled={completionLoading}
-              className="inline-flex h-12 w-full items-center justify-center rounded-[14px] bg-[#8E5EB5] text-[16px] font-extrabold text-white shadow-[0_16px_30px_rgba(142,94,181,0.24)] disabled:opacity-70"
-            >
-              {completionLoading ? "Completing..." : "Mark as Completed"}
-            </button>
-          ) : null}
-        </StepTimelineCard>
-        <StepTimelineCard
-          number={7}
-          title="Review"
-          state={stepState.review}
-          dateLabel={reviewDate}
-          timeLabel={reviewTime}
           description="Review popup will appear after both sides complete the job. You can add photos while submitting your review."
           expanded={canReview}
         >

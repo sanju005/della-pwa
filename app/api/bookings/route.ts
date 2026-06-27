@@ -499,10 +499,16 @@ function toBookingTab(status: BookingRow["booking_status"]): Booking["status"] {
   }
 
   if (
-    normalized !== "pending_provider_response" &&
-    normalized !== "declined_by_provider" &&
-    normalized !== "cancelled" &&
-    normalized !== "completed"
+    [
+      "accepted",
+      "on_the_way",
+      "arrived",
+      "work_finished_by_provider",
+      "work_confirmed_by_user",
+      "final_payment_sent",
+      "cash_paid_by_user",
+      "payment_received_by_provider",
+    ].includes(normalized)
   ) {
     return "ongoing";
   }
@@ -583,7 +589,7 @@ function mapLiveBookingToUi(
   const paymentRecord = row.payment_records?.[0] ?? null;
   const paidAmount = typeof paymentRecord?.amount === "number"
     ? Number(paymentRecord.amount)
-    : Number(row.final_amount ?? 0) || paymentAdjustment?.finalAmount ?? Number(row.quoted_amount ?? 0);
+    : Number(row.final_amount ?? 0) || (paymentAdjustment?.finalAmount ?? Number(row.quoted_amount ?? 0));
   const paymentBreakdown =
     Array.isArray(row.payment_breakdown) && row.payment_breakdown.length > 0
       ? row.payment_breakdown

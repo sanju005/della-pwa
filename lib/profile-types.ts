@@ -76,7 +76,9 @@ export type Booking = {
   location: string;
   status: BookingStatus;
   workflowStatus:
+    | "pending"
     | "pending_provider_response"
+    | "declined"
     | "declined_by_provider"
     | "accepted"
     | "on_the_way"
@@ -87,6 +89,9 @@ export type Booking = {
     | "cash_paid_by_user"
     | "payment_received_by_provider"
     | "completed"
+    | "paid"
+    | "review_requested"
+    | "reviewed"
     | "cancelled";
   statusLabel: string;
   badgeTone: "green" | "amber" | "slate";
