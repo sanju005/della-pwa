@@ -76,6 +76,18 @@ function mapBookingUpdateError(message?: string | null) {
   return message || "Unable to update booking.";
 }
 
+function isUnknownPaymentColumnError(message?: string | null) {
+  const normalized = message?.trim().toLowerCase() ?? "";
+  return normalized.includes("column") && (
+    normalized.includes("payment_option") ||
+    normalized.includes("company_commission_rate") ||
+    normalized.includes("company_commission_amount") ||
+    normalized.includes("provider_net_amount") ||
+    normalized.includes("company_payment_status") ||
+    normalized.includes("provider_sent_amount_at")
+  );
+}
+
 function buildFallbackUpdatePayload(
   nextStatus: BookingStatus,
   _current: BookingOwnerRow,
@@ -85,6 +97,75 @@ function buildFallbackUpdatePayload(
   };
 
   return payload;
+}
+
+function buildPaymentRequestPayload(
+  current: BookingOwnerRow,
+  amount: number,
+  commission: ReturnType<typeof calculateCommission>,
+) {
+  return {
+    booking_id: current.id,
+    customer_id: current.customer_id,
+    provider_id: current.provider_id,
+    service_title: `${current.service_label} Service`,
+    currency: "myr",
+    amount: commission.amount,
+    payment_provider: "cash",
+    payment_option: "cash",
+    payment_method: "Cash",
+    status: "pending",
+    company_commission_rate: commission.companyCommissionRate,
+    company_commission_amount: commission.companyCommissionAmount,
+    provider_net_amount: commission.providerNetAmount,
+    company_payment_status: "pending",
+    provider_sent_amount_at: new Date().toISOString(),
+  };
+}
+
+function buildFallbackPaymentRequestPayload(
+  current: BookingOwnerRow,
+  commission: ReturnType<typeof calculateCommission>,
+) {
+  return {
+    booking_id: current.id,
+    customer_id: current.customer_id,
+    provider_id: current.provider_id,
+    service_title: `${current.service_label} Service`,
+    currency: "myr",
+    amount: commission.amount,
+    payment_provider: "cash",
+    payment_method: "Cash",
+    status: "pending",
+  };
+}
+
+async function ensurePaymentRequest(
+  adminClient: NonNullable<ReturnType<typeof getAdminSupabaseClient>>,
+  current: BookingOwnerRow,
+  amount: number,
+) {
+  const commission = calculateCommission(amount);
+
+  let { error } = await adminClient
+    .from("payments")
+    .upsert(
+      buildPaymentRequestPayload(current, amount, commission),
+      { onConflict: "booking_id" },
+    );
+
+  if (error && isUnknownPaymentColumnError(error.message)) {
+    const fallbackWrite = await adminClient
+      .from("payments")
+      .upsert(
+        buildFallbackPaymentRequestPayload(current, commission),
+        { onConflict: "booking_id" },
+      );
+
+    error = fallbackWrite.error;
+  }
+
+  return { error };
 }
 
 function getAdminSupabaseClient() {
@@ -296,6 +377,27 @@ export async function PATCH(
 
   const current = booking as BookingOwnerRow;
 
+  if (current.booking_status === nextStatus) {
+    if (nextStatus === "completed") {
+      const amount = finalAmount ?? Number(current.quoted_amount ?? 0);
+      const { error: paymentUpsertError } = await ensurePaymentRequest(
+        verified.adminClient,
+        current,
+        amount,
+      );
+
+      if (paymentUpsertError) {
+        console.error("[Provider booking update] Failed to save payment request on retry:", paymentUpsertError);
+        return NextResponse.json(
+          { error: paymentUpsertError.message || "Payment request could not be prepared." },
+          { status: 500 }
+        );
+      }
+    }
+
+    return NextResponse.json({ success: true, alreadyApplied: true });
+  }
+
   if (!allowedTransitions[current.booking_status].includes(nextStatus)) {
     return NextResponse.json(
       { error: `Cannot move booking from ${current.booking_status} to ${nextStatus}.` },
@@ -375,29 +477,11 @@ export async function PATCH(
   }
 
   if (nextStatus === "completed") {
-    const commission = calculateCommission(finalAmount ?? Number(current.quoted_amount ?? 0));
-    const { error: paymentUpsertError } = await verified.adminClient
-      .from("payments")
-      .upsert(
-        {
-          booking_id: current.id,
-          customer_id: current.customer_id,
-          provider_id: current.provider_id,
-          service_title: `${current.service_label} Service`,
-          currency: "myr",
-          amount: commission.amount,
-          payment_provider: "cash",
-          payment_option: "cash",
-          payment_method: "Cash",
-          status: "pending",
-          company_commission_rate: commission.companyCommissionRate,
-          company_commission_amount: commission.companyCommissionAmount,
-          provider_net_amount: commission.providerNetAmount,
-          company_payment_status: "pending",
-          provider_sent_amount_at: new Date().toISOString(),
-        },
-        { onConflict: "booking_id" },
-      );
+    const { error: paymentUpsertError } = await ensurePaymentRequest(
+      verified.adminClient,
+      current,
+      finalAmount ?? Number(current.quoted_amount ?? 0),
+    );
 
     if (paymentUpsertError) {
       console.error("[Provider booking update] Failed to save payment request:", paymentUpsertError);
