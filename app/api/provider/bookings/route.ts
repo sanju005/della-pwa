@@ -70,6 +70,11 @@ type BookingRow = {
     provider_company_payment_proof_mime_type: string | null;
     created_at: string;
   }> | null;
+  provider_review_records?: Array<{
+    rating: number | null;
+    comment: string | null;
+    created_at: string | null;
+  }> | null;
 };
 
 function getAdminSupabaseClient() {
@@ -157,6 +162,11 @@ async function verifyProviderRequest(request: Request) {
     authUser: user,
     profile: profile as ProfileRow,
   };
+}
+
+function isMissingProviderReviewTableError(message?: string | null) {
+  const normalized = message?.trim().toLowerCase() ?? "";
+  return normalized.includes("provider_customer_reviews");
 }
 
 function formatDateTimeLabel(date: string, startTime: string, endTime: string) {
@@ -281,7 +291,7 @@ export async function GET(request: Request) {
     return verified.error;
   }
 
-  const { data, error } = await verified.adminClient
+  let { data, error } = await verified.adminClient
     .from("bookings")
     .select(`
       id,
@@ -306,10 +316,46 @@ export async function GET(request: Request) {
       paid_at,
       review_requested_at,
       reviewed_at,
-      payment_records:payments(amount, payment_method, payment_option, status, paid_at, company_commission_amount, provider_net_amount, company_payment_status, customer_payment_proof_data_url, customer_payment_proof_file_name, customer_payment_proof_mime_type, provider_company_payment_proof_data_url, provider_company_payment_proof_file_name, provider_company_payment_proof_mime_type, created_at)
+      payment_records:payments(amount, payment_method, payment_option, status, paid_at, company_commission_amount, provider_net_amount, company_payment_status, customer_payment_proof_data_url, customer_payment_proof_file_name, customer_payment_proof_mime_type, provider_company_payment_proof_data_url, provider_company_payment_proof_file_name, provider_company_payment_proof_mime_type, created_at),
+      provider_review_records:provider_customer_reviews(rating, comment, created_at)
     `)
     .eq("provider_id", verified.profile.id)
     .order("created_at", { ascending: false });
+
+  if (error && isMissingProviderReviewTableError(error.message)) {
+    const fallbackRead = await verified.adminClient
+      .from("bookings")
+      .select(`
+        id,
+        customer_id,
+        service_label,
+        service_key,
+        location_text,
+        booking_mode,
+        booking_status,
+        scheduled_date,
+        scheduled_start_time,
+        scheduled_end_time,
+        customer_note,
+        provider_response_note,
+        decline_reason,
+        quoted_amount,
+        created_at,
+        accepted_at,
+        on_the_way_at,
+        arrived_at,
+        completed_at,
+        paid_at,
+        review_requested_at,
+        reviewed_at,
+        payment_records:payments(amount, payment_method, payment_option, status, paid_at, company_commission_amount, provider_net_amount, company_payment_status, customer_payment_proof_data_url, customer_payment_proof_file_name, customer_payment_proof_mime_type, provider_company_payment_proof_data_url, provider_company_payment_proof_file_name, provider_company_payment_proof_mime_type, created_at)
+      `)
+      .eq("provider_id", verified.profile.id)
+      .order("created_at", { ascending: false });
+
+    data = fallbackRead.data as typeof data;
+    error = fallbackRead.error;
+  }
 
   if (error) {
     return NextResponse.json(
@@ -396,6 +442,12 @@ export async function GET(request: Request) {
       paidAt: row.paid_at ?? row.payment_records?.[0]?.paid_at ?? "",
       reviewRequestedAt: row.review_requested_at ?? "",
       reviewedAt: row.reviewed_at ?? "",
+      providerReviewRating:
+        typeof row.provider_review_records?.[0]?.rating === "number"
+          ? Number(row.provider_review_records[0].rating ?? 0)
+          : undefined,
+      providerReviewComment: row.provider_review_records?.[0]?.comment ?? "",
+      providerReviewedAt: row.provider_review_records?.[0]?.created_at ?? "",
     })),
   });
 }

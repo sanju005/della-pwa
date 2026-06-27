@@ -7,6 +7,11 @@ import { getSupabaseServiceKey, getSupabaseUrl } from "@/lib/supabase-env";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+type ReviewPayload = {
+  rating?: number;
+  comment?: string;
+};
+
 type ProfileRow = {
   id: string;
   full_name: string | null;
@@ -31,12 +36,6 @@ type BookingRow = {
     | "cancelled";
 };
 
-type CashPaymentPayload = {
-  proofDataUrl?: string;
-  proofFileName?: string;
-  proofMimeType?: string;
-};
-
 function isProviderRole(role: string | null | undefined) {
   return role === "provider" || role === "service_provider";
 }
@@ -57,7 +56,7 @@ function getAdminSupabaseClient() {
   });
 }
 
-async function verifyCustomerRequest(request: Request) {
+async function verifyProviderRequest(request: Request) {
   const adminClient = getAdminSupabaseClient();
 
   if (!adminClient) {
@@ -94,12 +93,9 @@ async function verifyCustomerRequest(request: Request) {
     .eq("id", user.id)
     .maybeSingle();
 
-  if (profileError || !profile || isProviderRole((profile as ProfileRow).role)) {
+  if (profileError || !profile || !isProviderRole((profile as ProfileRow).role)) {
     return {
-      error: NextResponse.json(
-        { error: "This account is not a customer account." },
-        { status: 403 },
-      ),
+      error: NextResponse.json({ error: "This account is not a provider account." }, { status: 403 }),
     };
   }
 
@@ -113,19 +109,26 @@ export async function POST(
   request: Request,
   context: { params: Promise<{ id: string }> },
 ) {
-  const verified = await verifyCustomerRequest(request);
+  const verified = await verifyProviderRequest(request);
 
   if ("error" in verified) {
     return verified.error;
   }
 
-  const payload = (await request.json().catch(() => ({}))) as CashPaymentPayload;
   const params = await context.params;
+  const payload = (await request.json().catch(() => ({}))) as ReviewPayload;
+  const rating = Math.max(1, Math.min(5, Math.round(Number(payload.rating ?? 0))));
+  const comment = payload.comment?.trim() ?? "";
+
+  if (!rating || !Number.isFinite(rating)) {
+    return NextResponse.json({ error: "A rating from 1 to 5 is required." }, { status: 400 });
+  }
+
   const { data: booking, error: bookingError } = await verified.adminClient
     .from("bookings")
     .select("id, customer_id, provider_id, service_label, booking_status")
     .eq("id", params.id)
-    .eq("customer_id", verified.profile.id)
+    .eq("provider_id", verified.profile.id)
     .maybeSingle();
 
   if (bookingError || !booking) {
@@ -134,68 +137,68 @@ export async function POST(
 
   const bookingRow = booking as BookingRow;
 
-  if (bookingRow.booking_status !== "completed") {
+  if (bookingRow.booking_status !== "review_requested" && bookingRow.booking_status !== "reviewed") {
     return NextResponse.json(
-      { error: "Cash payment can only be confirmed after the provider sends the final amount." },
+      { error: "Provider review is only available after the booking is fully completed." },
       { status: 400 },
     );
   }
 
-  const timestamp = new Date().toISOString();
-
-  const { error: paymentError } = await verified.adminClient
-    .from("payments")
-    .update({
-      status: "paid",
-      payment_method: "Cash",
-      paid_at: timestamp,
-      customer_confirmed_at: timestamp,
-      customer_payment_proof_data_url: payload.proofDataUrl?.trim() || null,
-      customer_payment_proof_file_name: payload.proofFileName?.trim() || null,
-      customer_payment_proof_mime_type: payload.proofMimeType?.trim() || null,
-    })
+  const { data: existingReview, error: existingReviewError } = await verified.adminClient
+    .from("provider_customer_reviews")
+    .select("id")
     .eq("booking_id", bookingRow.id)
-    .eq("customer_id", verified.profile.id);
+    .eq("provider_id", verified.profile.id)
+    .maybeSingle();
 
-  if (paymentError) {
+  if (existingReviewError) {
     return NextResponse.json(
-      { error: paymentError.message || "Unable to confirm cash payment." },
+      { error: existingReviewError.message || "Unable to load provider review." },
       { status: 500 },
     );
   }
 
-  const { error: bookingUpdateError } = await verified.adminClient
-    .from("bookings")
-    .update({
-      paid_at: timestamp,
-    })
-    .eq("id", bookingRow.id)
-    .eq("customer_id", verified.profile.id);
+  const reviewPayload = {
+    booking_id: bookingRow.id,
+    provider_id: verified.profile.id,
+    customer_id: bookingRow.customer_id,
+    rating,
+    comment,
+  };
 
-  if (bookingUpdateError) {
+  const reviewWrite = existingReview?.id
+    ? await verified.adminClient
+        .from("provider_customer_reviews")
+        .update(reviewPayload)
+        .eq("id", existingReview.id)
+    : await verified.adminClient
+        .from("provider_customer_reviews")
+        .insert(reviewPayload);
+
+  if (reviewWrite.error) {
     return NextResponse.json(
-      { error: bookingUpdateError.message || "Unable to update booking payment status." },
+      { error: reviewWrite.error.message || "Unable to submit provider review." },
       { status: 500 },
     );
   }
 
   await verified.adminClient.from("notifications").insert({
-    user_id: bookingRow.provider_id,
+    user_id: bookingRow.customer_id,
     booking_id: bookingRow.id,
-    notification_type: "payment_done",
-    title: "Customer marked payment paid",
-    body: `${verified.profile.full_name?.trim() || "A customer"} marked cash payment as paid for the ${bookingRow.service_label} booking. Please confirm receipt.`,
+    notification_type: "review_submitted",
+    title: "New provider review",
+    body: `${verified.profile.full_name?.trim() || "Your provider"} reviewed your ${bookingRow.service_label} booking.`,
   });
 
   try {
-    await sendPushNotificationToUser(bookingRow.provider_id, {
-      title: "Customer marked payment paid",
-      body: `${verified.profile.full_name?.trim() || "A customer"} marked cash payment as paid for the ${bookingRow.service_label} booking. Please confirm receipt.`,
+    await sendPushNotificationToUser(bookingRow.customer_id, {
+      title: "New provider review",
+      body: `${verified.profile.full_name?.trim() || "Your provider"} reviewed your ${bookingRow.service_label} booking.`,
       bookingId: bookingRow.id,
-      path: `/provider/bookings/${bookingRow.id}`,
+      path: `/profile/bookings/${bookingRow.id}`,
     });
   } catch (pushError) {
-    console.error("[Cash payment confirm] Failed to send provider push notification:", pushError);
+    console.error("[Provider review submit] Failed to send customer push notification:", pushError);
   }
 
   return NextResponse.json({ success: true });

@@ -30,6 +30,7 @@ import {
   type ProviderBookingItem,
   useProviderAppData,
 } from "../_components/provider-app";
+import { getSupabaseClient } from "@/lib/supabase";
 
 type BookingTab = "all" | "ongoing" | "pending" | "canceled" | "completes";
 
@@ -235,6 +236,79 @@ function TimelineCard({
   );
 }
 
+function ProviderReviewModal({
+  customerName,
+  rating,
+  comment,
+  loading,
+  onRatingChange,
+  onCommentChange,
+  onClose,
+  onSubmit,
+}: {
+  customerName: string;
+  rating: number;
+  comment: string;
+  loading: boolean;
+  onRatingChange: (value: number) => void;
+  onCommentChange: (value: string) => void;
+  onClose: () => void;
+  onSubmit: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0f172a]/50 px-4">
+      <div className="w-full max-w-md rounded-[28px] bg-white p-5 shadow-[0_24px_60px_rgba(15,23,42,0.28)]">
+        <p className="text-[12px] font-extrabold uppercase tracking-[0.14em] text-[#8E5EB5]">
+          Provider Review
+        </p>
+        <h3 className="mt-2 text-[1.35rem] font-black tracking-[-0.05em] text-[#0f172a]">
+          Review {customerName}
+        </h3>
+        <p className="mt-1 text-[13px] leading-6 text-[#64748b]">
+          Share your experience with this customer after the task is completed.
+        </p>
+
+        <div className="mt-5 flex items-center gap-2">
+          {Array.from({ length: 5 }).map((_, index) => {
+            const value = index + 1;
+            return (
+              <button
+                key={`provider-review-star-${value}`}
+                type="button"
+                onClick={() => onRatingChange(value)}
+                className={`text-[28px] leading-none ${value <= rating ? "text-[#8E5EB5]" : "text-[#d1d5db]"}`}
+                aria-label={`Rate ${value} star${value === 1 ? "" : "s"}`}
+              >
+                ★
+              </button>
+            );
+          })}
+        </div>
+
+        <label className="mt-5 block">
+          <span className="text-[13px] font-semibold text-[#1f1630]">Comment</span>
+          <textarea
+            value={comment}
+            onChange={(event) => onCommentChange(event.target.value)}
+            rows={5}
+            className="mt-2 w-full rounded-[18px] border border-[#e7dff2] px-4 py-3 text-[14px] text-[#1f1630] outline-none focus:border-[#8E5EB5]"
+            placeholder="Write your feedback about this customer."
+          />
+        </label>
+
+        <div className="mt-5 flex gap-3">
+          <AppButton className="flex-1" tone="secondary" onClick={onClose}>
+            Cancel
+          </AppButton>
+          <AppButton className="flex-1" disabled={loading} onClick={onSubmit}>
+            {loading ? "Submitting..." : "Submit Review"}
+          </AppButton>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function BookingDetails({
   booking,
   actionBookingId,
@@ -244,6 +318,9 @@ function BookingDetails({
   onOnTheWay,
   onArrived,
   onSendPaymentRequest,
+  onConfirmPaymentReceived,
+  onCompleteProviderJob,
+  onOpenReview,
 }: {
   booking: ProviderBookingItem;
   actionBookingId: string;
@@ -253,6 +330,9 @@ function BookingDetails({
   onOnTheWay: (bookingId: string) => void;
   onArrived: (bookingId: string) => void;
   onSendPaymentRequest: (booking: ProviderBookingItem) => void;
+  onConfirmPaymentReceived: (bookingId: string) => void;
+  onCompleteProviderJob: (bookingId: string) => void;
+  onOpenReview: (booking: ProviderBookingItem) => void;
 }) {
   const stepState = {
     confirmed: ["accepted", "on_the_way", "arrived", "completed", "paid", "review_requested", "reviewed"].includes(booking.bookingStatus) ? "done" : booking.bookingStatus === "pending" ? "current" : "waiting",
@@ -262,7 +342,7 @@ function BookingDetails({
     finalizePayment: booking.bookingStatus === "arrived" ? "current" : ["completed", "paid", "review_requested", "reviewed"].includes(booking.bookingStatus) ? "done" : "waiting",
     paymentWaiting: booking.bookingStatus === "completed" ? "current" : ["paid", "review_requested", "reviewed"].includes(booking.bookingStatus) ? "done" : "waiting",
     userCompleted: booking.bookingStatus === "paid" ? "current" : ["review_requested", "reviewed"].includes(booking.bookingStatus) ? "done" : "waiting",
-    review: booking.bookingStatus === "review_requested" ? "current" : booking.bookingStatus === "reviewed" ? "done" : "waiting",
+    review: booking.providerReviewedAt ? "done" : ["review_requested", "reviewed"].includes(booking.bookingStatus) ? "current" : "waiting",
   } as const;
   return (
     <section className="rounded-[24px] border border-[#eee5f7] bg-white p-5 shadow-[0_14px_32px_rgba(86,38,135,0.08)]">
@@ -308,9 +388,91 @@ function BookingDetails({
               ) : null}
             </div>
           </TimelineCard>
-          <TimelineCard number={6} title="Payment Waiting" state={stepState.paymentWaiting} dateLabel={formatStepDate(booking.completedAt)} timeLabel={formatStepTime(booking.completedAt)} description="Waiting for the user to pay the amount in cash." />
-          <TimelineCard number={7} title="User Job Completed" state={stepState.userCompleted} dateLabel={formatStepDate(booking.reviewRequestedAt)} timeLabel={formatStepTime(booking.reviewRequestedAt)} description="Waiting for the user to mark the job fully completed." />
-          <TimelineCard number={8} title="Review" state={stepState.review} dateLabel={formatStepDate(booking.reviewedAt)} timeLabel={formatStepTime(booking.reviewedAt)} description="A review popup will appear for both user and provider. You can attach photos to support the review." />
+          <TimelineCard
+            number={6}
+            title="Payment Waiting"
+            state={stepState.paymentWaiting}
+            dateLabel={formatStepDate(booking.paidAt || booking.completedAt)}
+            timeLabel={formatStepTime(booking.paidAt || booking.completedAt)}
+            description={
+              booking.bookingStatus === "completed" && booking.paymentStatus === "paid"
+                ? "The customer marked cash as paid. Confirm once you receive the payment."
+                : "Waiting for the user to pay the amount in cash."
+            }
+            expanded={stepState.paymentWaiting === "current" || stepState.paymentWaiting === "done"}
+          >
+            {booking.customerPaymentProofDataUrl ? (
+              <a
+                href={booking.customerPaymentProofDataUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="block rounded-[18px] border border-[#eee5f7] bg-white px-4 py-3 text-[13px] font-semibold text-[#8E5EB5]"
+              >
+                View customer payment proof
+              </a>
+            ) : null}
+            {booking.bookingStatus === "completed" && booking.paymentStatus === "paid" ? (
+              <button
+                type="button"
+                onClick={() => onConfirmPaymentReceived(booking.id)}
+                className="mt-4 inline-flex h-12 w-full items-center justify-center rounded-[14px] bg-[#8E5EB5] text-[16px] font-extrabold text-white shadow-[0_16px_30px_rgba(142,94,181,0.24)]"
+              >
+                Payment Received
+              </button>
+            ) : null}
+          </TimelineCard>
+          <TimelineCard
+            number={7}
+            title="Provider Job Completed"
+            state={stepState.userCompleted}
+            dateLabel={formatStepDate(booking.reviewRequestedAt || booking.paidAt)}
+            timeLabel={formatStepTime(booking.reviewRequestedAt || booking.paidAt)}
+            description="Complete the provider side after payment is received."
+            expanded={stepState.userCompleted === "current" || stepState.userCompleted === "done"}
+          >
+            {booking.bookingStatus === "paid" ? (
+              <button
+                type="button"
+                onClick={() => onCompleteProviderJob(booking.id)}
+                className="inline-flex h-12 w-full items-center justify-center rounded-[14px] bg-[#8E5EB5] text-[16px] font-extrabold text-white shadow-[0_16px_30px_rgba(142,94,181,0.24)]"
+              >
+                Complete Job
+              </button>
+            ) : (
+              <p className="text-[13px] leading-6 text-[#64748b]">
+                The provider completion step is finished.
+              </p>
+            )}
+          </TimelineCard>
+          <TimelineCard
+            number={8}
+            title="Review"
+            state={stepState.review}
+            dateLabel={formatStepDate(booking.providerReviewedAt || booking.reviewedAt)}
+            timeLabel={formatStepTime(booking.providerReviewedAt || booking.reviewedAt)}
+            description="Submit your review about the user after the booking is fully completed."
+            expanded={stepState.review === "current" || stepState.review === "done"}
+          >
+            {stepState.review === "current" ? (
+              <button
+                type="button"
+                onClick={() => onOpenReview(booking)}
+                className="inline-flex h-12 w-full items-center justify-center rounded-[14px] bg-[#8E5EB5] text-[16px] font-extrabold text-white shadow-[0_16px_30px_rgba(142,94,181,0.24)]"
+              >
+                Review User
+              </button>
+            ) : null}
+            {booking.providerReviewedAt ? (
+              <div className="rounded-[18px] border border-[#eee5f7] bg-white px-4 py-3">
+                <p className="text-[13px] font-semibold text-[#1f1630]">
+                  Your rating: {booking.providerReviewRating ?? 0}/5
+                </p>
+                {booking.providerReviewComment ? (
+                  <p className="mt-2 text-[13px] leading-6 text-[#64748b]">{booking.providerReviewComment}</p>
+                ) : null}
+              </div>
+            ) : null}
+          </TimelineCard>
         </div>
       ) : (
         <div className="mt-4 rounded-[18px] border border-[#fecaca] bg-[#fff1f2] px-4 py-3 text-[13px] font-semibold text-[#be123c]">
@@ -375,6 +537,10 @@ export function ProviderBookingsScreen({
   const [selectedDate, setSelectedDate] = useState(getTodayKey());
   const [selectedBookingId, setSelectedBookingId] = useState(initialBookingId);
   const [tab, setTab] = useState<BookingTab>("all");
+  const [reviewBookingId, setReviewBookingId] = useState("");
+  const [reviewRating, setReviewRating] = useState(0);
+  const [reviewComment, setReviewComment] = useState("");
+  const [reviewLoading, setReviewLoading] = useState(false);
   const [calendarMonth, setCalendarMonth] = useState(() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
@@ -549,6 +715,82 @@ export function ProviderBookingsScreen({
     );
   }
 
+  function handleConfirmPaymentReceived(bookingId: string) {
+    state.handleBookingAction(bookingId, "paid", "Provider confirmed cash payment received.");
+  }
+
+  function handleCompleteProviderJob(bookingId: string) {
+    state.handleBookingAction(bookingId, "review_requested", "Provider completed the booking and opened reviews.");
+  }
+
+  function openReviewModal(booking: ProviderBookingItem) {
+    setReviewBookingId(booking.id);
+    setReviewRating(booking.providerReviewRating ?? 0);
+    setReviewComment(booking.providerReviewComment ?? "");
+  }
+
+  async function handleSubmitProviderReview() {
+    const client = getSupabaseClient();
+    const bookingId = reviewBookingId;
+
+    if (!bookingId) {
+      return;
+    }
+
+    if (reviewRating < 1) {
+      state.setError("Please choose a rating before submitting the provider review.");
+      return;
+    }
+
+    if (!client) {
+      state.setError("Supabase is not configured yet.");
+      return;
+    }
+
+    setReviewLoading(true);
+    state.setError("");
+    state.setNotice("");
+
+    const {
+      data: { session },
+    } = await client.auth.getSession();
+
+    if (!session) {
+      state.setError("Your session expired. Please log in again.");
+      setReviewLoading(false);
+      return;
+    }
+
+    const response = await fetch(`/api/provider/bookings/${bookingId}/review`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({
+        rating: reviewRating,
+        comment: reviewComment.trim(),
+      }),
+    }).catch(() => null);
+
+    const result = response
+      ? ((await response.json().catch(() => ({}))) as { success?: boolean; error?: string })
+      : null;
+
+    if (!response || !response.ok || !result?.success) {
+      state.setError(result?.error || "Unable to submit provider review.");
+      setReviewLoading(false);
+      return;
+    }
+
+    await state.reloadWorkspace();
+    state.setNotice("Provider review submitted successfully.");
+    setReviewBookingId("");
+    setReviewRating(0);
+    setReviewComment("");
+    setReviewLoading(false);
+  }
+
   if (state.loading) {
     return (
       <MobilePage className="pb-28">
@@ -643,6 +885,9 @@ export function ProviderBookingsScreen({
             onOnTheWay={handleOnTheWay}
             onArrived={handleArrived}
             onSendPaymentRequest={handleSendPaymentRequest}
+            onConfirmPaymentReceived={handleConfirmPaymentReceived}
+            onCompleteProviderJob={handleCompleteProviderJob}
+            onOpenReview={openReviewModal}
           />
         ) : null}
 
@@ -833,6 +1078,22 @@ export function ProviderBookingsScreen({
           </div>
         </section>
       </section>
+      {reviewBookingId ? (
+        <ProviderReviewModal
+          customerName={state.bookings.find((booking) => booking.id === reviewBookingId)?.customerName || "Customer"}
+          rating={reviewRating}
+          comment={reviewComment}
+          loading={reviewLoading}
+          onRatingChange={setReviewRating}
+          onCommentChange={setReviewComment}
+          onClose={() => {
+            if (!reviewLoading) {
+              setReviewBookingId("");
+            }
+          }}
+          onSubmit={handleSubmitProviderReview}
+        />
+      ) : null}
       <ProviderBottomNav />
     </MobilePage>
   );

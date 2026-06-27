@@ -100,6 +100,9 @@ export type ProviderBookingItem = {
   paidAt?: string;
   reviewRequestedAt?: string;
   reviewedAt?: string;
+  providerReviewRating?: number;
+  providerReviewComment?: string;
+  providerReviewedAt?: string;
   customerStatusLabel: string;
 };
 

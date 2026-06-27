@@ -261,7 +261,7 @@ const allowedTransitions: Record<BookingStatus, BookingStatus[]> = {
   on_the_way: ["arrived", "cancelled"],
   arrived: ["completed", "cancelled"],
   completed: ["paid"],
-  paid: [],
+  paid: ["review_requested"],
   review_requested: [],
   reviewed: [],
   declined: [],
@@ -282,6 +282,8 @@ function notificationTypeForStatus(status: BookingStatus) {
       return "task_completed";
     case "paid":
       return "payment_done";
+    case "review_requested":
+      return "review_requested";
     case "cancelled":
       return "booking_cancelled";
     default:
@@ -322,8 +324,13 @@ function notificationContent(
       };
     case "paid":
       return {
-        title: "Cash paid successfully",
-        body: `Cash payment was confirmed for your ${serviceLabel} booking.`,
+        title: "Payment received",
+        body: `Your provider confirmed cash payment for the ${serviceLabel} booking.`,
+      };
+    case "review_requested":
+      return {
+        title: "Leave your review",
+        body: `Your ${serviceLabel} booking is fully completed. Please leave your review now.`,
       };
     case "cancelled":
       return {
@@ -441,6 +448,10 @@ export async function PATCH(
 
   if (nextStatus === "paid") {
     updatePayload.paid_at = new Date().toISOString();
+  }
+
+  if (nextStatus === "review_requested") {
+    updatePayload.review_requested_at = new Date().toISOString();
   }
 
   if (nextStatus === "cancelled") {

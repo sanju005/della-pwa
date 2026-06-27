@@ -1500,8 +1500,13 @@ export function BookingDetailScreen({ booking }: BookingDetailProps) {
   const [paymentProofDataUrl, setPaymentProofDataUrl] = useState("");
   const [paymentProofFileName, setPaymentProofFileName] = useState("");
   const [paymentProofMimeType, setPaymentProofMimeType] = useState("");
-  const canPayNow = booking.workflowStatus === "completed";
-  const canMarkCompleted = booking.workflowStatus === "paid";
+  const paymentMarkedPaid =
+    booking.paymentStatus === "paid" ||
+    booking.workflowStatus === "paid" ||
+    booking.workflowStatus === "review_requested" ||
+    booking.workflowStatus === "reviewed";
+  const canPayNow = booking.workflowStatus === "completed" && !paymentMarkedPaid;
+  const canMarkCompleted = false;
   const canReview =
     booking.workflowStatus === "review_requested" ||
     booking.workflowStatus === "reviewed";
@@ -1555,15 +1560,15 @@ export function BookingDetailScreen({ booking }: BookingDetailProps) {
           ? "current"
           : "waiting",
     paymentRequest:
-      booking.workflowStatus === "completed"
+      booking.workflowStatus === "completed" && !paymentMarkedPaid
         ? "current"
-        : ["paid", "review_requested", "reviewed"].includes(booking.workflowStatus)
+        : paymentMarkedPaid
           ? "done"
           : "waiting",
     userCompleted:
-      booking.workflowStatus === "paid"
+      booking.workflowStatus === "review_requested"
         ? "current"
-        : ["review_requested", "reviewed"].includes(booking.workflowStatus)
+        : booking.workflowStatus === "reviewed"
           ? "done"
           : "waiting",
     review:
@@ -1794,7 +1799,11 @@ export function BookingDetailScreen({ booking }: BookingDetailProps) {
           state={stepState.userCompleted}
           dateLabel={completedDate}
           timeLabel={completedTime}
-          description="Tap this after you have paid the amount to the provider."
+          description={
+            paymentMarkedPaid
+              ? "Waiting for the provider to confirm the received cash and complete the provider side."
+              : "Complete this after the payment steps are fully finished."
+          }
           expanded={stepState.userCompleted === "current"}
         >
           {canMarkCompleted ? (
