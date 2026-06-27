@@ -177,6 +177,33 @@ function mapBookingSchemaError(message: string | null | undefined) {
   return message || null;
 }
 
+function isMissingTaskPathSchemaError(message: string | null | undefined) {
+  const normalized = message?.toLowerCase() ?? "";
+  return (
+    normalized.includes("schema cache") ||
+    normalized.includes("could not find") ||
+    normalized.includes("column")
+  ) && (
+    normalized.includes("booking_price") ||
+    normalized.includes("final_amount") ||
+    normalized.includes("work_finished_at") ||
+    normalized.includes("work_finished_images") ||
+    normalized.includes("work_confirmed_by_user_at") ||
+    normalized.includes("payment_sent_at") ||
+    normalized.includes("payment_breakdown") ||
+    normalized.includes("cash_paid_by_user_at") ||
+    normalized.includes("cash_payment_proof_images") ||
+    normalized.includes("payment_received_by_provider_at") ||
+    normalized.includes("user_review_status") ||
+    normalized.includes("provider_review_status")
+  );
+}
+
+function isMissingNewBookingStatusError(message: string | null | undefined) {
+  const normalized = message?.toLowerCase() ?? "";
+  return normalized.includes("invalid input value for enum") && normalized.includes("booking_status");
+}
+
 function isUuid(value: string) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 }
@@ -711,7 +738,7 @@ export async function GET(request: Request) {
     return verified.error;
   }
 
-  const { data, error } = await verified.adminClient
+  let { data, error } = await verified.adminClient
     .from("bookings")
     .select(`
       id,
@@ -751,6 +778,38 @@ export async function GET(request: Request) {
     `)
     .eq("customer_id", verified.profile.id)
     .order("created_at", { ascending: false });
+
+  if (error && isMissingTaskPathSchemaError(error.message)) {
+    const fallbackRead = await verified.adminClient
+      .from("bookings")
+      .select(`
+        id,
+        provider_id,
+        service_key,
+        service_label,
+        location_text,
+        booking_mode,
+        booking_status,
+        scheduled_date,
+        scheduled_start_time,
+        scheduled_end_time,
+        customer_note,
+        provider_response_note,
+        decline_reason,
+        quoted_amount,
+        created_at,
+        accepted_at,
+        on_the_way_at,
+        arrived_at,
+        completed_at,
+        payment_records:payments(amount, payment_method, payment_option, status, paid_at, company_commission_amount, provider_net_amount, company_payment_status, customer_payment_proof_data_url, customer_payment_proof_file_name, customer_payment_proof_mime_type, provider_company_payment_proof_data_url, provider_company_payment_proof_file_name, provider_company_payment_proof_mime_type, created_at)
+      `)
+      .eq("customer_id", verified.profile.id)
+      .order("created_at", { ascending: false });
+
+    data = fallbackRead.data as typeof data;
+    error = fallbackRead.error;
+  }
 
   if (error) {
     return NextResponse.json(
@@ -867,28 +926,30 @@ export async function POST(request: Request) {
 
   const providerServiceRow = providerService as ProviderServiceRow | null;
 
-  const { data: insertedBooking, error: bookingError } = await verified.adminClient
+  const bookingInsertPayload = {
+    customer_id: verified.profile.id,
+    provider_id: payload.providerId,
+    provider_service_id: providerServiceRow?.id ?? null,
+    booking_status: "pending_provider_response",
+    booking_mode: payload.bookingMode,
+    service_key: payload.serviceKey,
+    service_label: payload.serviceLabel,
+    location_text: payload.location,
+    scheduled_date: scheduledDate,
+    scheduled_start_time: scheduledStartTime,
+    scheduled_end_time: scheduledEndTime,
+    duration_hours: payload.durationHours,
+    customer_note: payload.notes,
+    hourly_rate: payload.hourlyRate,
+    daily_rate: payload.dailyRate,
+    quoted_amount: payload.totalAmount,
+    booking_price: payload.totalAmount,
+    final_amount: payload.totalAmount,
+  };
+
+  let { data: insertedBooking, error: bookingError } = await verified.adminClient
     .from("bookings")
-    .insert({
-      customer_id: verified.profile.id,
-      provider_id: payload.providerId,
-      provider_service_id: providerServiceRow?.id ?? null,
-      booking_status: "pending_provider_response",
-      booking_mode: payload.bookingMode,
-      service_key: payload.serviceKey,
-      service_label: payload.serviceLabel,
-      location_text: payload.location,
-      scheduled_date: scheduledDate,
-      scheduled_start_time: scheduledStartTime,
-      scheduled_end_time: scheduledEndTime,
-      duration_hours: payload.durationHours,
-      customer_note: payload.notes,
-      hourly_rate: payload.hourlyRate,
-      daily_rate: payload.dailyRate,
-      quoted_amount: payload.totalAmount,
-      booking_price: payload.totalAmount,
-      final_amount: payload.totalAmount,
-    })
+    .insert(bookingInsertPayload)
     .select(`
       id,
       provider_id,
@@ -907,6 +968,52 @@ export async function POST(request: Request) {
       created_at
     `)
     .single();
+
+  if (bookingError && (isMissingTaskPathSchemaError(bookingError.message) || isMissingNewBookingStatusError(bookingError.message))) {
+    const fallbackPayload = {
+      customer_id: bookingInsertPayload.customer_id,
+      provider_id: bookingInsertPayload.provider_id,
+      provider_service_id: bookingInsertPayload.provider_service_id,
+      booking_status: "pending",
+      booking_mode: bookingInsertPayload.booking_mode,
+      service_key: bookingInsertPayload.service_key,
+      service_label: bookingInsertPayload.service_label,
+      location_text: bookingInsertPayload.location_text,
+      scheduled_date: bookingInsertPayload.scheduled_date,
+      scheduled_start_time: bookingInsertPayload.scheduled_start_time,
+      scheduled_end_time: bookingInsertPayload.scheduled_end_time,
+      duration_hours: bookingInsertPayload.duration_hours,
+      customer_note: bookingInsertPayload.customer_note,
+      hourly_rate: bookingInsertPayload.hourly_rate,
+      daily_rate: bookingInsertPayload.daily_rate,
+      quoted_amount: bookingInsertPayload.quoted_amount,
+    };
+
+    const fallbackInsert = await verified.adminClient
+      .from("bookings")
+      .insert(fallbackPayload)
+      .select(`
+        id,
+        provider_id,
+        service_key,
+        service_label,
+        location_text,
+        booking_mode,
+        booking_status,
+        scheduled_date,
+        scheduled_start_time,
+        scheduled_end_time,
+        customer_note,
+        provider_response_note,
+        decline_reason,
+        quoted_amount,
+        created_at
+      `)
+      .single();
+
+    insertedBooking = fallbackInsert.data as typeof insertedBooking;
+    bookingError = fallbackInsert.error;
+  }
 
   if (bookingError || !insertedBooking) {
     return NextResponse.json(

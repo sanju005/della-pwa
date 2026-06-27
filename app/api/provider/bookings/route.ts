@@ -183,6 +183,28 @@ function isMissingProviderReviewTableError(message?: string | null) {
   return normalized.includes("provider_customer_reviews");
 }
 
+function isMissingTaskPathSchemaError(message?: string | null) {
+  const normalized = message?.trim().toLowerCase() ?? "";
+  return (
+    normalized.includes("schema cache") ||
+    normalized.includes("could not find") ||
+    normalized.includes("column")
+  ) && (
+    normalized.includes("booking_price") ||
+    normalized.includes("final_amount") ||
+    normalized.includes("work_finished_at") ||
+    normalized.includes("work_finished_images") ||
+    normalized.includes("work_confirmed_by_user_at") ||
+    normalized.includes("payment_sent_at") ||
+    normalized.includes("payment_breakdown") ||
+    normalized.includes("cash_paid_by_user_at") ||
+    normalized.includes("cash_payment_proof_images") ||
+    normalized.includes("payment_received_by_provider_at") ||
+    normalized.includes("user_review_status") ||
+    normalized.includes("provider_review_status")
+  );
+}
+
 function formatDateTimeLabel(date: string, startTime: string, endTime: string) {
   const start = new Date(`${date}T${startTime}`);
   const end = new Date(`${date}T${endTime}`);
@@ -359,7 +381,7 @@ export async function GET(request: Request) {
     .eq("provider_id", verified.profile.id)
     .order("created_at", { ascending: false });
 
-  if (error && isMissingProviderReviewTableError(error.message)) {
+  if (error && (isMissingProviderReviewTableError(error.message) || isMissingTaskPathSchemaError(error.message))) {
     const fallbackRead = await verified.adminClient
       .from("bookings")
       .select(`
