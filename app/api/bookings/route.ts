@@ -2,6 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 
 import type { Booking } from "@/lib/profile-types";
+import { normalizeBookingWorkflowStatus } from "@/lib/booking-workflow";
 import { parsePaymentAdjustmentNote } from "@/lib/payment-adjustment";
 import { sendPushNotificationToUser } from "@/lib/push-notifications";
 import { buildProviderPortraitSrc, type ProviderCategoryKey } from "@/lib/provider-catalog";
@@ -72,15 +73,17 @@ type BookingRow = {
   location_text: string;
   booking_mode: "hourly" | "daily";
   booking_status:
-    | "pending"
+    | "pending_provider_response"
+    | "declined_by_provider"
     | "accepted"
     | "on_the_way"
     | "arrived"
+    | "work_finished_by_provider"
+    | "work_confirmed_by_user"
+    | "final_payment_sent"
+    | "cash_paid_by_user"
+    | "payment_received_by_provider"
     | "completed"
-    | "paid"
-    | "review_requested"
-    | "reviewed"
-    | "declined"
     | "cancelled";
   scheduled_date: string;
   scheduled_start_time: string;
@@ -93,10 +96,21 @@ type BookingRow = {
   accepted_at?: string | null;
   on_the_way_at?: string | null;
   arrived_at?: string | null;
+  work_finished_at?: string | null;
+  work_confirmed_by_user_at?: string | null;
+  payment_sent_at?: string | null;
+  cash_paid_by_user_at?: string | null;
+  payment_received_by_provider_at?: string | null;
   completed_at?: string | null;
-  paid_at?: string | null;
-  review_requested_at?: string | null;
-  reviewed_at?: string | null;
+  work_finished_images?: string[] | null;
+  payment_breakdown?: Array<{ description?: string; amount?: number }> | null;
+  booking_price?: number | null;
+  additional_charges?: Array<{ description?: string; amount?: number }> | null;
+  discount_amount?: number | null;
+  final_amount?: number | null;
+  cash_payment_proof_images?: string[] | null;
+  user_review_status?: string | null;
+  provider_review_status?: string | null;
   payment_records?: Array<{
     amount: number | null;
     payment_method: string | null;
@@ -445,40 +459,51 @@ function isProviderCategoryKey(value: string): value is ProviderCategoryKey {
 }
 
 function userStatusLabel(status: BookingRow["booking_status"]) {
-  switch (status) {
-    case "pending":
-      return "Request Sent";
+  switch (normalizeBookingWorkflowStatus(status)) {
+    case "pending_provider_response":
+      return "Booking Sent";
+    case "declined_by_provider":
+      return "Declined by Provider";
     case "accepted":
-      return "Confirmed";
+      return "Provider Accepted";
     case "on_the_way":
-      return "On the Way";
+      return "Provider On The Way";
     case "arrived":
-      return "Arrived";
+      return "Provider Arrived";
+    case "work_finished_by_provider":
+      return "Confirm Work Completion";
+    case "work_confirmed_by_user":
+      return "Waiting Final Payment";
+    case "final_payment_sent":
+      return "Payment Requested";
+    case "cash_paid_by_user":
+      return "Waiting Provider Payment Confirmation";
+    case "payment_received_by_provider":
+      return "Payment Received";
     case "completed":
-      return "Job Done";
-    case "paid":
-      return "Payment Done";
-    case "review_requested":
-      return "Completed";
-    case "reviewed":
-      return "Reviewed";
-    case "declined":
-      return "Declined";
+      return "Task Completed";
     case "cancelled":
       return "Cancelled";
   }
 }
 
 function toBookingTab(status: BookingRow["booking_status"]): Booking["status"] {
-  if (status === "declined" || status === "cancelled") {
+  const normalized = normalizeBookingWorkflowStatus(status);
+
+  if (normalized === "declined_by_provider" || normalized === "cancelled") {
     return "cancelled";
   }
 
-  if (status === "completed" || status === "paid" || status === "review_requested" || status === "reviewed") {
+  if (normalized === "completed") {
     return "completed";
   }
 
-  if (status === "accepted" || status === "on_the_way" || status === "arrived") {
+  if (
+    normalized !== "pending_provider_response" &&
+    normalized !== "declined_by_provider" &&
+    normalized !== "cancelled" &&
+    normalized !== "completed"
+  ) {
     return "ongoing";
   }
 
@@ -486,11 +511,13 @@ function toBookingTab(status: BookingRow["booking_status"]): Booking["status"] {
 }
 
 function toBadgeTone(status: BookingRow["booking_status"]): Booking["badgeTone"] {
-  if (status === "declined" || status === "cancelled") {
+  const normalized = normalizeBookingWorkflowStatus(status);
+
+  if (normalized === "declined_by_provider" || normalized === "cancelled") {
     return "slate";
   }
 
-  if (status === "pending") {
+  if (normalized === "pending_provider_response") {
     return "amber";
   }
 
@@ -499,28 +526,29 @@ function toBadgeTone(status: BookingRow["booking_status"]): Booking["badgeTone"]
 
 function buildUserActivitySteps(status: BookingRow["booking_status"]): Booking["activitySteps"] {
   const stepOrder: string[] = [
-    "pending",
+    "pending_provider_response",
     "accepted",
     "on_the_way",
     "arrived",
+    "work_finished_by_provider",
+    "work_confirmed_by_user",
+    "final_payment_sent",
+    "cash_paid_by_user",
     "completed",
-    "paid",
-    "review_requested",
   ] as const;
 
   const labels = [
-    "Request Sent",
-    "Confirmed",
-    "On the Way",
-    "Arrived",
-    "Job Done",
-    "Payment Done",
-    "Completed",
+    "Booking Sent",
+    "Provider Accepted",
+    "Provider On The Way",
+    "Provider Arrived",
+    "Confirm Work Completion",
+    "Waiting Final Payment",
+    "Paid by Cash",
+    "Task Completed",
   ];
 
-  const currentIndex = stepOrder.indexOf(
-    status === "reviewed" ? "review_requested" : status
-  );
+  const currentIndex = stepOrder.indexOf(normalizeBookingWorkflowStatus(status));
 
   return labels.map((label, index) => ({
     label,
@@ -532,9 +560,7 @@ function buildUserActivitySteps(status: BookingRow["booking_status"]): Booking["
         : index < currentIndex
           ? "done"
           : index === currentIndex
-            ? status === "reviewed" && label === "Review"
-              ? "done"
-              : "current"
+            ? "current"
             : "pending",
   }));
 }
@@ -552,14 +578,21 @@ function mapLiveBookingToUi(
   const serviceKey = isProviderCategoryKey(row.service_key)
     ? row.service_key
     : "cleaner";
+  const workflowStatus = normalizeBookingWorkflowStatus(row.booking_status);
   const paymentAdjustment = parsePaymentAdjustmentNote(row.provider_response_note);
   const paymentRecord = row.payment_records?.[0] ?? null;
   const paidAmount = typeof paymentRecord?.amount === "number"
     ? Number(paymentRecord.amount)
-    : paymentAdjustment?.finalAmount ?? Number(row.quoted_amount ?? 0);
+    : Number(row.final_amount ?? 0) || paymentAdjustment?.finalAmount ?? Number(row.quoted_amount ?? 0);
+  const paymentBreakdown =
+    Array.isArray(row.payment_breakdown) && row.payment_breakdown.length > 0
+      ? row.payment_breakdown
+          .filter((item) => typeof item?.description === "string" && typeof item?.amount === "number")
+          .map((item) => ({ description: item.description ?? "", amount: Number(item.amount ?? 0) }))
+      : paymentAdjustment?.rows ?? [];
   const paymentMethod = paymentRecord?.payment_method?.trim()
     ? paymentRecord.payment_method
-    : row.booking_status === "paid" || row.booking_status === "review_requested" || row.booking_status === "reviewed"
+    : workflowStatus === "cash_paid_by_user" || workflowStatus === "payment_received_by_provider" || workflowStatus === "completed"
       ? "Cash"
       : "Cash";
 
@@ -570,7 +603,7 @@ function mapLiveBookingToUi(
     schedule: scheduleParts.schedule,
     location: row.location_text,
     status: toBookingTab(row.booking_status),
-    workflowStatus: row.booking_status,
+    workflowStatus,
     statusLabel: userStatusLabel(row.booking_status),
     badgeTone: toBadgeTone(row.booking_status),
     thumbnail:
@@ -608,21 +641,38 @@ function mapLiveBookingToUi(
     providerCompanyPaymentProofDataUrl: paymentRecord?.provider_company_payment_proof_data_url ?? "",
     providerCompanyPaymentProofFileName: paymentRecord?.provider_company_payment_proof_file_name ?? "",
     providerCompanyPaymentProofMimeType: paymentRecord?.provider_company_payment_proof_mime_type ?? "",
-    baseAmount: paymentAdjustment?.baseAmount,
-    additionalCharge: paymentAdjustment?.additionalCharge,
+    baseAmount: Number(row.booking_price ?? 0) || paymentAdjustment?.baseAmount,
+    additionalCharge:
+      Array.isArray(row.additional_charges)
+        ? row.additional_charges.reduce((sum, item) => sum + Number(item?.amount ?? 0), 0)
+        : paymentAdjustment?.additionalCharge,
     additionalChargeDescription: paymentAdjustment?.chargeDescription,
+    paymentBreakdown,
+    workFinishedImages: Array.isArray(row.work_finished_images) ? row.work_finished_images : [],
+    cashPaymentProofImages: Array.isArray(row.cash_payment_proof_images) ? row.cash_payment_proof_images : [],
+    userReviewStatus:
+      row.user_review_status === "submitted" || row.user_review_status === "skipped"
+        ? row.user_review_status
+        : "pending",
+    providerReviewStatus:
+      row.provider_review_status === "submitted" || row.provider_review_status === "skipped"
+        ? row.provider_review_status
+        : "pending",
     paymentNote: paymentAdjustment?.note,
     notes: row.customer_note ?? "",
-    cancelledBy: row.booking_status === "declined" ? "Service provider" : "User",
+    cancelledBy: workflowStatus === "declined_by_provider" ? "Service provider" : "User",
     cancellationReason: row.decline_reason ?? "",
     createdAt: row.created_at,
     acceptedAt: row.accepted_at ?? "",
     onTheWayAt: row.on_the_way_at ?? "",
     arrivedAt: row.arrived_at ?? "",
+    workFinishedAt: row.work_finished_at ?? "",
+    workConfirmedByUserAt: row.work_confirmed_by_user_at ?? "",
+    paymentSentAt: row.payment_sent_at ?? "",
+    cashPaidByUserAt: row.cash_paid_by_user_at ?? paymentRecord?.paid_at ?? "",
+    paymentReceivedByProviderAt: row.payment_received_by_provider_at ?? "",
     completedAt: row.completed_at ?? "",
-    paidAt: row.paid_at ?? paymentRecord?.paid_at ?? "",
-    reviewRequestedAt: row.review_requested_at ?? "",
-    reviewedAt: row.reviewed_at ?? "",
+    paidAt: row.cash_paid_by_user_at ?? paymentRecord?.paid_at ?? "",
     activitySteps: buildUserActivitySteps(row.booking_status),
   };
 }
@@ -672,14 +722,25 @@ export async function GET(request: Request) {
       provider_response_note,
       decline_reason,
       quoted_amount,
+      work_finished_at,
+      work_finished_images,
+      work_confirmed_by_user_at,
+      payment_sent_at,
+      payment_breakdown,
+      booking_price,
+      additional_charges,
+      discount_amount,
+      final_amount,
+      cash_paid_by_user_at,
+      cash_payment_proof_images,
+      payment_received_by_provider_at,
+      user_review_status,
+      provider_review_status,
       created_at,
       accepted_at,
       on_the_way_at,
       arrived_at,
       completed_at,
-      paid_at,
-      review_requested_at,
-      reviewed_at,
       payment_records:payments(amount, payment_method, payment_option, status, paid_at, company_commission_amount, provider_net_amount, company_payment_status, customer_payment_proof_data_url, customer_payment_proof_file_name, customer_payment_proof_mime_type, provider_company_payment_proof_data_url, provider_company_payment_proof_file_name, provider_company_payment_proof_mime_type, created_at)
     `)
     .eq("customer_id", verified.profile.id)
@@ -806,7 +867,7 @@ export async function POST(request: Request) {
       customer_id: verified.profile.id,
       provider_id: payload.providerId,
       provider_service_id: providerServiceRow?.id ?? null,
-      booking_status: "pending",
+      booking_status: "pending_provider_response",
       booking_mode: payload.bookingMode,
       service_key: payload.serviceKey,
       service_label: payload.serviceLabel,
@@ -819,6 +880,8 @@ export async function POST(request: Request) {
       hourly_rate: payload.hourlyRate,
       daily_rate: payload.dailyRate,
       quoted_amount: payload.totalAmount,
+      booking_price: payload.totalAmount,
+      final_amount: payload.totalAmount,
     })
     .select(`
       id,

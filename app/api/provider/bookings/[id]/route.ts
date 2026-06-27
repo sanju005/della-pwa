@@ -1,8 +1,10 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 
+import { buildPaymentBreakdownNote, type PaymentBreakdownRow } from "@/lib/payment-adjustment";
 import { calculateCommission } from "@/lib/payments";
 import { sendPushNotificationToUser } from "@/lib/push-notifications";
+import { normalizeBookingWorkflowStatus } from "@/lib/booking-workflow";
 import {
   getSupabaseServiceKey,
   getSupabaseUrl,
@@ -22,21 +24,25 @@ type ProfileRow = {
 };
 
 type BookingStatus =
-  | "pending"
+  | "pending_provider_response"
+  | "declined_by_provider"
   | "accepted"
   | "on_the_way"
   | "arrived"
+  | "work_finished_by_provider"
+  | "work_confirmed_by_user"
+  | "final_payment_sent"
+  | "cash_paid_by_user"
+  | "payment_received_by_provider"
   | "completed"
-  | "paid"
-  | "review_requested"
-  | "reviewed"
-  | "declined"
   | "cancelled";
 
 type UpdatePayload = {
   status?: BookingStatus;
   note?: string;
   finalAmount?: number;
+  workFinishedImages?: string[];
+  paymentBreakdown?: PaymentBreakdownRow[];
 };
 
 type BookingOwnerRow = {
@@ -46,19 +52,30 @@ type BookingOwnerRow = {
   booking_status: BookingStatus;
   service_label: string;
   quoted_amount: number | null;
+  booking_price?: number | null;
 };
 
 function isUnknownColumnError(message?: string | null) {
   const normalized = message?.trim().toLowerCase() ?? "";
   return normalized.includes("column") && (
+    normalized.includes("work_finished_at") ||
+    normalized.includes("work_finished_images") ||
+    normalized.includes("work_confirmed_by_user_at") ||
+    normalized.includes("payment_sent_at") ||
+    normalized.includes("payment_breakdown") ||
+    normalized.includes("booking_price") ||
+    normalized.includes("additional_charges") ||
+    normalized.includes("discount_amount") ||
+    normalized.includes("final_amount") ||
+    normalized.includes("cash_paid_by_user_at") ||
+    normalized.includes("cash_payment_proof_images") ||
+    normalized.includes("payment_received_by_provider_at") ||
     normalized.includes("accepted_at") ||
     normalized.includes("provider_response_note") ||
     normalized.includes("decline_reason") ||
     normalized.includes("on_the_way_at") ||
     normalized.includes("arrived_at") ||
     normalized.includes("completed_at") ||
-    normalized.includes("paid_at") ||
-    normalized.includes("review_requested_at") ||
     normalized.includes("cancelled_at")
   );
 }
@@ -256,15 +273,17 @@ async function verifyProviderRequest(request: Request) {
 }
 
 const allowedTransitions: Record<BookingStatus, BookingStatus[]> = {
-  pending: ["accepted", "declined", "cancelled"],
+  pending_provider_response: ["accepted", "declined_by_provider", "cancelled"],
   accepted: ["on_the_way", "cancelled"],
   on_the_way: ["arrived", "cancelled"],
-  arrived: ["completed", "cancelled"],
-  completed: ["paid"],
-  paid: ["review_requested"],
-  review_requested: [],
-  reviewed: [],
-  declined: [],
+  arrived: ["work_finished_by_provider", "cancelled"],
+  work_finished_by_provider: [],
+  work_confirmed_by_user: ["final_payment_sent"],
+  final_payment_sent: [],
+  cash_paid_by_user: ["payment_received_by_provider"],
+  payment_received_by_provider: ["completed"],
+  completed: [],
+  declined_by_provider: [],
   cancelled: [],
 };
 
@@ -272,16 +291,20 @@ function notificationTypeForStatus(status: BookingStatus) {
   switch (status) {
     case "accepted":
       return "booking_accepted";
-    case "declined":
+    case "declined_by_provider":
       return "booking_declined";
     case "on_the_way":
       return "provider_on_the_way";
     case "arrived":
       return "provider_arrived";
+    case "work_finished_by_provider":
+      return "provider_work_finished";
+    case "final_payment_sent":
+      return "final_payment_sent";
+    case "payment_received_by_provider":
+      return "payment_received_by_provider";
     case "completed":
       return "task_completed";
-    case "paid":
-      return "payment_done";
     case "review_requested":
       return "review_requested";
     case "cancelled":
@@ -302,7 +325,7 @@ function notificationContent(
         title: "Booking confirmed",
         body: `Your ${serviceLabel} booking was accepted.${note ? ` Note: ${note}` : ""}`,
       };
-    case "declined":
+    case "declined_by_provider":
       return {
         title: "Booking declined",
         body: `Your ${serviceLabel} booking was declined.${note ? ` Reason: ${note}` : ""}`,
@@ -317,20 +340,25 @@ function notificationContent(
         title: "Provider arrived",
         body: `Your ${serviceLabel} provider has arrived.`,
       };
-    case "completed":
+    case "work_finished_by_provider":
       return {
-        title: "Review final amount",
-        body: `Your ${serviceLabel} task is completed. Please review the final cash amount from your provider.`,
+        title: "Work finished by provider",
+        body: `Your provider marked the ${serviceLabel} work as finished. Please confirm the work completion.`,
       };
-    case "paid":
+    case "final_payment_sent":
+      return {
+        title: "Final payment sent",
+        body: `Your provider sent the final cash payment for the ${serviceLabel} booking.`,
+      };
+    case "payment_received_by_provider":
       return {
         title: "Payment received",
-        body: `Your provider confirmed cash payment for the ${serviceLabel} booking.`,
+        body: `Your provider confirmed the cash payment for the ${serviceLabel} booking.`,
       };
-    case "review_requested":
+    case "completed":
       return {
-        title: "Leave your review",
-        body: `Your ${serviceLabel} booking is fully completed. Please leave your review now.`,
+        title: "Task completed",
+        body: `Your ${serviceLabel} booking is completed.`,
       };
     case "cancelled":
       return {

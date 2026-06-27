@@ -57,15 +57,17 @@ export type ProviderBookingItem = {
   location: string;
   bookingMode: "hourly" | "daily";
   bookingStatus:
-    | "pending"
+    | "pending_provider_response"
+    | "declined_by_provider"
     | "accepted"
     | "on_the_way"
     | "arrived"
+    | "work_finished_by_provider"
+    | "work_confirmed_by_user"
+    | "final_payment_sent"
+    | "cash_paid_by_user"
+    | "payment_received_by_provider"
     | "completed"
-    | "paid"
-    | "review_requested"
-    | "reviewed"
-    | "declined"
     | "cancelled";
   statusLabel: string;
   bucket: "requests" | "active" | "completed" | "closed";
@@ -91,15 +93,25 @@ export type ProviderBookingItem = {
   providerCompanyPaymentProofMimeType?: string;
   additionalCharge: number;
   additionalChargeDescription: string;
+  paymentBreakdown?: Array<{
+    description: string;
+    amount: number;
+  }>;
+  workFinishedImages?: string[];
+  cashPaymentProofImages?: string[];
+  userReviewStatus?: "pending" | "submitted" | "skipped";
+  providerReviewStatus?: "pending" | "submitted" | "skipped";
   paymentNote: string;
   createdAt: string;
   acceptedAt?: string;
   onTheWayAt?: string;
   arrivedAt?: string;
+  workFinishedAt?: string;
+  workConfirmedByUserAt?: string;
+  paymentSentAt?: string;
+  cashPaidByUserAt?: string;
+  paymentReceivedByProviderAt?: string;
   completedAt?: string;
-  paidAt?: string;
-  reviewRequestedAt?: string;
-  reviewedAt?: string;
   providerReviewRating?: number;
   providerReviewComment?: string;
   providerReviewedAt?: string;
