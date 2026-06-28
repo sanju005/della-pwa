@@ -349,6 +349,9 @@ export function useProviderAppData() {
     }
 
     setData(profileResult);
+    if (!bookingsResponse.ok && "error" in bookingsResult && bookingsResult.error) {
+      setError(bookingsResult.error);
+    }
     setBookings(
       bookingsResponse.ok && "bookings" in bookingsResult ? bookingsResult.bookings : [],
     );
