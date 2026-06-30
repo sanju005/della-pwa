@@ -2726,7 +2726,7 @@ export function EarningsScreen() {
   return (
     <PageShell
       title="Payments"
-      subtitle="See cash, online, commission, withdrawal totals, and booking-linked payment details."
+      subtitle="See cash, online, 5% DELLA commission, provider balance, and booking-linked payment details."
     >
       <section className="rounded-[24px] border border-[#eee5f7] bg-white p-5 shadow-[0_14px_32px_rgba(86,38,135,0.08)]">
         <div className="flex items-start gap-3">
@@ -2839,7 +2839,7 @@ export function EarningsScreen() {
               <p className="text-[22px] font-black text-[#6F3EA1]">{formatCurrency(totalNetEarnings)}</p>
             </div>
             <p className="mt-1 text-[11px] text-[#8f86a2]">
-              Provider collects full amount first, then settles DELLA commission later.
+              Cash jobs: provider collects the full amount and later pays DELLA 5%. Online jobs: DELLA deducts 5% first and pays the balance to the provider.
             </p>
           </div>
         </div>
@@ -2883,6 +2883,7 @@ export function EarningsScreen() {
             filteredPayments.map((booking) => {
               const collected = isCollectedPayment(booking);
               const paymentMode = booking.paymentOption === "online" ? "Online" : "Cash";
+              const isCashPayment = (booking.paymentOption ?? "cash") !== "online";
               const companyStatusLabel =
                 booking.companyCommissionAmount <= 0
                   ? "Not due"
@@ -2894,6 +2895,9 @@ export function EarningsScreen() {
                 : booking.paymentStatus
                   ? booking.paymentStatus.charAt(0).toUpperCase() + booking.paymentStatus.slice(1)
                   : "Pending";
+              const settlementNote = isCashPayment
+                ? `Cash collected by provider. DELLA commission to pay: ${formatCurrency(booking.companyCommissionAmount)}.`
+                : `Online payment handled by DELLA. 5% commission is deducted first, and ${formatCurrency(booking.providerNetAmount)} is payable to the provider.`;
 
               return (
                 <div
@@ -2935,14 +2939,23 @@ export function EarningsScreen() {
                     <div className="rounded-[16px] border border-[#d8f0dc] bg-[#f3fff6] p-3">
                       <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#15803d]">Amount</p>
                       <p className="mt-1 text-[16px] font-black text-[#166534]">{formatCurrency(booking.quotedAmount)}</p>
+                      <p className="mt-1 text-[10px] font-semibold text-[#15803d]">
+                        {isCashPayment ? "Collected by provider" : "Handled by DELLA"}
+                      </p>
                     </div>
                     <div className="rounded-[16px] border border-[#fde7d3] bg-[#fff7ed] p-3">
                       <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#ea580c]">Commission</p>
                       <p className="mt-1 text-[16px] font-black text-[#c2410c]">{formatCurrency(booking.companyCommissionAmount)}</p>
+                      <p className="mt-1 text-[10px] font-semibold text-[#c2410c]">5% DELLA fee</p>
                     </div>
                     <div className="rounded-[16px] border border-[#e9def8] bg-[#f8f3fd] p-3">
-                      <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#7c3aed]">Withdrawal</p>
+                      <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#7c3aed]">
+                        {isCashPayment ? "Provider Keeps" : "Provider Payout"}
+                      </p>
                       <p className="mt-1 text-[16px] font-black text-[#6F3EA1]">{formatCurrency(booking.providerNetAmount)}</p>
+                      <p className="mt-1 text-[10px] font-semibold text-[#7c3aed]">
+                        {isCashPayment ? "After 5% company due" : "After commission deduction"}
+                      </p>
                     </div>
                   </div>
 
@@ -2952,6 +2965,10 @@ export function EarningsScreen() {
                     <p>Company Slip: <span className="font-bold text-[#1f1630]">{booking.providerCompanyPaymentProofDataUrl ? "Attached" : "No slip"}</span></p>
                     <p>Review Status: <span className="font-bold text-[#1f1630]">{booking.customerStatusLabel}</span></p>
                   </div>
+
+                  <p className="mt-3 rounded-[16px] border border-[#eee5f7] bg-white px-4 py-3 text-[12px] font-semibold text-[#6c5d83]">
+                    {settlementNote}
+                  </p>
 
                   <div className="mt-4 flex gap-3">
                     <AppButton href={`/provider/bookings/${booking.id}`} tone="secondary" className="flex-1">
