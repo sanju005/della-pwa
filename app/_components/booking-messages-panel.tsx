@@ -128,6 +128,9 @@ export function BookingMessagesPanel({
   emptyDescription,
   emptyActionHref,
   emptyActionLabel,
+  fixedBookingId,
+  hideThreadList = false,
+  hideOpenBookingLink = false,
   theme,
 }: {
   role: "customer" | "provider";
@@ -136,12 +139,15 @@ export function BookingMessagesPanel({
   emptyDescription: string;
   emptyActionHref: string;
   emptyActionLabel: string;
+  fixedBookingId?: string;
+  hideThreadList?: boolean;
+  hideOpenBookingLink?: boolean;
   theme: Theme;
 }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const selectedBookingId = searchParams.get("booking") ?? "";
+  const selectedBookingId = fixedBookingId || searchParams.get("booking") || "";
   const [threads, setThreads] = useState<Thread[]>([]);
   const [threadDetail, setThreadDetail] = useState<ThreadDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -253,12 +259,9 @@ export function BookingMessagesPanel({
           return;
         }
 
-        const targetBookingId =
-          selectedBookingId ||
-          loadedThreads[0]?.bookingId ||
-          "";
+        const targetBookingId = fixedBookingId || selectedBookingId || loadedThreads[0]?.bookingId || "";
 
-        if (!selectedBookingId && targetBookingId) {
+        if (!fixedBookingId && !selectedBookingId && targetBookingId) {
           router.replace(`${pathname}?booking=${encodeURIComponent(targetBookingId)}`, {
             scroll: false,
           });
@@ -295,7 +298,7 @@ export function BookingMessagesPanel({
                 return;
               }
 
-              const activeBookingId = selectedBookingId || refreshedThreads?.[0]?.bookingId || "";
+              const activeBookingId = fixedBookingId || selectedBookingId || refreshedThreads?.[0]?.bookingId || "";
               if (activeBookingId) {
                 await loadThreadDetail(activeBookingId).catch(() => null);
               }
@@ -321,7 +324,7 @@ export function BookingMessagesPanel({
         void client.removeChannel(channel);
       }
     };
-  }, [apiBasePath, pathname, role, router, selectedBookingId]);
+  }, [apiBasePath, fixedBookingId, pathname, role, router, selectedBookingId]);
 
   useEffect(() => {
     if (!selectedBookingId) {
@@ -340,6 +343,13 @@ export function BookingMessagesPanel({
   );
 
   function openThread(bookingId: string) {
+    if (fixedBookingId) {
+      void loadThreadDetail(bookingId).catch((caughtError) => {
+        setError(caughtError instanceof Error ? caughtError.message : "Unable to load conversation.");
+      });
+      return;
+    }
+
     router.replace(`${basePath}?booking=${encodeURIComponent(bookingId)}`, {
       scroll: false,
     });
@@ -386,7 +396,7 @@ export function BookingMessagesPanel({
         setAttachmentMimeType("");
         setThreadDetail(thread);
         const refreshedThreads = await loadThreads().catch(() => null);
-        if (!selectedBookingId && refreshedThreads?.[0]?.bookingId) {
+        if (!fixedBookingId && !selectedBookingId && refreshedThreads?.[0]?.bookingId) {
           openThread(refreshedThreads[0].bookingId);
         }
       } catch (caughtError) {
@@ -432,6 +442,8 @@ export function BookingMessagesPanel({
     );
   }
 
+  const activeThread = threadDetail ?? selectedThreadSummary;
+
   return (
     <div className="space-y-4">
       {error ? (
@@ -440,7 +452,8 @@ export function BookingMessagesPanel({
         </p>
       ) : null}
 
-      <section className="rounded-[22px] border border-[#e5e7eb] bg-white p-4 shadow-[0_10px_26px_rgba(15,23,42,0.04)]">
+      {!hideThreadList ? (
+        <section className="rounded-[22px] border border-[#e5e7eb] bg-white p-4 shadow-[0_10px_26px_rgba(15,23,42,0.04)]">
         <div className="flex items-center justify-between gap-3">
           <div>
             <h2 className="text-[16px] font-black text-[#111827]">Booking Conversations</h2>
@@ -520,18 +533,19 @@ export function BookingMessagesPanel({
           )}
         </div>
       </section>
+      ) : null}
 
-      {selectedThreadSummary ? (
+      {activeThread ? (
         <section className="rounded-[22px] border border-[#e5e7eb] bg-white p-4 shadow-[0_10px_26px_rgba(15,23,42,0.04)]">
           <div className="border-b border-[#edf1ef] pb-4">
             <p className="text-[16px] font-black text-[#111827]">
-              {threadDetail?.counterpartName ?? selectedThreadSummary.counterpartName}
+              {activeThread.counterpartName}
             </p>
             <p className={`mt-1 text-[12px] font-semibold ${theme.accentText}`}>
-              {threadDetail?.serviceLabel ?? selectedThreadSummary.serviceLabel}
+              {activeThread.serviceLabel}
             </p>
             <p className="mt-2 text-[12px] leading-5 text-[#6b7280]">
-              {threadDetail?.schedule ?? selectedThreadSummary.schedule}
+              {activeThread.schedule}
             </p>
           </div>
 
@@ -640,12 +654,16 @@ export function BookingMessagesPanel({
               ) : null}
             </div>
             <div className="mt-3 flex items-center justify-between gap-3">
-              <Link
-                href={role === "customer" ? `/profile/bookings/${selectedThreadSummary.bookingId}` : `/provider/bookings/${selectedThreadSummary.bookingId}`}
-                className={`text-[12px] font-bold ${theme.accentText}`}
-              >
-                Open booking details
-              </Link>
+              {hideOpenBookingLink ? (
+                <span />
+              ) : (
+                <Link
+                  href={role === "customer" ? `/profile/bookings/${activeThread.bookingId}` : `/provider/bookings/${activeThread.bookingId}`}
+                  className={`text-[12px] font-bold ${theme.accentText}`}
+                >
+                  Open booking details
+                </Link>
+              )}
               <button
                 type="button"
                 onClick={sendMessage}

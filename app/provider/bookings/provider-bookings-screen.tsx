@@ -20,6 +20,7 @@ import {
   MobilePage,
   StatusBadge,
 } from "@/app/_components/della-ui";
+import { BookingMessagesPanel } from "@/app/_components/booking-messages-panel";
 import {
   ImageCropModal,
   cropImageFromSelection,
@@ -374,11 +375,13 @@ function ProviderBookingSummaryWithActions({
   actionBookingId,
   onAccept,
   onDecline,
+  onMessage,
 }: {
   booking: ProviderBookingItem;
   actionBookingId: string;
   onAccept: (bookingId: string) => void;
   onDecline: (bookingId: string) => void;
+  onMessage: (bookingId: string) => void;
 }) {
   const modeLabel = booking.bookingMode === "daily" ? "Daily booking" : "Hourly booking";
   const paymentLabel = booking.paymentOption === "online" ? "Online payment" : "Cash payment";
@@ -459,9 +462,9 @@ function ProviderBookingSummaryWithActions({
           value={booking.customerNote?.trim() || "No notes from user."}
         />
         <AppButton
-          href={`/provider/messages?booking=${booking.id}`}
           tone="secondary"
           className="w-full !rounded-[14px] !border-[#d9c5f1] !bg-white !text-[#8E5EB5] !shadow-none"
+          onClick={() => onMessage(booking.id)}
         >
           Message Customer
         </AppButton>
@@ -606,6 +609,7 @@ function BookingDetails({
   onSendPaymentRequest,
   onConfirmPaymentReceived,
   onCompleteProviderJob,
+  onMessage,
   onOpenReview,
 }: {
   booking: ProviderBookingItem;
@@ -619,6 +623,7 @@ function BookingDetails({
   onSendPaymentRequest: (booking: ProviderBookingItem, finalAmount: number) => void;
   onConfirmPaymentReceived: (bookingId: string) => void;
   onCompleteProviderJob: (bookingId: string) => void;
+  onMessage: (bookingId: string) => void;
   onOpenReview: (booking: ProviderBookingItem) => void;
 }) {
   const workFinishedInputRef = useRef<HTMLInputElement>(null);
@@ -744,6 +749,7 @@ function BookingDetails({
         actionBookingId={actionBookingId}
         onAccept={onAccept}
         onDecline={onDecline}
+        onMessage={onMessage}
       />
 
       {!isCanceledStatus(booking.bookingStatus) ? (
@@ -976,6 +982,35 @@ function BookingDetails({
         </div>
       )}
 
+      <section id={`provider-booking-messages-${booking.id}`} className="mt-4">
+        <BookingMessagesPanel
+          role="provider"
+          basePath="/provider/messages"
+          fixedBookingId={booking.id}
+          hideThreadList
+          hideOpenBookingLink
+          emptyTitle="No messages yet"
+          emptyDescription="Send a message to this customer without leaving the task screen."
+          emptyActionHref="/provider/bookings"
+          emptyActionLabel="Open Bookings"
+          theme={{
+            accentText: "text-[#16a34a]",
+            accentBg: "bg-[#16a34a]",
+            accentSoftBg: "bg-[#f6fff8]",
+            accentBorder: "border-[#bbf7d0]",
+            badgeBg: "bg-[#eef9f1]",
+            badgeText: "text-[#16a34a]",
+            ownBubble: "bg-[#16a34a]",
+            ownBubbleText: "text-white",
+            otherBubble: "bg-[#f8fcf9]",
+            otherBubbleText: "text-[#0f172a]",
+            threadUnreadBorder: "border-[#bbf7d0]",
+            threadUnreadBg: "bg-[#f6fff8]",
+            composerButton: "bg-[#16a34a]",
+          }}
+        />
+      </section>
+
       {workImageCropSource ? (
         <ImageCropModal
           imageDataUrl={workImageCropSource}
@@ -1169,6 +1204,16 @@ export function ProviderBookingsScreen({
     state.handleBookingAction(bookingId, "completed", "Provider completed the booking and opened reviews.");
   }
 
+  function handleOpenTaskMessages(bookingId: string) {
+    if (typeof document === "undefined") {
+      return;
+    }
+
+    document
+      .getElementById(`provider-booking-messages-${bookingId}`)
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
   function openReviewModal(booking: ProviderBookingItem) {
     setReviewBookingId(booking.id);
     setReviewRating(booking.providerReviewRating ?? 0);
@@ -1310,6 +1355,7 @@ export function ProviderBookingsScreen({
             onSendPaymentRequest={handleSendPaymentRequest}
             onConfirmPaymentReceived={handleConfirmPaymentReceived}
             onCompleteProviderJob={handleCompleteProviderJob}
+            onMessage={handleOpenTaskMessages}
             onOpenReview={openReviewModal}
           />
         ) : null}

@@ -1338,7 +1338,7 @@ export function BookingsScreen({ bookings, initialTab = "pending" }: BookingsPro
             ) : null}
 
             <div className="mt-4 grid grid-cols-2 gap-3">
-              <AppButton href={`/profile/messages?booking=${booking.id}`} tone="secondary" className="w-full !rounded-[14px] !border-[#d9c5f1] !bg-white !text-[#8E5EB5] !shadow-none">
+              <AppButton href={`/profile/bookings/${booking.id}#task-messages`} tone="secondary" className="w-full !rounded-[14px] !border-[#d9c5f1] !bg-white !text-[#8E5EB5] !shadow-none">
                 Message
               </AppButton>
               <AppButton href={`/profile/bookings/${booking.id}`} className="w-full !rounded-[14px] !bg-[#8E5EB5] !shadow-[0_12px_24px_rgba(142,94,181,0.22)]">
@@ -1780,6 +1780,35 @@ export function BookingDetailScreen({ booking }: BookingDetailProps) {
           ) : null}
         </StepTimelineCard>
       </div>
+
+      <section id="task-messages" className="mt-4">
+        <BookingMessagesPanel
+          role="customer"
+          basePath="/profile/messages"
+          fixedBookingId={booking.id}
+          hideThreadList
+          hideOpenBookingLink
+          emptyTitle="No messages yet"
+          emptyDescription="Send a message to this provider without leaving the task screen."
+          emptyActionHref="/profile/bookings"
+          emptyActionLabel="Open My Bookings"
+          theme={{
+            accentText: "text-[#8E5EB5]",
+            accentBg: "bg-[#8E5EB5]",
+            accentSoftBg: "bg-[#faf5ff]",
+            accentBorder: "border-[#d9c5f1]",
+            badgeBg: "bg-[#f5f1fa]",
+            badgeText: "text-[#8E5EB5]",
+            ownBubble: "bg-[#8E5EB5]",
+            ownBubbleText: "text-white",
+            otherBubble: "bg-[#f7f4fb]",
+            otherBubbleText: "text-[#24193a]",
+            threadUnreadBorder: "border-[#d9c5f1]",
+            threadUnreadBg: "bg-[#fcf8ff]",
+            composerButton: "bg-[#8E5EB5]",
+          }}
+        />
+      </section>
 
       <PaymentProofPreview
         title="Customer Payment Proof"
