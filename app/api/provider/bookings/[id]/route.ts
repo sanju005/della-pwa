@@ -278,8 +278,8 @@ const allowedTransitions: Record<BookingStatus, BookingStatus[]> = {
   pending_provider_response: ["accepted", "declined_by_provider", "cancelled"],
   accepted: ["on_the_way", "cancelled"],
   on_the_way: ["arrived", "cancelled"],
-  arrived: ["work_finished_by_provider", "cancelled"],
-  work_finished_by_provider: [],
+  arrived: ["work_finished_by_provider", "final_payment_sent", "cancelled"],
+  work_finished_by_provider: ["final_payment_sent"],
   work_confirmed_by_user: ["final_payment_sent"],
   final_payment_sent: [],
   cash_paid_by_user: ["payment_received_by_provider"],
@@ -505,7 +505,13 @@ export async function PATCH(
     const amount = paymentTotal ?? Number(current.quoted_amount ?? 0);
     const bookingPrice = Number(current.booking_price ?? current.quoted_amount ?? 0);
     const extraRows = paymentBreakdown.filter((row, index) => index > 0 || row.description !== "Booking Price");
+    const isSendingAfterArrival =
+      current.booking_status === "arrived" || current.booking_status === "work_finished_by_provider";
 
+    if (isSendingAfterArrival) {
+      updatePayload.work_finished_at = new Date().toISOString();
+      updatePayload.work_finished_images = payload.workFinishedImages ?? [];
+    }
     updatePayload.payment_sent_at = new Date().toISOString();
     updatePayload.payment_breakdown =
       paymentBreakdown.length > 0

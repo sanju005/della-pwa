@@ -1496,7 +1496,6 @@ export function BookingDetailScreen({ booking }: BookingDetailProps) {
   const [paymentError, setPaymentError] = useState("");
   const [paymentNotice, setPaymentNotice] = useState("");
   const [paymentLoading, startPaymentTransition] = useTransition();
-  const [completionLoading, startCompletionTransition] = useTransition();
   const [paymentProofDataUrl, setPaymentProofDataUrl] = useState("");
   const [paymentProofFileName, setPaymentProofFileName] = useState("");
   const [paymentProofMimeType, setPaymentProofMimeType] = useState("");
@@ -1504,7 +1503,6 @@ export function BookingDetailScreen({ booking }: BookingDetailProps) {
     booking.paymentStatus === "paid" ||
     ["cash_paid_by_user", "payment_received_by_provider", "completed"].includes(booking.workflowStatus);
   const canPayNow = booking.workflowStatus === "final_payment_sent" && !paymentMarkedPaid;
-  const canConfirmWork = booking.workflowStatus === "work_finished_by_provider";
   const canReview = booking.workflowStatus === "completed" && booking.userReviewStatus !== "submitted";
   const paidDateLabel =
     canPayNow
@@ -1646,49 +1644,6 @@ export function BookingDetailScreen({ booking }: BookingDetailProps) {
     });
   }
 
-  function handleMarkCompleted() {
-    const client = getSupabaseClient();
-
-    startCompletionTransition(async () => {
-      setPaymentError("");
-      setPaymentNotice("");
-
-      if (!client) {
-        setPaymentError("Supabase is not configured yet.");
-        return;
-      }
-
-      const {
-        data: { session },
-      } = await client.auth.getSession();
-
-      if (!session) {
-        setPaymentError("Your session expired. Please log in again.");
-        return;
-      }
-
-      const response = await fetch(`/api/bookings/${booking.id}/complete`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
-      }).catch(() => null);
-
-      const result = response
-        ? ((await response.json().catch(() => ({}))) as { success?: boolean; error?: string })
-        : null;
-
-      if (!response || !response.ok || !result?.success) {
-        setPaymentError(result?.error || "Unable to complete task.");
-        return;
-      }
-
-      setPaymentNotice("Task completed successfully. Please leave your review.");
-      router.replace(`/profile/bookings/${booking.id}/review`);
-      router.refresh();
-    });
-  }
-
   async function handlePaymentProofChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     event.target.value = "";
@@ -1733,24 +1688,11 @@ export function BookingDetailScreen({ booking }: BookingDetailProps) {
         <StepTimelineCard number={4} title="Provider Arrived" state={stepState.arrived} dateLabel={arrivedDate} timeLabel={arrivedTime} />
         <StepTimelineCard
           number={5}
-          title="Confirm Work Completion"
-          state={stepState.workConfirmed}
-          dateLabel={workConfirmedDate || workFinishedDate}
-          timeLabel={workConfirmedTime || workFinishedTime}
-          description="Provider marked the work as finished. Confirm only after checking the service."
-          expanded={stepState.workConfirmed === "current"}
-        >
-          {canConfirmWork ? (
-            <button
-              type="button"
-              onClick={handleMarkCompleted}
-              disabled={completionLoading}
-              className="inline-flex h-12 w-full items-center justify-center rounded-[14px] bg-[#8E5EB5] text-[16px] font-extrabold text-white shadow-[0_16px_30px_rgba(142,94,181,0.24)] disabled:opacity-70"
-            >
-              {completionLoading ? "Confirming..." : "Accept Work Completed"}
-            </button>
-          ) : null}
-        </StepTimelineCard>
+          title="Job Completed by Provider"
+          state={stepState.workFinished}
+          dateLabel={workFinishedDate || workConfirmedDate}
+          timeLabel={workFinishedTime || workConfirmedTime}
+        />
         <StepTimelineCard
           number={6}
           title="Payment Requested"

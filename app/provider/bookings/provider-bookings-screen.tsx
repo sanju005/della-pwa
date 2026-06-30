@@ -725,7 +725,7 @@ function BookingDetails({
                 <div>
                   <p className="text-[13px] font-extrabold text-[#1f1630]">Completion Images</p>
                   <p className="mt-1 text-[12px] text-[#64748b]">
-                    Attach job proof before marking completed.
+                    Attach job proof before sending the payment request.
                   </p>
                 </div>
                 <button
@@ -762,7 +762,7 @@ function BookingDetails({
               disabled={actionBookingId === booking.id}
               onClick={() => onWorkFinished(booking.id, workFinishedImages)}
             >
-              Mark Job Completed
+              Mark Job Completed & Send Payment Request
             </AppButton>
           </TimelineCard>
           <TimelineCard number={5} title="Finalize Payment" state={stepState.finalizePayment} expanded={stepState.finalizePayment === "current" || stepState.finalizePayment === "done"}>
@@ -1025,11 +1025,31 @@ export function ProviderBookingsScreen({
   }
 
   function handleWorkFinished(bookingId: string, images: string[] = []) {
+    const booking = state.bookings.find((item) => item.id === bookingId);
+    const input = window.prompt(
+      "Enter final amount (RM) to request from the customer.",
+      String(booking?.quotedAmount || booking?.baseAmount || 0),
+    );
+
+    if (input === null) {
+      return;
+    }
+
+    const finalAmount = Number(input);
+
+    if (!Number.isFinite(finalAmount) || finalAmount <= 0) {
+      state.setError("Final amount must be a valid number.");
+      return;
+    }
+
     state.handleBookingAction(
       bookingId,
-      "work_finished_by_provider",
-      "Provider marked work as finished.",
-      { workFinishedImages: images },
+      "final_payment_sent",
+      "Provider marked work as finished and sent the final cash payment request.",
+      {
+        finalAmount,
+        workFinishedImages: images,
+      },
     );
   }
 
