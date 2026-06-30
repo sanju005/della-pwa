@@ -188,7 +188,6 @@ function TaskPath({
 function TimelineCard({
   number,
   title,
-  description,
   state,
   dateLabel,
   timeLabel,
@@ -197,7 +196,6 @@ function TimelineCard({
 }: {
   number: number;
   title: string;
-  description?: string;
   state: TimelineState;
   dateLabel?: string;
   timeLabel?: string;
@@ -233,13 +231,122 @@ function TimelineCard({
                 {timeLabel ? <span className="inline-flex items-center gap-2"><Clock3 className="h-4 w-4" />{timeLabel}</span> : null}
               </div>
             ) : null}
-            {description ? <p className="mt-3 text-[13px] leading-6 text-[#64748b]">{description}</p> : null}
           </div>
           <span className={`inline-flex rounded-full px-4 py-2 text-[12px] font-bold ${done ? "bg-[#eef9f0] text-[#16a34a]" : current ? "bg-[#f3e8ff] text-[#8E5EB5]" : "bg-[#f3f4f6] text-[#6b7280]"}`}>
             {done ? "Done" : current ? "Current Step" : "Waiting"}
           </span>
         </div>
         {expanded ? <div className="mt-4">{children}</div> : null}
+      </div>
+    </div>
+  );
+}
+
+function BookingInfoRow({
+  icon,
+  label,
+  value,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-[18px] border border-[#eee5f7] bg-[#fbf8ff] px-4 py-3">
+      <div className="flex items-start gap-3">
+        <span className="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-[#8E5EB5] shadow-[0_8px_18px_rgba(86,38,135,0.08)]">
+          {icon}
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-[#8E5EB5]">
+            {label}
+          </p>
+          <div className="mt-1 text-[13px] font-semibold leading-5 text-[#1f1630]">
+            {value}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ProviderBookingSummary({ booking }: { booking: ProviderBookingItem }) {
+  const modeLabel = booking.bookingMode === "daily" ? "Daily booking" : "Hourly booking";
+  const paymentLabel = booking.paymentOption === "online" ? "Online payment" : "Cash payment";
+  const scheduleLabel = [
+    formatDateLabel(booking.scheduledDate),
+    formatTimeLabel(booking.scheduledDate, booking.scheduledStartTime),
+    booking.scheduledEndTime ? `to ${formatTimeLabel(booking.scheduledDate, booking.scheduledEndTime)}` : "",
+  ].filter(Boolean).join(" ");
+
+  return (
+    <div className="mt-5 rounded-[24px] border border-[#eee5f7] bg-white p-4 shadow-[0_14px_32px_rgba(86,38,135,0.06)]">
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <div>
+          <p className="text-[12px] font-extrabold uppercase tracking-[0.14em] text-[#8E5EB5]">
+            Task Details
+          </p>
+          <p className="mt-1 text-[12px] text-[#64748b]">
+            Review the request before following the task path.
+          </p>
+        </div>
+        <StatusBadge label={booking.statusLabel} tone={providerStatusTone(booking.bookingStatus)} />
+      </div>
+
+      <div className="grid grid-cols-1 gap-3">
+        <BookingInfoRow
+          icon={<BriefcaseBusiness className="h-4.5 w-4.5" />}
+          label="User Detail"
+          value={
+            <>
+              <span className="block">{booking.customerName || "Customer"}</span>
+              <span className="mt-0.5 block text-[12px] font-medium text-[#64748b]">
+                Booking ID: {booking.id}
+              </span>
+            </>
+          }
+        />
+        <BookingInfoRow
+          icon={<MapPin className="h-4.5 w-4.5" />}
+          label="Location"
+          value={booking.location || "Location not provided"}
+        />
+        <div className="grid grid-cols-2 gap-3">
+          <BookingInfoRow
+            icon={<CalendarDays className="h-4.5 w-4.5" />}
+            label="Date & Time"
+            value={scheduleLabel || booking.schedule || "Schedule not provided"}
+          />
+          <BookingInfoRow
+            icon={<Wallet className="h-4.5 w-4.5" />}
+            label="Rates"
+            value={
+              <>
+                <span className="block">{modeLabel}</span>
+                <span className="mt-0.5 block text-[12px] font-medium text-[#64748b]">
+                  Base {formatCurrency(booking.baseAmount)} · Total {formatCurrency(booking.quotedAmount)}
+                </span>
+              </>
+            }
+          />
+        </div>
+        <BookingInfoRow
+          icon={<Wallet className="h-4.5 w-4.5" />}
+          label="Payment"
+          value={
+            <>
+              <span className="block">{paymentLabel}</span>
+              <span className="mt-0.5 block text-[12px] font-medium text-[#64748b]">
+                Provider net {formatCurrency(booking.providerNetAmount)} · Commission {formatCurrency(booking.companyCommissionAmount)}
+              </span>
+            </>
+          }
+        />
+        <BookingInfoRow
+          icon={<MessageCircleMore className="h-4.5 w-4.5" />}
+          label="User Notes"
+          value={booking.customerNote?.trim() || "No notes from user."}
+        />
       </div>
     </div>
   );
@@ -377,13 +484,15 @@ function BookingDetails({
         </button>
       </div>
 
+      <ProviderBookingSummary booking={booking} />
+
       {!isCanceledStatus(booking.bookingStatus) ? (
         <div className="mt-4 space-y-4">
-          <TimelineCard number={1} title="Confirmed" state={stepState.confirmed} dateLabel={formatStepDate(booking.acceptedAt || booking.createdAt)} timeLabel={formatStepTime(booking.acceptedAt || booking.createdAt)} description="Your booking has been confirmed by you." />
-          <TimelineCard number={2} title="On The Way" state={stepState.onTheWay} dateLabel={formatStepDate(booking.onTheWayAt)} timeLabel={formatStepTime(booking.onTheWayAt)} description="You are on the way to the user's location." />
-          <TimelineCard number={3} title="Arrived" state={stepState.arrived} dateLabel={formatStepDate(booking.arrivedAt)} timeLabel={formatStepTime(booking.arrivedAt)} description="You have arrived at the user's location." />
-          <TimelineCard number={4} title="Job Completed" state={stepState.jobDone} dateLabel={formatStepDate(booking.completedAt)} timeLabel={formatStepTime(booking.completedAt)} description="You marked the service as completed." />
-          <TimelineCard number={5} title="Finalize Payment" state={stepState.finalizePayment} description="Review the charges and send a payment request to the user." expanded={stepState.finalizePayment === "current" || stepState.finalizePayment === "done"}>
+          <TimelineCard number={1} title="Confirmed" state={stepState.confirmed} dateLabel={formatStepDate(booking.acceptedAt || booking.createdAt)} timeLabel={formatStepTime(booking.acceptedAt || booking.createdAt)} />
+          <TimelineCard number={2} title="On The Way" state={stepState.onTheWay} dateLabel={formatStepDate(booking.onTheWayAt)} timeLabel={formatStepTime(booking.onTheWayAt)} />
+          <TimelineCard number={3} title="Arrived" state={stepState.arrived} dateLabel={formatStepDate(booking.arrivedAt)} timeLabel={formatStepTime(booking.arrivedAt)} />
+          <TimelineCard number={4} title="Job Completed" state={stepState.jobDone} dateLabel={formatStepDate(booking.completedAt)} timeLabel={formatStepTime(booking.completedAt)} />
+          <TimelineCard number={5} title="Finalize Payment" state={stepState.finalizePayment} expanded={stepState.finalizePayment === "current" || stepState.finalizePayment === "done"}>
             <div className="rounded-[20px] border border-[#eee5f7] bg-white p-4">
               <div className="space-y-3 text-[14px] text-[#1f1630]">
                 <div className="flex items-center justify-between gap-3"><span>Booking Price</span><span className="font-semibold">RM {booking.baseAmount}</span></div>
@@ -405,11 +514,6 @@ function BookingDetails({
             state={stepState.paymentWaiting}
             dateLabel={formatStepDate(booking.paidAt || booking.completedAt)}
             timeLabel={formatStepTime(booking.paidAt || booking.completedAt)}
-            description={
-              booking.bookingStatus === "cash_paid_by_user"
-                ? "The customer marked cash as paid. Confirm once you receive the payment."
-                : "Waiting for the user to pay the amount in cash."
-            }
             expanded={stepState.paymentWaiting === "current" || stepState.paymentWaiting === "done"}
           >
             {booking.customerPaymentProofDataUrl ? (
@@ -438,7 +542,6 @@ function BookingDetails({
             state={stepState.userCompleted}
             dateLabel={formatStepDate(booking.reviewRequestedAt || booking.paidAt)}
             timeLabel={formatStepTime(booking.reviewRequestedAt || booking.paidAt)}
-            description="Complete the provider side after payment is received."
             expanded={stepState.userCompleted === "current" || stepState.userCompleted === "done"}
           >
             {booking.bookingStatus === "payment_received_by_provider" ? (
@@ -461,7 +564,6 @@ function BookingDetails({
             state={stepState.review}
             dateLabel={formatStepDate(booking.providerReviewedAt || booking.reviewedAt)}
             timeLabel={formatStepTime(booking.providerReviewedAt || booking.reviewedAt)}
-            description="Submit your review about the user after the booking is fully completed."
             expanded={stepState.review === "current" || stepState.review === "done"}
           >
             {stepState.review === "current" ? (
