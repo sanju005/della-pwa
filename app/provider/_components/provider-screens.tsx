@@ -732,7 +732,14 @@ export function DashboardScreen() {
   const collectedBookings = state.bookings.filter(
     (booking) =>
       booking.paymentStatus === "paid" ||
-      ["paid", "review_requested", "reviewed"].includes(booking.bookingStatus),
+      [
+        "cash_paid_by_user",
+        "payment_received_by_provider",
+        "completed",
+        "paid",
+        "review_requested",
+        "reviewed",
+      ].includes(booking.bookingStatus),
   );
   const walletBalance = collectedBookings.reduce((sum, booking) => sum + booking.quotedAmount, 0);
   const companyPayable = collectedBookings
