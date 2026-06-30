@@ -82,6 +82,14 @@ const AVAILABILITY_TIME_OPTIONS = [
   "11:00 PM",
 ];
 
+type CropTone = "profile" | "service" | "document";
+type CropSelection = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};
+
 async function readFileAsDataUrl(file: File) {
   return new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
@@ -91,46 +99,22 @@ async function readFileAsDataUrl(file: File) {
   });
 }
 
-async function cropImageToSquareDataUrl(file: File) {
-  const sourceDataUrl = await readFileAsDataUrl(file);
-
-  return new Promise<string>((resolve, reject) => {
-    const image = new window.Image();
-    image.onload = () => {
-      const size = Math.min(image.width, image.height);
-      const offsetX = Math.max(0, (image.width - size) / 2);
-      const offsetY = Math.max(0, (image.height - size) / 2);
-      const canvas = document.createElement("canvas");
-      canvas.width = size;
-      canvas.height = size;
-      const context = canvas.getContext("2d");
-
-      if (!context) {
-        reject(new Error("Unable to process this image."));
-        return;
-      }
-
-      context.drawImage(image, offsetX, offsetY, size, size, 0, 0, size, size);
-      resolve(canvas.toDataURL("image/jpeg", 0.9));
-    };
-    image.onerror = () => reject(new Error("Unable to process this image."));
-    image.src = sourceDataUrl;
-  });
-}
-
-async function cropImageWithViewport(
+async function cropImageFromSelection(
   sourceDataUrl: string,
-  zoom: number,
-  offsetX: number,
-  offsetY: number,
+  selection: CropSelection,
 ) {
   return new Promise<string>((resolve, reject) => {
     const image = new window.Image();
     image.onload = () => {
+      const sourceX = Math.round((selection.x / 100) * image.width);
+      const sourceY = Math.round((selection.y / 100) * image.height);
+      const sourceWidth = Math.round((selection.width / 100) * image.width);
+      const sourceHeight = Math.round((selection.height / 100) * image.height);
+      const maxOutputSize = 1280;
+      const scale = Math.min(1, maxOutputSize / Math.max(sourceWidth, sourceHeight));
       const canvas = document.createElement("canvas");
-      const size = 1080;
-      canvas.width = size;
-      canvas.height = size;
+      canvas.width = Math.max(1, Math.round(sourceWidth * scale));
+      canvas.height = Math.max(1, Math.round(sourceHeight * scale));
       const context = canvas.getContext("2d");
 
       if (!context) {
@@ -139,35 +123,23 @@ async function cropImageWithViewport(
       }
 
       context.fillStyle = "#ffffff";
-      context.fillRect(0, 0, size, size);
-
-      const scaledWidth = image.width * zoom;
-      const scaledHeight = image.height * zoom;
-      const drawX = (size - scaledWidth) / 2 + offsetX;
-      const drawY = (size - scaledHeight) / 2 + offsetY;
-
-      context.drawImage(image, drawX, drawY, scaledWidth, scaledHeight);
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      context.drawImage(
+        image,
+        sourceX,
+        sourceY,
+        sourceWidth,
+        sourceHeight,
+        0,
+        0,
+        canvas.width,
+        canvas.height,
+      );
       resolve(canvas.toDataURL("image/jpeg", 0.92));
     };
     image.onerror = () => reject(new Error("Unable to process this image."));
     image.src = sourceDataUrl;
   });
-}
-
-async function prepareImageUpload(file: File) {
-  if (!["image/jpeg", "image/jpg", "image/png", "image/gif"].includes(file.type)) {
-    throw new Error("Only JPG, JPEG, PNG, or GIF images are allowed.");
-  }
-
-  if (file.size > IMAGE_UPLOAD_MAX_BYTES) {
-    throw new Error("Image must be smaller than 2MB.");
-  }
-
-  const dataUrl = await cropImageToSquareDataUrl(file);
-  return {
-    displayName: file.name,
-    dataUrl,
-  };
 }
 
 async function prepareCertificateUpload(file: File) {
@@ -224,7 +196,8 @@ export function ProviderRegistrationWizard() {
   const [cropState, setCropState] = useState<{
     sourceDataUrl: string;
     fileName: string;
-    tone: "profile" | "service";
+    tone: CropTone;
+    aspectRatio?: number;
     onApply: (dataUrl: string, fileName: string) => void;
   } | null>(null);
 
@@ -519,18 +492,22 @@ export function ProviderRegistrationWizard() {
   const openCropper = async ({
     file,
     tone,
+    maxSizeBytes = IMAGE_UPLOAD_MAX_BYTES,
+    aspectRatio,
     onApply,
   }: {
     file: File;
-    tone: "profile" | "service";
+    tone: CropTone;
+    maxSizeBytes?: number;
+    aspectRatio?: number;
     onApply: (dataUrl: string, fileName: string) => void;
   }) => {
     if (!["image/jpeg", "image/jpg", "image/png", "image/gif"].includes(file.type)) {
       throw new Error("Only JPG, JPEG, PNG, or GIF images are allowed.");
     }
 
-    if (file.size > IMAGE_UPLOAD_MAX_BYTES) {
-      throw new Error("Image must be smaller than 2MB.");
+    if (file.size > maxSizeBytes) {
+      throw new Error(`Image must be smaller than ${Math.round(maxSizeBytes / 1024 / 1024)}MB.`);
     }
 
     const sourceDataUrl = await readFileAsDataUrl(file);
@@ -539,6 +516,7 @@ export function ProviderRegistrationWizard() {
       sourceDataUrl,
       fileName: file.name,
       tone,
+      aspectRatio,
       onApply,
     });
   };
@@ -662,6 +640,7 @@ export function ProviderRegistrationWizard() {
                 data={data}
                 onUpdate={updateVerification}
                 setSubmitError={setSubmitError}
+                openCropper={openCropper}
               />
             ) : null}
             {activeStep.type === "success" ? (
@@ -691,15 +670,11 @@ export function ProviderRegistrationWizard() {
         <ImageCropModal
           imageDataUrl={cropState.sourceDataUrl}
           tone={cropState.tone}
+          aspectRatio={cropState.aspectRatio}
           onClose={() => setCropState(null)}
-          onApply={async ({ zoom, offsetX, offsetY }) => {
+          onApply={async (selection) => {
             try {
-              const cropped = await cropImageWithViewport(
-                cropState.sourceDataUrl,
-                zoom,
-                offsetX,
-                offsetY,
-              );
+              const cropped = await cropImageFromSelection(cropState.sourceDataUrl, selection);
               cropState.onApply(cropped, cropState.fileName);
               setCropState(null);
             } catch (error) {
@@ -734,7 +709,9 @@ function BasicProfileStep({
   ) => void;
   openCropper: (options: {
     file: File;
-    tone: "profile" | "service";
+    tone: CropTone;
+    maxSizeBytes?: number;
+    aspectRatio?: number;
     onApply: (dataUrl: string, fileName: string) => void;
   }) => Promise<void>;
   invalidFields: string[];
@@ -758,6 +735,7 @@ function BasicProfileStep({
         await openCropper({
           file,
           tone: "profile",
+          aspectRatio: 1,
           onApply: (dataUrl, fileName) => {
             updateBasic("profileImageName", fileName);
             updateBasic("avatarDataUrl", dataUrl);
@@ -1036,7 +1014,9 @@ function ServiceDetailsStep({
   setSubmitError: (value: string) => void;
   openCropper: (options: {
     file: File;
-    tone: "profile" | "service";
+    tone: CropTone;
+    maxSizeBytes?: number;
+    aspectRatio?: number;
     onApply: (dataUrl: string, fileName: string) => void;
   }) => Promise<void>;
 }) {
@@ -1454,18 +1434,18 @@ function VerificationStep({
 }) {
   return (
     <div className="space-y-6">
-      <OtpGroup
-        label="Phone Number Verification"
+      <PhoneOtpGroup
         value={`${data.account.phoneCountryCode} ${data.account.phoneNumber}`}
         otp={data.verification.phoneOtp}
         onChange={(next) => onUpdate("phoneOtp", next)}
       />
-      <OtpGroup
-        label="Email Verification"
-        value={data.account.email}
-        otp={data.verification.emailOtp}
-        onChange={(next) => onUpdate("emailOtp", next)}
-      />
+      <div className="rounded-[16px] border border-[#e5d9f3] bg-[#fbf8ff] px-4 py-3">
+        <p className="text-[13px] font-extrabold text-[#111827]">Email Verification</p>
+        <p className="mt-1 text-[12px] leading-5 text-[#6b7280]">
+          We removed email OTP here. Your email will be verified from the activation link sent to{" "}
+          <span className="font-bold text-[#111827]">{data.account.email || "your email"}</span>.
+        </p>
+      </div>
     </div>
   );
 }
@@ -1474,6 +1454,7 @@ function IdentityStep({
   data,
   onUpdate,
   setSubmitError,
+  openCropper,
 }: {
   data: ProviderRegistrationData;
   onUpdate: (
@@ -1481,6 +1462,13 @@ function IdentityStep({
     value: string | string[]
   ) => void;
   setSubmitError: (value: string) => void;
+  openCropper: (options: {
+    file: File;
+    tone: CropTone;
+    maxSizeBytes?: number;
+    aspectRatio?: number;
+    onApply: (dataUrl: string, fileName: string) => void;
+  }) => Promise<void>;
 }) {
   return (
     <div className="space-y-4">
@@ -1500,6 +1488,7 @@ function IdentityStep({
           onUpdate("frontImageDataUrl", dataUrl);
         }}
         setSubmitError={setSubmitError}
+        openCropper={openCropper}
       />
       <UploadCard
         label="Upload Document (Back)"
@@ -1511,6 +1500,7 @@ function IdentityStep({
           onUpdate("backImageDataUrl", dataUrl);
         }}
         setSubmitError={setSubmitError}
+        openCropper={openCropper}
       />
     </div>
   );
@@ -1541,11 +1531,20 @@ function SuccessStep({
           <CheckIcon className="h-10 w-10" />
         </div>
         <h2 className="mt-5 text-[24px] font-extrabold tracking-[-0.04em] text-[#111827]">
-          Verification Submitted
+          Profile Submitted for Verification
         </h2>
         <p className="mt-2 text-[14px] leading-6 text-[#4b5563]">
-          Your verification details were submitted successfully. Your listing can stay visible while checks are in progress.
+          Your profile submitted for verification. You will verify within 48 hrs. For more details contact:{" "}
+          <a href="mailto:admin@myswiper.my" className="font-extrabold text-[#8E5EB5]">
+            admin@myswiper.my
+          </a>
         </p>
+        <Link
+          href="/provider/profile"
+          className="mt-5 inline-flex h-11 w-full items-center justify-center rounded-[14px] bg-[#8E5EB5] text-[14px] font-extrabold text-white"
+        >
+          View Profile
+        </Link>
       </div>
 
       <div className="rounded-[20px] border border-[#e4ece7] bg-[linear-gradient(180deg,#fcfffd_0%,#f4fbf5_100%)] p-5 shadow-[0_10px_26px_rgba(15,23,42,0.04)]">
@@ -1948,7 +1947,9 @@ function AssetStrip({
   setSubmitError: (value: string) => void;
   openCropper: (options: {
     file: File;
-    tone: "profile" | "service";
+    tone: CropTone;
+    maxSizeBytes?: number;
+    aspectRatio?: number;
     onApply: (dataUrl: string, fileName: string) => void;
   }) => Promise<void>;
 }) {
@@ -1998,7 +1999,9 @@ function AssetUploadSlot({
   setSubmitError: (value: string) => void;
   openCropper: (options: {
     file: File;
-    tone: "profile" | "service";
+    tone: CropTone;
+    maxSizeBytes?: number;
+    aspectRatio?: number;
     onApply: (dataUrl: string, fileName: string) => void;
   }) => Promise<void>;
 }) {
@@ -2017,6 +2020,7 @@ function AssetUploadSlot({
         await openCropper({
           file,
           tone: "service",
+          aspectRatio: 1,
           onApply: (dataUrl, fileName) => {
             onSelect(index, dataUrl);
             if (!caption.trim()) {
@@ -2184,72 +2188,210 @@ function TagInput({
 function ImageCropModal({
   imageDataUrl,
   tone,
+  aspectRatio,
   onClose,
   onApply,
 }: {
   imageDataUrl: string;
-  tone: "profile" | "service";
+  tone: CropTone;
+  aspectRatio?: number;
   onClose: () => void;
-  onApply: (value: { zoom: number; offsetX: number; offsetY: number }) => void;
+  onApply: (selection: CropSelection) => void;
 }) {
-  const [zoom, setZoom] = useState(1);
-  const [offsetX, setOffsetX] = useState(0);
-  const [offsetY, setOffsetY] = useState(0);
+  const imageFrameRef = useRef<HTMLDivElement>(null);
+  const [selection, setSelection] = useState<CropSelection>(
+    aspectRatio
+      ? { x: 12, y: 12, width: 76, height: 76 }
+      : { x: 7, y: 24, width: 86, height: 52 },
+  );
+  const [dragState, setDragState] = useState<{
+    mode: "move" | "nw" | "ne" | "sw" | "se";
+    startX: number;
+    startY: number;
+    startSelection: CropSelection;
+  } | null>(null);
+
+  const clampSelection = (nextSelection: CropSelection) => {
+    const minSize = 18;
+    const next = { ...nextSelection };
+
+    if (aspectRatio) {
+      const rect = imageFrameRef.current?.getBoundingClientRect();
+      const frameRatio = rect && rect.height > 0 ? rect.width / rect.height : 1;
+      next.height = (next.width * frameRatio) / aspectRatio;
+    }
+
+    next.width = Math.max(minSize, Math.min(next.width, 100));
+    next.height = Math.max(minSize, Math.min(next.height, 100));
+    next.x = Math.max(0, Math.min(next.x, 100 - next.width));
+    next.y = Math.max(0, Math.min(next.y, 100 - next.height));
+
+    return next;
+  };
+
+  const resetInitialSelection = () => {
+    if (!aspectRatio || !imageFrameRef.current) {
+      return;
+    }
+
+    const rect = imageFrameRef.current.getBoundingClientRect();
+    const frameRatio = rect.height > 0 ? rect.width / rect.height : 1;
+    const width = 76;
+    const height = (width * frameRatio) / aspectRatio;
+    setSelection(clampSelection({
+      x: (100 - width) / 2,
+      y: (100 - height) / 2,
+      width,
+      height,
+    }));
+  };
+
+  const updateSelectionFromPointer = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (!dragState || !imageFrameRef.current) {
+      return;
+    }
+
+    const rect = imageFrameRef.current.getBoundingClientRect();
+    const deltaX = ((event.clientX - dragState.startX) / rect.width) * 100;
+    const deltaY = ((event.clientY - dragState.startY) / rect.height) * 100;
+    const original = dragState.startSelection;
+
+    if (dragState.mode === "move") {
+      setSelection(clampSelection({
+        ...original,
+        x: original.x + deltaX,
+        y: original.y + deltaY,
+      }));
+      return;
+    }
+
+    if (dragState.mode === "se") {
+      setSelection(clampSelection({
+        ...original,
+        width: original.width + deltaX,
+        height: original.height + deltaY,
+      }));
+      return;
+    }
+
+    if (dragState.mode === "sw") {
+      setSelection(clampSelection({
+        x: original.x + deltaX,
+        y: original.y,
+        width: original.width - deltaX,
+        height: original.height + deltaY,
+      }));
+      return;
+    }
+
+    if (dragState.mode === "ne") {
+      setSelection(clampSelection({
+        x: original.x,
+        y: original.y + deltaY,
+        width: original.width + deltaX,
+        height: original.height - deltaY,
+      }));
+      return;
+    }
+
+    setSelection(clampSelection({
+      x: original.x + deltaX,
+      y: original.y + deltaY,
+      width: original.width - deltaX,
+      height: original.height - deltaY,
+    }));
+  };
+
+  const startDrag = (
+    event: React.PointerEvent<HTMLElement>,
+    mode: "move" | "nw" | "ne" | "sw" | "se",
+  ) => {
+    event.preventDefault();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    setDragState({
+      mode,
+      startX: event.clientX,
+      startY: event.clientY,
+      startSelection: selection,
+    });
+  };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#111827]/70 px-4">
-      <div className="w-full max-w-[430px] rounded-[24px] bg-white p-4 shadow-[0_24px_60px_rgba(15,23,42,0.28)]">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <h3 className="text-[18px] font-extrabold text-[#111827]">Crop image</h3>
-            <p className="mt-1 text-[12px] text-[#6b7280]">
-              Adjust the image before uploading your {tone === "profile" ? "profile photo" : "service image"}.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-full bg-[#f3f4f6] px-3 py-2 text-[12px] font-bold text-[#374151]"
-          >
-            Close
-          </button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#111827]/85 px-4">
+      <div className="w-full max-w-[430px] overflow-hidden rounded-[24px] bg-[#191919] shadow-[0_24px_60px_rgba(15,23,42,0.36)]">
+        <div className="px-4 pt-4 text-center">
+          <h3 className="text-[18px] font-extrabold text-white">Crop image</h3>
+          <p className="mt-1 text-[12px] text-white/65">
+            Drag the box and pull the corners to crop your{" "}
+            {tone === "profile" ? "profile photo" : tone === "service" ? "service image" : "document image"}.
+          </p>
         </div>
 
-        <div className="mt-4 flex justify-center">
-          <div className="relative h-[18rem] w-[18rem] overflow-hidden rounded-[22px] border border-[#e5d9f3] bg-[#f5f1fa]">
-            <Image
+        <div className="mt-4 flex min-h-[25rem] items-center justify-center bg-[#111] px-3 py-6">
+          <div
+            ref={imageFrameRef}
+            className="relative max-h-[23rem] max-w-full touch-none select-none"
+            onPointerMove={updateSelectionFromPointer}
+            onPointerUp={() => setDragState(null)}
+            onPointerCancel={() => setDragState(null)}
+          >
+            {/* Native img keeps the overlay aligned to the real rendered image size. */}
+            <img
               src={imageDataUrl}
               alt="Crop preview"
-              fill
-              unoptimized
-              className="object-cover"
-              style={{
-                transform: `translate(${offsetX}px, ${offsetY}px) scale(${zoom})`,
-              }}
+              onLoad={resetInitialSelection}
+              className="block max-h-[23rem] max-w-full object-contain"
             />
+            <div className="pointer-events-none absolute inset-0 bg-black/45" />
+            <div
+              role="presentation"
+              onPointerDown={(event) => startDrag(event, "move")}
+              className="absolute border-2 border-white shadow-[0_0_0_9999px_rgba(0,0,0,0.42)]"
+              style={{
+                left: `${selection.x}%`,
+                top: `${selection.y}%`,
+                width: `${selection.width}%`,
+                height: `${selection.height}%`,
+              }}
+            >
+              <span className="pointer-events-none absolute left-1/3 top-0 h-full border-l border-white/40" />
+              <span className="pointer-events-none absolute left-2/3 top-0 h-full border-l border-white/40" />
+              <span className="pointer-events-none absolute left-0 top-1/3 w-full border-t border-white/40" />
+              <span className="pointer-events-none absolute left-0 top-2/3 w-full border-t border-white/40" />
+              {(["nw", "ne", "sw", "se"] as const).map((handle) => (
+                <span
+                  key={handle}
+                  role="presentation"
+                  onPointerDown={(event) => startDrag(event, handle)}
+                  className={`absolute h-5 w-5 rounded-full border-2 border-white bg-[#8E5EB5] ${
+                    handle === "nw"
+                      ? "-left-3 -top-3 cursor-nwse-resize"
+                      : handle === "ne"
+                        ? "-right-3 -top-3 cursor-nesw-resize"
+                        : handle === "sw"
+                          ? "-bottom-3 -left-3 cursor-nesw-resize"
+                          : "-bottom-3 -right-3 cursor-nwse-resize"
+                  }`}
+                />
+              ))}
+            </div>
           </div>
         </div>
 
-        <div className="mt-4 space-y-3">
-          <RangeField label="Zoom" value={Math.round(zoom * 100)} min={100} max={220} suffix="%" onChange={(value) => setZoom(value / 100)} />
-          <RangeField label="Move Left / Right" value={offsetX} min={-120} max={120} suffix="px" onChange={setOffsetX} />
-          <RangeField label="Move Up / Down" value={offsetY} min={-120} max={120} suffix="px" onChange={setOffsetY} />
-        </div>
-
-        <div className="mt-5 flex gap-3">
+        <div className="flex items-center justify-between gap-3 px-4 py-4">
           <button
             type="button"
             onClick={onClose}
-            className="inline-flex h-11 flex-1 items-center justify-center rounded-[14px] border border-[#dfe8e2] bg-white text-[14px] font-extrabold text-[#111827]"
+            className="inline-flex h-11 flex-1 items-center justify-center rounded-[14px] border border-white/15 bg-white/5 text-[14px] font-extrabold text-white"
           >
             Cancel
           </button>
           <button
             type="button"
-            onClick={() => onApply({ zoom, offsetX, offsetY })}
+            onClick={() => onApply(selection)}
             className="inline-flex h-11 flex-1 items-center justify-center rounded-[14px] bg-[#8E5EB5] text-[14px] font-extrabold text-white"
           >
-            Use Crop
+            Done
           </button>
         </div>
       </div>
@@ -2287,36 +2429,53 @@ function ReviewLine({
   );
 }
 
-function OtpGroup({
-  label,
+function PhoneOtpGroup({
   value,
   otp,
   onChange,
 }: {
-  label: string;
   value: string;
   otp: string[];
   onChange: (otp: string[]) => void;
 }) {
+  const [sendState, setSendState] = useState<"idle" | "sent">("idle");
+
   return (
-    <div>
-      <p className="mb-2 text-[13px] font-semibold text-[#111827]">{label}</p>
-      <p className="mb-3 text-[13px] text-[#374151]">{value}</p>
+    <div className="rounded-[16px] border border-[#dfe8e2] bg-white p-4">
+      <div className="mb-3 flex items-start justify-between gap-3">
+        <div>
+          <p className="text-[13px] font-semibold text-[#111827]">Phone Number Verification</p>
+          <p className="mt-1 text-[13px] text-[#374151]">{value}</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setSendState("sent")}
+          className="shrink-0 rounded-[11px] bg-[#8E5EB5] px-3 py-2 text-[12px] font-extrabold text-white"
+        >
+          Send OTP
+        </button>
+      </div>
       <div className="grid grid-cols-6 gap-2">
         {otp.map((digit, index) => (
           <input
-            key={`${label}-${index}`}
+            key={`phone-otp-${index}`}
             value={digit}
+            inputMode="numeric"
+            maxLength={1}
             onChange={(event) => {
               const next = [...otp];
-              next[index] = event.target.value.slice(-1);
+              next[index] = event.target.value.replace(/\D/g, "").slice(-1);
               onChange(next);
             }}
             className="h-11 rounded-[10px] border border-[#dfe8e2] text-center text-[15px] font-semibold text-[#111827] outline-none"
           />
         ))}
       </div>
-      <p className="mt-3 text-[12px] font-semibold text-[#8E5EB5]">Resend OTP (0:30)</p>
+      <p className="mt-3 text-[12px] font-semibold text-[#8E5EB5]">
+        {sendState === "sent"
+          ? "OTP requested. Connect an SMS provider to deliver real codes."
+          : "Tap Send OTP to verify this phone number."}
+      </p>
     </div>
   );
 }
@@ -2327,14 +2486,23 @@ function UploadCard({
   preview,
   onSelect,
   setSubmitError,
+  openCropper,
 }: {
   label: string;
   fileName: string;
   preview: string;
   onSelect: (fileName: string, dataUrl: string) => void;
   setSubmitError: (value: string) => void;
+  openCropper: (options: {
+    file: File;
+    tone: CropTone;
+    maxSizeBytes?: number;
+    aspectRatio?: number;
+    onApply: (dataUrl: string, fileName: string) => void;
+  }) => Promise<void>;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -2353,11 +2521,17 @@ function UploadCard({
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      onSelect(file.name, typeof reader.result === "string" ? reader.result : "");
-    };
-    reader.readAsDataURL(file);
+    void openCropper({
+      file,
+      tone: "document",
+      maxSizeBytes: CERTIFICATE_UPLOAD_MAX_BYTES,
+      onApply: (dataUrl, nextFileName) => {
+        setSubmitError("");
+        onSelect(nextFileName, dataUrl);
+      },
+    }).catch((error) => {
+      setSubmitError(error instanceof Error ? error.message : "Unable to crop this document image.");
+    });
   };
 
   return (
@@ -2367,6 +2541,14 @@ function UploadCard({
         ref={inputRef}
         type="file"
         accept="image/png,image/jpeg,image/jpg"
+        onChange={handleChange}
+        className="hidden"
+      />
+      <input
+        ref={cameraInputRef}
+        type="file"
+        accept="image/png,image/jpeg,image/jpg"
+        capture="environment"
         onChange={handleChange}
         className="hidden"
       />
@@ -2388,11 +2570,27 @@ function UploadCard({
         ) : (
           <>
             <UploadIcon className="h-8 w-8 text-[#8E5EB5]" />
-            <p className="mt-3 text-[14px] font-bold text-[#111827]">Upload Image</p>
-            <p className="mt-1 text-[12px] text-[#6b7280]">JPG, PNG (Max 5MB)</p>
+            <p className="mt-3 text-[14px] font-bold text-[#111827]">Upload or Capture Image</p>
+            <p className="mt-1 text-[12px] text-[#6b7280]">JPG, PNG (Max 5MB). Crop before saving.</p>
           </>
         )}
       </button>
+      <div className="mt-3 grid grid-cols-2 gap-2">
+        <button
+          type="button"
+          onClick={() => inputRef.current?.click()}
+          className="h-10 rounded-[12px] border border-[#e5d9f3] bg-white text-[12px] font-extrabold text-[#8E5EB5]"
+        >
+          Choose Image
+        </button>
+        <button
+          type="button"
+          onClick={() => cameraInputRef.current?.click()}
+          className="h-10 rounded-[12px] bg-[#8E5EB5] text-[12px] font-extrabold text-white"
+        >
+          Capture Photo
+        </button>
+      </div>
       {fileName ? (
         <p className="mt-2 truncate text-[12px] font-semibold text-[#111827]">
           {fileName}
