@@ -637,7 +637,12 @@ function BookingDetails({
     finalizePayment: booking.bookingStatus === "work_confirmed_by_user" ? "current" : ["final_payment_sent", "cash_paid_by_user", "payment_received_by_provider", "completed", "paid", "review_requested", "reviewed"].includes(booking.bookingStatus) ? "done" : "waiting",
     paymentWaiting: booking.bookingStatus === "final_payment_sent" ? "current" : ["cash_paid_by_user", "payment_received_by_provider", "completed", "paid", "review_requested", "reviewed"].includes(booking.bookingStatus) ? "done" : "waiting",
     userCompleted: booking.bookingStatus === "cash_paid_by_user" ? "current" : ["payment_received_by_provider", "completed", "review_requested", "reviewed"].includes(booking.bookingStatus) ? "done" : "waiting",
-    review: booking.providerReviewedAt ? "done" : booking.bookingStatus === "completed" || booking.bookingStatus === "review_requested" || booking.bookingStatus === "reviewed" ? "current" : "waiting",
+    review:
+      booking.providerReviewStatus === "submitted" || booking.providerReviewedAt
+        ? "done"
+        : booking.bookingStatus === "completed" || booking.bookingStatus === "review_requested" || booking.bookingStatus === "reviewed"
+          ? "current"
+          : "waiting",
   } as const;
 
   useEffect(() => {
@@ -950,7 +955,7 @@ function BookingDetails({
                 Review User
               </button>
             ) : null}
-            {booking.providerReviewedAt ? (
+            {booking.providerReviewStatus === "submitted" || booking.providerReviewedAt ? (
               <div className="rounded-[18px] border border-[#eee5f7] bg-white px-4 py-3">
                 <p className="text-[12px] font-extrabold uppercase tracking-[0.12em] text-[#16a34a]">
                   Review done
@@ -1040,7 +1045,6 @@ export function ProviderBookingsScreen({
     if (
       selectedBooking &&
       selectedBooking.bookingStatus === "completed" &&
-      !selectedBooking.providerReviewedAt &&
       selectedBooking.providerReviewStatus !== "submitted" &&
       autoReviewOpenedFor !== selectedBooking.id &&
       !reviewBookingId

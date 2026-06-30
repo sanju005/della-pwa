@@ -208,6 +208,23 @@ export async function POST(
     );
   }
 
+  const bookingReviewUpdate = {
+    provider_review_status: "submitted",
+  };
+
+  const { error: bookingUpdateError } = await verified.adminClient
+    .from("bookings")
+    .update(bookingReviewUpdate)
+    .eq("id", bookingRow.id)
+    .eq("provider_id", verified.profile.id);
+
+  if (bookingUpdateError) {
+    return NextResponse.json(
+      { error: bookingUpdateError.message || "Unable to update booking review status." },
+      { status: 500 },
+    );
+  }
+
   await verified.adminClient.from("notifications").insert({
     user_id: bookingRow.customer_id,
     booking_id: bookingRow.id,
