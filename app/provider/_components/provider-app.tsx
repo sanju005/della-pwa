@@ -446,8 +446,9 @@ export function useProviderAppData() {
     bookingId: string,
     status: ProviderBookingItem["bookingStatus"],
     note = "",
-    paymentDetails?: {
+    actionDetails?: {
       finalAmount?: number;
+      workFinishedImages?: string[];
     },
   ) {
     const client = getSupabaseClient();
@@ -482,7 +483,8 @@ export function useProviderAppData() {
         body: JSON.stringify({
           status,
           note,
-          finalAmount: paymentDetails?.finalAmount,
+          finalAmount: actionDetails?.finalAmount,
+          workFinishedImages: actionDetails?.workFinishedImages,
         }),
       }).catch((error) => {
         console.error("[Provider app] Booking action request failed:", error);

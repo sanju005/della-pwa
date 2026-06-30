@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   BriefcaseBusiness,
@@ -35,6 +35,18 @@ import { getSupabaseClient } from "@/lib/supabase";
 type BookingTab = "all" | "ongoing" | "pending" | "canceled" | "completes";
 
 type TimelineState = "done" | "current" | "waiting";
+
+const WORK_FINISHED_IMAGE_MAX_BYTES = 5 * 1024 * 1024;
+const WORK_FINISHED_IMAGE_MAX_COUNT = 4;
+
+async function readImageAsDataUrl(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(typeof reader.result === "string" ? reader.result : "");
+    reader.onerror = () => reject(new Error("Unable to read this image."));
+    reader.readAsDataURL(file);
+  });
+}
 
 function isCompletedStatus(status: ProviderBookingItem["bookingStatus"]) {
   return ["completed", "paid", "review_requested", "reviewed"].includes(status);
@@ -559,12 +571,15 @@ function BookingDetails({
   onDecline: (bookingId: string) => void;
   onOnTheWay: (bookingId: string) => void;
   onArrived: (bookingId: string) => void;
-  onWorkFinished: (bookingId: string) => void;
+  onWorkFinished: (bookingId: string, images?: string[]) => void;
   onSendPaymentRequest: (booking: ProviderBookingItem) => void;
   onConfirmPaymentReceived: (bookingId: string) => void;
   onCompleteProviderJob: (bookingId: string) => void;
   onOpenReview: (booking: ProviderBookingItem) => void;
 }) {
+  const workFinishedInputRef = useRef<HTMLInputElement>(null);
+  const [workFinishedImages, setWorkFinishedImages] = useState<string[]>(booking.workFinishedImages ?? []);
+  const [workFinishedImageError, setWorkFinishedImageError] = useState("");
   const stepState = {
     confirmed: ["accepted", "on_the_way", "arrived", "work_finished_by_provider", "work_confirmed_by_user", "final_payment_sent", "cash_paid_by_user", "payment_received_by_provider", "completed", "paid", "review_requested", "reviewed"].includes(booking.bookingStatus) ? "done" : booking.bookingStatus === "pending_provider_response" || booking.bookingStatus === "pending" ? "current" : "waiting",
     onTheWay: ["on_the_way", "arrived", "work_finished_by_provider", "work_confirmed_by_user", "final_payment_sent", "cash_paid_by_user", "payment_received_by_provider", "completed", "paid", "review_requested", "reviewed"].includes(booking.bookingStatus) ? "done" : booking.bookingStatus === "accepted" ? "current" : "waiting",
@@ -575,6 +590,50 @@ function BookingDetails({
     userCompleted: booking.bookingStatus === "cash_paid_by_user" ? "current" : ["payment_received_by_provider", "completed", "review_requested", "reviewed"].includes(booking.bookingStatus) ? "done" : "waiting",
     review: booking.providerReviewedAt ? "done" : booking.bookingStatus === "completed" || booking.bookingStatus === "review_requested" || booking.bookingStatus === "reviewed" ? "current" : "waiting",
   } as const;
+
+  useEffect(() => {
+    setWorkFinishedImages(booking.workFinishedImages ?? []);
+    setWorkFinishedImageError("");
+  }, [booking.id, booking.workFinishedImages]);
+
+  const handleWorkFinishedImageChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFiles = Array.from(event.target.files ?? []);
+    event.target.value = "";
+
+    if (selectedFiles.length === 0) {
+      return;
+    }
+
+    const remainingSlots = WORK_FINISHED_IMAGE_MAX_COUNT - workFinishedImages.length;
+    const files = selectedFiles.slice(0, Math.max(0, remainingSlots));
+
+    if (files.length === 0) {
+      setWorkFinishedImageError(`You can attach up to ${WORK_FINISHED_IMAGE_MAX_COUNT} images.`);
+      return;
+    }
+
+    try {
+      const images = await Promise.all(
+        files.map(async (file) => {
+          if (!file.type.startsWith("image/")) {
+            throw new Error("Only image files are allowed.");
+          }
+
+          if (file.size > WORK_FINISHED_IMAGE_MAX_BYTES) {
+            throw new Error("Each image must be 5MB or smaller.");
+          }
+
+          return readImageAsDataUrl(file);
+        }),
+      );
+
+      setWorkFinishedImageError("");
+      setWorkFinishedImages((current) => [...current, ...images].slice(0, WORK_FINISHED_IMAGE_MAX_COUNT));
+    } catch (error) {
+      setWorkFinishedImageError(error instanceof Error ? error.message : "Unable to attach image.");
+    }
+  };
+
   return (
     <section className="rounded-[24px] border border-[#eee5f7] bg-white p-5 shadow-[0_14px_32px_rgba(86,38,135,0.08)]">
       <div className="flex items-start justify-between gap-3">
@@ -653,10 +712,55 @@ function BookingDetails({
             timeLabel={formatStepTime(booking.completedAt)}
             expanded={booking.bookingStatus === "arrived"}
           >
+            <input
+              ref={workFinishedInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={handleWorkFinishedImageChange}
+              className="hidden"
+            />
+            <div className="mb-3 rounded-[18px] border border-[#eee5f7] bg-white p-3">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-[13px] font-extrabold text-[#1f1630]">Completion Images</p>
+                  <p className="mt-1 text-[12px] text-[#64748b]">
+                    Attach job proof before marking completed.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => workFinishedInputRef.current?.click()}
+                  className="shrink-0 rounded-[12px] border border-[#dcc7f7] bg-[#fbf8ff] px-3 py-2 text-[12px] font-extrabold text-[#8E5EB5]"
+                >
+                  Add Images
+                </button>
+              </div>
+              {workFinishedImages.length > 0 ? (
+                <div className="mt-3 grid grid-cols-4 gap-2">
+                  {workFinishedImages.map((image, index) => (
+                    <div key={`${booking.id}-work-image-${index}`} className="relative aspect-square overflow-hidden rounded-[12px] border border-[#eee5f7]">
+                      <img src={image} alt={`Completion proof ${index + 1}`} className="h-full w-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => setWorkFinishedImages((current) => current.filter((_, itemIndex) => itemIndex !== index))}
+                        className="absolute right-1 top-1 inline-flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-[12px] font-black text-white"
+                        aria-label={`Remove completion proof ${index + 1}`}
+                      >
+                        x
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+              {workFinishedImageError ? (
+                <p className="mt-2 text-[12px] font-semibold text-[#dc2626]">{workFinishedImageError}</p>
+              ) : null}
+            </div>
             <AppButton
               className="w-full"
               disabled={actionBookingId === booking.id}
-              onClick={() => onWorkFinished(booking.id)}
+              onClick={() => onWorkFinished(booking.id, workFinishedImages)}
             >
               Mark Job Completed
             </AppButton>
@@ -920,8 +1024,13 @@ export function ProviderBookingsScreen({
     state.handleBookingAction(bookingId, "arrived", "Provider arrived at customer location");
   }
 
-  function handleWorkFinished(bookingId: string) {
-    state.handleBookingAction(bookingId, "work_finished_by_provider", "Provider marked work as finished.");
+  function handleWorkFinished(bookingId: string, images: string[] = []) {
+    state.handleBookingAction(
+      bookingId,
+      "work_finished_by_provider",
+      "Provider marked work as finished.",
+      { workFinishedImages: images },
+    );
   }
 
   function handleSendPaymentRequest(booking: ProviderBookingItem) {
