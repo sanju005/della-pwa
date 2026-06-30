@@ -1285,32 +1285,6 @@ export function ProviderBookingsScreen({
           </p>
         </header>
 
-        <section className="rounded-[24px] border border-[#eee5f7] bg-white p-5 shadow-[0_14px_32px_rgba(86,38,135,0.08)]">
-          <button
-            type="button"
-            onClick={() => setTab("pending")}
-            className="flex w-full items-start justify-between gap-3 text-left"
-          >
-            <div>
-              <p className="text-[12px] font-extrabold uppercase tracking-[0.14em] text-[#8E5EB5]">
-                Provider Flow
-              </p>
-              <h2 className="mt-2 text-[1.35rem] font-black tracking-[-0.05em] text-[#1f1630]">
-                New Task Requests
-              </h2>
-              <p className="mt-1 text-[13px] leading-6 text-[#7b728a]">
-                Open request cards and accept or decline from the details panel.
-              </p>
-            </div>
-            <div className="rounded-[18px] bg-[#f7f1fc] px-4 py-3 text-center">
-              <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-[#8E5EB5]">
-                Pending
-              </p>
-              <p className="mt-1 text-[1.5rem] font-black text-[#1f1630]">{pendingCount}</p>
-            </div>
-          </button>
-        </section>
-
         {state.error ? (
           <p className="rounded-[18px] border border-[#fecaca] bg-[#fff1f2] px-4 py-3 text-[13px] font-semibold text-[#dc2626]">
             {state.error}
@@ -1429,8 +1403,7 @@ export function ProviderBookingsScreen({
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className="text-[15px] font-black text-[#0f172a]">{booking.serviceLabel}</p>
-                      <p className="mt-1 text-[13px] text-[#475569]">{booking.customerName}</p>
+                      <p className="text-[15px] font-black text-[#0f172a]">{booking.customerName || "Customer"}</p>
                     </div>
                     <StatusBadge
                       label={booking.statusLabel}

@@ -83,6 +83,147 @@ function normalizeServiceFormValue(value: string) {
   return value.trim().toLowerCase().replace(/\s+/g, "_");
 }
 
+function isActiveTaskStatus(status: ProviderBookingItem["bookingStatus"]) {
+  return [
+    "accepted",
+    "on_the_way",
+    "arrived",
+    "work_finished_by_provider",
+    "work_confirmed_by_user",
+    "final_payment_sent",
+    "cash_paid_by_user",
+    "payment_received_by_provider",
+  ].includes(status);
+}
+
+type DashboardTaskStep = {
+  label: string;
+  status: "done" | "current" | "waiting";
+};
+
+function buildDashboardTaskPath(booking: ProviderBookingItem): DashboardTaskStep[] {
+  const status = booking.bookingStatus;
+  const steps: Array<[string, DashboardTaskStep["status"]]> = [
+    ["Confirmed", status === "accepted" || isActiveTaskStatus(status) ? "done" : "current"],
+    [
+      "On The Way",
+      ["on_the_way", "arrived", "work_finished_by_provider", "work_confirmed_by_user", "final_payment_sent", "cash_paid_by_user", "payment_received_by_provider"].includes(status)
+        ? "done"
+        : status === "accepted"
+          ? "current"
+          : "waiting",
+    ],
+    [
+      "Arrived",
+      ["arrived", "work_finished_by_provider", "work_confirmed_by_user", "final_payment_sent", "cash_paid_by_user", "payment_received_by_provider"].includes(status)
+        ? "done"
+        : status === "on_the_way"
+          ? "current"
+          : "waiting",
+    ],
+    [
+      "Job Done",
+      ["work_finished_by_provider", "work_confirmed_by_user", "final_payment_sent", "cash_paid_by_user", "payment_received_by_provider"].includes(status)
+        ? "done"
+        : status === "arrived"
+          ? "current"
+          : "waiting",
+    ],
+    [
+      "Payment Sent",
+      ["final_payment_sent", "cash_paid_by_user", "payment_received_by_provider"].includes(status)
+        ? "done"
+        : status === "work_finished_by_provider" || status === "work_confirmed_by_user"
+          ? "current"
+          : "waiting",
+    ],
+    [
+      "Payment Received",
+      ["cash_paid_by_user", "payment_received_by_provider"].includes(status)
+        ? "done"
+        : status === "final_payment_sent"
+          ? "current"
+          : "waiting",
+    ],
+    [
+      "Completed",
+      ["completed", "paid", "review_requested", "reviewed"].includes(status)
+        ? "done"
+        : ["cash_paid_by_user", "payment_received_by_provider"].includes(status)
+          ? "current"
+          : "waiting",
+    ],
+    [
+      "Review",
+      booking.providerReviewStatus === "submitted" || booking.providerReviewedAt
+        ? "done"
+        : ["completed", "review_requested", "reviewed"].includes(status)
+          ? "current"
+          : "waiting",
+    ],
+  ];
+
+  return steps.map(([label, stepStatus]) => ({ label, status: stepStatus }));
+}
+
+function DashboardTaskPath({
+  steps,
+}: {
+  steps: DashboardTaskStep[];
+}) {
+  return (
+    <div className="rounded-[18px] border border-[#efe6fb] bg-white px-4 py-4">
+      <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#8E5EB5]">
+        Task Path
+      </p>
+      <div className="mt-3 space-y-3">
+        {steps.map((step, index) => (
+          <div key={step.label} className="flex gap-3">
+            <div className="flex flex-col items-center">
+              <span
+                className={`inline-flex h-6 w-6 items-center justify-center rounded-full border-2 text-[10px] font-black ${
+                  step.status === "done"
+                    ? "border-[#8E5EB5] bg-[#8E5EB5] text-white"
+                    : step.status === "current"
+                      ? "border-[#8E5EB5] bg-white text-[#8E5EB5]"
+                      : "border-[#e2e8f0] bg-white text-[#94a3b8]"
+                }`}
+              >
+                {index + 1}
+              </span>
+              {index < steps.length - 1 ? (
+                <span
+                  className={`mt-1 h-6 w-[2px] ${
+                    step.status === "done" ? "bg-[#8E5EB5]" : "bg-[#e5e7eb]"
+                  }`}
+                />
+              ) : null}
+            </div>
+            <div className="min-w-0 flex-1 pb-1">
+              <div className="flex items-center justify-between gap-3">
+                <p className={`text-[13px] font-bold ${step.status === "waiting" ? "text-[#94a3b8]" : "text-[#1f1630]"}`}>
+                  {step.label}
+                </p>
+                <span
+                  className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${
+                    step.status === "done"
+                      ? "bg-[#eef9f1] text-[#16a34a]"
+                      : step.status === "current"
+                        ? "bg-[#f3e8ff] text-[#8E5EB5]"
+                        : "bg-[#f1f5f9] text-[#94a3b8]"
+                  }`}
+                >
+                  {step.status === "done" ? "Done" : step.status === "current" ? "Current" : "Waiting"}
+                </span>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 async function getProviderAccessToken() {
   const client = getSupabaseClient();
 
@@ -702,9 +843,7 @@ export function DashboardScreen() {
     (booking) => booking.bucket === "requests" || booking.bookingStatus === "pending",
   );
   const acceptedBookings = state.bookings.filter((booking) => booking.bookingStatus === "accepted");
-  const ongoingBookings = state.bookings.filter(
-    (booking) => booking.bookingStatus === "on_the_way" || booking.bookingStatus === "arrived",
-  );
+  const ongoingBookings = state.bookings.filter((booking) => isActiveTaskStatus(booking.bookingStatus));
   const todayKey = getTodayKey();
   const todayBookings = state.bookings
     .filter(
@@ -1164,42 +1303,33 @@ export function DashboardScreen() {
               />
             ) : (
               ongoingBookings.slice(0, 3).map((booking) => (
-                <div
-                  key={booking.id}
-                  className="rounded-[20px] border border-[#e7eee8] bg-[#fbfffc] p-4"
-                >
+                <div key={booking.id} className="rounded-[20px] border border-[#e7eee8] bg-[#fbfffc] p-4">
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className="text-[14px] font-black text-[#0f172a]">{booking.serviceLabel}</p>
-                      <p className="mt-1 text-[12px] text-[#64748b]">{booking.customerName}</p>
+                      <p className="text-[14px] font-black text-[#0f172a]">{booking.customerName}</p>
+                      <p className="mt-1 text-[12px] text-[#64748b]">{booking.schedule}</p>
                     </div>
                     <StatusBadge label={booking.statusLabel} tone={providerStatusTone(booking.bookingStatus)} />
                   </div>
+
                   <div className="mt-3 space-y-2 text-[13px] text-[#475569]">
-                    <div className="flex items-center gap-2">
-                      <CalendarDays className="h-4 w-4 text-[#16a34a]" />
-                      <span>{booking.schedule}</span>
-                    </div>
                     <div className="flex items-center gap-2">
                       <MapPin className="h-4 w-4 text-[#16a34a]" />
                       <span>{booking.location}</span>
                     </div>
+                    <div className="flex items-center gap-2">
+                      <CalendarDays className="h-4 w-4 text-[#16a34a]" />
+                      <span>{booking.serviceLabel}</span>
+                    </div>
                   </div>
+
                   <div className="mt-4">
-                    <AppButton
-                      className="w-full"
-                      disabled={state.actionBookingId === booking.id}
-                      onClick={() =>
-                        state.handleBookingAction(
-                          booking.id,
-                          booking.bookingStatus === "on_the_way" ? "arrived" : "completed",
-                          booking.bookingStatus === "on_the_way"
-                            ? "Provider arrived at customer location"
-                            : "Provider completed task",
-                        )
-                      }
-                    >
-                      {booking.bookingStatus === "on_the_way" ? "Mark Arrived" : "Mark Completed"}
+                    <DashboardTaskPath steps={buildDashboardTaskPath(booking)} />
+                  </div>
+
+                  <div className="mt-4">
+                    <AppButton className="w-full" href={`/provider/bookings/${booking.id}`}>
+                      View Details
                     </AppButton>
                   </div>
                 </div>
