@@ -222,7 +222,7 @@ function TimelineCard({
       <div className={`flex-1 rounded-[24px] border p-5 shadow-[0_14px_32px_rgba(86,38,135,0.08)] ${current ? "border-[#dcc7f7] bg-[linear-gradient(180deg,#fcf7ff_0%,#fffefe_100%)]" : "border-[#eee5f7] bg-white"}`}>
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h3 className="text-[1.1rem] font-black tracking-[-0.04em] text-[#0f172a]">
+            <h3 className="text-[0.95rem] font-black tracking-[-0.035em] text-[#0f172a]">
               {number}. {title}
             </h3>
             {(dateLabel || timeLabel) ? (
@@ -488,10 +488,80 @@ function BookingDetails({
 
       {!isCanceledStatus(booking.bookingStatus) ? (
         <div className="mt-4 space-y-4">
-          <TimelineCard number={1} title="Confirmed" state={stepState.confirmed} dateLabel={formatStepDate(booking.acceptedAt || booking.createdAt)} timeLabel={formatStepTime(booking.acceptedAt || booking.createdAt)} />
-          <TimelineCard number={2} title="On The Way" state={stepState.onTheWay} dateLabel={formatStepDate(booking.onTheWayAt)} timeLabel={formatStepTime(booking.onTheWayAt)} />
-          <TimelineCard number={3} title="Arrived" state={stepState.arrived} dateLabel={formatStepDate(booking.arrivedAt)} timeLabel={formatStepTime(booking.arrivedAt)} />
-          <TimelineCard number={4} title="Job Completed" state={stepState.jobDone} dateLabel={formatStepDate(booking.completedAt)} timeLabel={formatStepTime(booking.completedAt)} />
+          <TimelineCard
+            number={1}
+            title="Confirmed"
+            state={stepState.confirmed}
+            dateLabel={formatStepDate(booking.acceptedAt || booking.createdAt)}
+            timeLabel={formatStepTime(booking.acceptedAt || booking.createdAt)}
+            expanded={booking.bookingStatus === "pending"}
+          >
+            <div className="flex gap-3">
+              <AppButton
+                className="flex-1"
+                tone="danger"
+                disabled={actionBookingId === booking.id}
+                onClick={() => onDecline(booking.id)}
+              >
+                Decline
+              </AppButton>
+              <AppButton
+                className="flex-1"
+                disabled={actionBookingId === booking.id}
+                onClick={() => onAccept(booking.id)}
+              >
+                Confirm Booking
+              </AppButton>
+            </div>
+          </TimelineCard>
+          <TimelineCard
+            number={2}
+            title="On The Way"
+            state={stepState.onTheWay}
+            dateLabel={formatStepDate(booking.onTheWayAt)}
+            timeLabel={formatStepTime(booking.onTheWayAt)}
+            expanded={booking.bookingStatus === "accepted"}
+          >
+            <AppButton
+              className="w-full"
+              disabled={actionBookingId === booking.id}
+              onClick={() => onOnTheWay(booking.id)}
+            >
+              Mark As On The Way
+            </AppButton>
+          </TimelineCard>
+          <TimelineCard
+            number={3}
+            title="Arrived"
+            state={stepState.arrived}
+            dateLabel={formatStepDate(booking.arrivedAt)}
+            timeLabel={formatStepTime(booking.arrivedAt)}
+            expanded={booking.bookingStatus === "on_the_way"}
+          >
+            <AppButton
+              className="w-full"
+              disabled={actionBookingId === booking.id}
+              onClick={() => onArrived(booking.id)}
+            >
+              Mark As Arrived
+            </AppButton>
+          </TimelineCard>
+          <TimelineCard
+            number={4}
+            title="Job Completed"
+            state={stepState.jobDone}
+            dateLabel={formatStepDate(booking.completedAt)}
+            timeLabel={formatStepTime(booking.completedAt)}
+            expanded={booking.bookingStatus === "arrived"}
+          >
+            <AppButton
+              className="w-full"
+              disabled={actionBookingId === booking.id}
+              onClick={() => onWorkFinished(booking.id)}
+            >
+              Mark Job Completed
+            </AppButton>
+          </TimelineCard>
           <TimelineCard number={5} title="Finalize Payment" state={stepState.finalizePayment} expanded={stepState.finalizePayment === "current" || stepState.finalizePayment === "done"}>
             <div className="rounded-[20px] border border-[#eee5f7] bg-white p-4">
               <div className="space-y-3 text-[14px] text-[#1f1630]">
@@ -593,61 +663,6 @@ function BookingDetails({
         </div>
       )}
 
-      {booking.bookingStatus === "pending" ? (
-        <div className="mt-4 flex gap-3">
-          <AppButton
-            className="flex-1"
-            tone="danger"
-            disabled={actionBookingId === booking.id}
-            onClick={() => onDecline(booking.id)}
-          >
-            Decline
-          </AppButton>
-          <AppButton
-            className="flex-1"
-            disabled={actionBookingId === booking.id}
-            onClick={() => onAccept(booking.id)}
-          >
-            Accept
-          </AppButton>
-        </div>
-      ) : null}
-
-      {booking.bookingStatus === "accepted" ? (
-        <div className="mt-4">
-          <AppButton
-            className="w-full"
-            disabled={actionBookingId === booking.id}
-            onClick={() => onOnTheWay(booking.id)}
-          >
-            Mark On The Way
-          </AppButton>
-        </div>
-      ) : null}
-
-      {booking.bookingStatus === "on_the_way" ? (
-        <div className="mt-4">
-          <AppButton
-            className="w-full"
-            disabled={actionBookingId === booking.id}
-            onClick={() => onArrived(booking.id)}
-          >
-            Mark Arrived
-          </AppButton>
-        </div>
-      ) : null}
-
-      {booking.bookingStatus === "arrived" ? (
-        <div className="mt-4">
-          <AppButton
-            className="w-full"
-            disabled={actionBookingId === booking.id}
-            onClick={() => onWorkFinished(booking.id)}
-          >
-            Mark Work Finished
-          </AppButton>
-        </div>
-      ) : null}
     </section>
   );
 }
