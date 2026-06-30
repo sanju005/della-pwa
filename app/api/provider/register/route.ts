@@ -119,6 +119,12 @@ function isMissingColumnError(message?: string) {
   );
 }
 
+function isMissingConflictTargetError(message?: string) {
+  return (message ?? "")
+    .toLowerCase()
+    .includes("no unique or exclusion constraint matching the on conflict specification");
+}
+
 function getProviderFullName(payload: ProviderRegistrationData) {
   return [payload.basicProfile.firstName, payload.basicProfile.lastName]
     .filter(Boolean)
@@ -159,6 +165,28 @@ async function upsertProviderVerification(
     return byProviderId;
   }
 
+  if (isMissingConflictTargetError(byProviderId.error.message)) {
+    const existingVerification = await adminClient
+      .from("provider_verifications")
+      .select("id")
+      .eq("provider_id", providerId)
+      .maybeSingle();
+
+    if (existingVerification.data?.id) {
+      return adminClient
+        .from("provider_verifications")
+        .update(payload)
+        .eq("id", existingVerification.data.id);
+    }
+
+    return adminClient
+      .from("provider_verifications")
+      .insert({
+        provider_id: providerId,
+        ...payload,
+      });
+  }
+
   return adminClient
     .from("provider_verifications")
     .upsert(
@@ -191,6 +219,44 @@ function stripProviderServiceMediaFields(
   delete nextProviderService.certificate_data_urls;
   delete nextProviderService.certificate_captions;
   return nextProviderService;
+}
+
+function toAvailabilityTime(value: string) {
+  const trimmed = value.trim();
+  const match = trimmed.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+
+  if (!match) {
+    return trimmed;
+  }
+
+  const [, hourPart, minutePart, period] = match;
+  let hour = Number(hourPart);
+
+  if (period.toUpperCase() === "PM" && hour < 12) {
+    hour += 12;
+  }
+
+  if (period.toUpperCase() === "AM" && hour === 12) {
+    hour = 0;
+  }
+
+  return `${String(hour).padStart(2, "0")}:${minutePart}`;
+}
+
+function getRegistrationAvailabilityRange(payload: ProviderRegistrationData) {
+  if (payload.availability.timePreset === "24 Hours") {
+    return { startTime: "00:00", endTime: "23:59", timeMode: "24_hours" };
+  }
+
+  if (payload.availability.timePreset === "9 AM - 9 PM") {
+    return { startTime: "09:00", endTime: "21:00", timeMode: "preset" };
+  }
+
+  return {
+    startTime: toAvailabilityTime(payload.availability.startTime || "09:00 AM"),
+    endTime: toAvailabilityTime(payload.availability.endTime || "09:00 PM"),
+    timeMode: "custom",
+  };
 }
 
 export async function POST(request: Request) {
@@ -370,6 +436,32 @@ export async function POST(request: Request) {
         { error: "Account created, but provider profile setup failed." },
         { status: 500 }
       );
+    }
+
+    const availabilityDays = payload.availability.days
+      .map((day) => day.trim().toLowerCase())
+      .filter(Boolean);
+
+    if (availabilityDays.length > 0) {
+      const availabilityRange = getRegistrationAvailabilityRange(payload);
+      const availabilityWrite = await adminClient
+        .from("provider_availability")
+        .insert(
+          availabilityDays.map((day) => ({
+            provider_id: providerId,
+            day_of_week: day,
+            time_mode: availabilityRange.timeMode,
+            start_time: availabilityRange.startTime,
+            end_time: availabilityRange.endTime,
+          })),
+        );
+
+      if (availabilityWrite.error) {
+        return NextResponse.json(
+          { error: "Account created, but provider availability setup failed." },
+          { status: 500 }
+        );
+      }
     }
 
     const verificationResult = await upsertProviderVerification(

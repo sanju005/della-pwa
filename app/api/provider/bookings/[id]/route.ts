@@ -164,26 +164,50 @@ async function ensurePaymentRequest(
   amount: number,
 ) {
   const commission = calculateCommission(amount);
+  const paymentPayload = buildPaymentRequestPayload(current, amount, commission);
+  const fallbackPaymentPayload = buildFallbackPaymentRequestPayload(current, commission);
 
-  let { error } = await adminClient
+  const existingPayment = await adminClient
     .from("payments")
-    .upsert(
-      buildPaymentRequestPayload(current, amount, commission),
-      { onConflict: "booking_id" },
-    );
+    .select("id")
+    .eq("booking_id", current.id)
+    .maybeSingle();
 
-  if (error && isUnknownPaymentColumnError(error.message)) {
-    const fallbackWrite = await adminClient
-      .from("payments")
-      .upsert(
-        buildFallbackPaymentRequestPayload(current, commission),
-        { onConflict: "booking_id" },
-      );
-
-    error = fallbackWrite.error;
+  if (existingPayment.error) {
+    return { error: existingPayment.error };
   }
 
-  return { error };
+  let writeResult = existingPayment.data?.id
+    ? await adminClient
+        .from("payments")
+        .update(paymentPayload)
+        .eq("id", existingPayment.data.id)
+    : await adminClient
+        .from("payments")
+        .insert(paymentPayload);
+
+  if (writeResult.error && isUnknownPaymentColumnError(writeResult.error.message)) {
+    writeResult = existingPayment.data?.id
+      ? await adminClient
+          .from("payments")
+          .update(fallbackPaymentPayload)
+          .eq("id", existingPayment.data.id)
+      : await adminClient
+          .from("payments")
+          .insert(fallbackPaymentPayload);
+  }
+
+  if (
+    writeResult.error?.message?.toLowerCase().includes("duplicate") ||
+    writeResult.error?.message?.toLowerCase().includes("unique")
+  ) {
+    writeResult = await adminClient
+      .from("payments")
+      .update(paymentPayload)
+      .eq("booking_id", current.id);
+  }
+
+  return { error: writeResult.error };
 }
 
 function getAdminSupabaseClient() {

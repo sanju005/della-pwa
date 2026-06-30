@@ -21,6 +21,11 @@ import {
   StatusBadge,
 } from "@/app/_components/della-ui";
 import {
+  ImageCropModal,
+  cropImageFromSelection,
+  type CropSelection,
+} from "@/app/_components/image-crop-modal";
+import {
   formatCurrency,
   formatDateLabel,
   formatTimeLabel,
@@ -453,6 +458,13 @@ function ProviderBookingSummaryWithActions({
           label="User Notes"
           value={booking.customerNote?.trim() || "No notes from user."}
         />
+        <AppButton
+          href={`/provider/messages?booking=${booking.id}`}
+          tone="secondary"
+          className="w-full !rounded-[14px] !border-[#d9c5f1] !bg-white !text-[#8E5EB5] !shadow-none"
+        >
+          Message Customer
+        </AppButton>
         {canRespondToRequest ? (
           <div className="grid grid-cols-2 gap-3 pt-1">
             <AppButton
@@ -603,8 +615,8 @@ function BookingDetails({
   onDecline: (bookingId: string) => void;
   onOnTheWay: (bookingId: string) => void;
   onArrived: (bookingId: string) => void;
-  onWorkFinished: (bookingId: string, images?: string[]) => void;
-  onSendPaymentRequest: (booking: ProviderBookingItem) => void;
+  onWorkFinished: (bookingId: string, images: string[], finalAmount: number) => void;
+  onSendPaymentRequest: (booking: ProviderBookingItem, finalAmount: number) => void;
   onConfirmPaymentReceived: (bookingId: string) => void;
   onCompleteProviderJob: (bookingId: string) => void;
   onOpenReview: (booking: ProviderBookingItem) => void;
@@ -612,6 +624,11 @@ function BookingDetails({
   const workFinishedInputRef = useRef<HTMLInputElement>(null);
   const [workFinishedImages, setWorkFinishedImages] = useState<string[]>(booking.workFinishedImages ?? []);
   const [workFinishedImageError, setWorkFinishedImageError] = useState("");
+  const [workImageCropSource, setWorkImageCropSource] = useState("");
+  const [workImageCropQueue, setWorkImageCropQueue] = useState<string[]>([]);
+  const [finalPaymentAmount, setFinalPaymentAmount] = useState(
+    String(booking.quotedAmount || booking.baseAmount || 0),
+  );
   const stepState = {
     confirmed: ["accepted", "on_the_way", "arrived", "work_finished_by_provider", "work_confirmed_by_user", "final_payment_sent", "cash_paid_by_user", "payment_received_by_provider", "completed", "paid", "review_requested", "reviewed"].includes(booking.bookingStatus) ? "done" : booking.bookingStatus === "pending_provider_response" || booking.bookingStatus === "pending" ? "current" : "waiting",
     onTheWay: ["on_the_way", "arrived", "work_finished_by_provider", "work_confirmed_by_user", "final_payment_sent", "cash_paid_by_user", "payment_received_by_provider", "completed", "paid", "review_requested", "reviewed"].includes(booking.bookingStatus) ? "done" : booking.bookingStatus === "accepted" ? "current" : "waiting",
@@ -626,7 +643,16 @@ function BookingDetails({
   useEffect(() => {
     setWorkFinishedImages(booking.workFinishedImages ?? []);
     setWorkFinishedImageError("");
-  }, [booking.id, booking.workFinishedImages]);
+    setWorkImageCropSource("");
+    setWorkImageCropQueue([]);
+    setFinalPaymentAmount(String(booking.quotedAmount || booking.baseAmount || 0));
+  }, [booking.id, booking.workFinishedImages, booking.quotedAmount, booking.baseAmount]);
+
+  const openNextWorkImageCrop = (queue: string[]) => {
+    const [nextImage, ...remainingImages] = queue;
+    setWorkImageCropQueue(remainingImages);
+    setWorkImageCropSource(nextImage ?? "");
+  };
 
   const handleWorkFinishedImageChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(event.target.files ?? []);
@@ -660,10 +686,30 @@ function BookingDetails({
       );
 
       setWorkFinishedImageError("");
-      setWorkFinishedImages((current) => [...current, ...images].slice(0, WORK_FINISHED_IMAGE_MAX_COUNT));
+      openNextWorkImageCrop(images);
     } catch (error) {
       setWorkFinishedImageError(error instanceof Error ? error.message : "Unable to attach image.");
     }
+  };
+
+  const handleWorkImageCropApply = async (selection: CropSelection) => {
+    if (!workImageCropSource) {
+      return;
+    }
+
+    try {
+      const croppedImage = await cropImageFromSelection(workImageCropSource, selection);
+      setWorkFinishedImages((current) => [...current, croppedImage].slice(0, WORK_FINISHED_IMAGE_MAX_COUNT));
+      setWorkFinishedImageError("");
+      openNextWorkImageCrop(workImageCropQueue);
+    } catch (error) {
+      setWorkFinishedImageError(error instanceof Error ? error.message : "Unable to crop image.");
+    }
+  };
+
+  const handleWorkImageCropClose = () => {
+    setWorkImageCropSource("");
+    setWorkImageCropQueue([]);
   };
 
   return (
@@ -753,6 +799,17 @@ function BookingDetails({
               className="hidden"
             />
             <div className="mb-3 rounded-[18px] border border-[#eee5f7] bg-white p-3">
+              <label className="mb-3 block">
+                <span className="text-[13px] font-extrabold text-[#1f1630]">Final Payment Amount (RM)</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={finalPaymentAmount}
+                  onChange={(event) => setFinalPaymentAmount(event.target.value)}
+                  className="mt-2 h-11 w-full rounded-[14px] border border-[#e7dff2] px-4 text-[14px] font-semibold text-[#1f1630] outline-none focus:border-[#8E5EB5]"
+                />
+              </label>
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-[13px] font-extrabold text-[#1f1630]">Completion Images</p>
@@ -792,7 +849,7 @@ function BookingDetails({
             <AppButton
               className="w-full"
               disabled={actionBookingId === booking.id}
-              onClick={() => onWorkFinished(booking.id, workFinishedImages)}
+              onClick={() => onWorkFinished(booking.id, workFinishedImages, Number(finalPaymentAmount))}
             >
               Mark Job Completed & Send Payment Request
             </AppButton>
@@ -807,7 +864,20 @@ function BookingDetails({
                 <div className="border-t border-dashed border-[#ddd4ea] pt-3"><div className="flex items-center justify-between gap-3"><span className="text-[1rem] font-black text-[#8E5EB5]">Total Amount</span><span className="text-[1.6rem] font-black text-[#8E5EB5]">RM {booking.quotedAmount}</span></div></div>
               </div>
               {booking.bookingStatus === "work_confirmed_by_user" ? (
-                <button type="button" onClick={() => onSendPaymentRequest(booking)} className="mt-4 inline-flex h-12 w-full items-center justify-center rounded-[14px] bg-[#8E5EB5] text-[16px] font-extrabold text-white shadow-[0_16px_30px_rgba(142,94,181,0.24)]">
+                <label className="mt-4 block">
+                  <span className="text-[13px] font-extrabold text-[#1f1630]">Final Payment Amount (RM)</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={finalPaymentAmount}
+                    onChange={(event) => setFinalPaymentAmount(event.target.value)}
+                    className="mt-2 h-11 w-full rounded-[14px] border border-[#e7dff2] px-4 text-[14px] font-semibold text-[#1f1630] outline-none focus:border-[#8E5EB5]"
+                  />
+                </label>
+              ) : null}
+              {booking.bookingStatus === "work_confirmed_by_user" ? (
+                <button type="button" onClick={() => onSendPaymentRequest(booking, Number(finalPaymentAmount))} className="mt-4 inline-flex h-12 w-full items-center justify-center rounded-[14px] bg-[#8E5EB5] text-[16px] font-extrabold text-white shadow-[0_16px_30px_rgba(142,94,181,0.24)]">
                   Send Payment Request
                 </button>
               ) : null}
@@ -898,6 +968,14 @@ function BookingDetails({
         </div>
       )}
 
+      {workImageCropSource ? (
+        <ImageCropModal
+          imageDataUrl={workImageCropSource}
+          tone="work"
+          onClose={handleWorkImageCropClose}
+          onApply={handleWorkImageCropApply}
+        />
+      ) : null}
     </section>
   );
 }
@@ -1084,23 +1162,11 @@ export function ProviderBookingsScreen({
     state.handleBookingAction(bookingId, "arrived", "Provider arrived at customer location");
   }
 
-  function handleWorkFinished(bookingId: string, images: string[] = []) {
+  function handleWorkFinished(bookingId: string, images: string[] = [], finalAmount = 0) {
     if (images.length < 1) {
       state.setError("Please attach at least 1 job image before sending the payment request.");
       return;
     }
-
-    const booking = state.bookings.find((item) => item.id === bookingId);
-    const input = window.prompt(
-      "Enter final amount (RM) to request from the customer.",
-      String(booking?.quotedAmount || booking?.baseAmount || 0),
-    );
-
-    if (input === null) {
-      return;
-    }
-
-    const finalAmount = Number(input);
 
     if (!Number.isFinite(finalAmount) || finalAmount <= 0) {
       state.setError("Final amount must be a valid number.");
@@ -1118,36 +1184,16 @@ export function ProviderBookingsScreen({
     );
   }
 
-  function handleSendPaymentRequest(booking: ProviderBookingItem) {
-    const input = window.prompt(
-      "Enter final amount (RM) to send to the customer.",
-      String(booking.quotedAmount || booking.baseAmount || 0),
-    );
-
-    if (input === null) {
-      return;
-    }
-
-    const finalAmount = Number(input);
-
+  function handleSendPaymentRequest(booking: ProviderBookingItem, finalAmount: number) {
     if (!Number.isFinite(finalAmount) || finalAmount <= 0) {
       state.setError("Final amount must be a valid number.");
-      return;
-    }
-
-    const note = window.prompt(
-      "Optional payment note for customer",
-      booking.paymentNote || "Please review and confirm the final cash amount.",
-    );
-
-    if (note === null) {
       return;
     }
 
     state.handleBookingAction(
       booking.id,
       "final_payment_sent",
-      note.trim(),
+      booking.paymentNote || "Please review and confirm the final cash amount.",
       { finalAmount },
     );
   }

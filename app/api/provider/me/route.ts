@@ -110,6 +110,12 @@ function isMissingProviderProfileColumnError(message?: string) {
   return normalized.includes("column") && normalized.includes("verification_status");
 }
 
+function isMissingConflictTargetError(message?: string) {
+  return (message ?? "")
+    .toLowerCase()
+    .includes("no unique or exclusion constraint matching the on conflict specification");
+}
+
 function isMissingProviderServiceMediaColumnError(message?: string) {
   const normalized = message?.trim().toLowerCase() ?? "";
 
@@ -212,6 +218,30 @@ async function syncEmailVerification(
     );
 
   if (!byProviderId.error) {
+    return;
+  }
+
+  if (isMissingConflictTargetError(byProviderId.error.message)) {
+    const existingVerification = await adminClient
+      .from("provider_verifications")
+      .select("id")
+      .eq("provider_id", providerId)
+      .maybeSingle();
+
+    if (existingVerification.data?.id) {
+      await adminClient
+        .from("provider_verifications")
+        .update(payload)
+        .eq("id", existingVerification.data.id);
+      return;
+    }
+
+    await adminClient
+      .from("provider_verifications")
+      .insert({
+        provider_id: providerId,
+        ...payload,
+      });
     return;
   }
 
@@ -488,7 +518,41 @@ export async function PATCH(request: Request) {
         { onConflict: "provider_id" },
       );
 
-    if (byProviderId.error) {
+    if (byProviderId.error && isMissingConflictTargetError(byProviderId.error.message)) {
+      const existingVerification = await verified.adminClient
+        .from("provider_verifications")
+        .select("id")
+        .eq("provider_id", verified.profile.id)
+        .maybeSingle();
+
+      if (existingVerification.data?.id) {
+        const { error } = await verified.adminClient
+          .from("provider_verifications")
+          .update(verificationPayload)
+          .eq("id", existingVerification.data.id);
+
+        if (error) {
+          return NextResponse.json(
+            { error: error.message || "Unable to update provider verification." },
+            { status: 500 },
+          );
+        }
+      } else {
+        const { error } = await verified.adminClient
+          .from("provider_verifications")
+          .insert({
+            provider_id: verified.profile.id,
+            ...verificationPayload,
+          });
+
+        if (error) {
+          return NextResponse.json(
+            { error: error.message || "Unable to update provider verification." },
+            { status: 500 },
+          );
+        }
+      }
+    } else if (byProviderId.error) {
       const byId = await verified.adminClient
         .from("provider_verifications")
         .upsert(
