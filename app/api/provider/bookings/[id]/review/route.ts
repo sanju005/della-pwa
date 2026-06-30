@@ -10,6 +10,7 @@ export const dynamic = "force-dynamic";
 type ReviewPayload = {
   rating?: number;
   comment?: string;
+  photos?: string[];
 };
 
 type ProfileRow = {
@@ -119,6 +120,7 @@ export async function POST(
   const payload = (await request.json().catch(() => ({}))) as ReviewPayload;
   const rating = Math.max(1, Math.min(5, Math.round(Number(payload.rating ?? 0))));
   const comment = payload.comment?.trim() ?? "";
+  const photos = (payload.photos ?? []).map((photo) => photo.trim()).filter(Boolean);
 
   if (!rating || !Number.isFinite(rating)) {
     return NextResponse.json({ error: "A rating from 1 to 5 is required." }, { status: 400 });
@@ -137,7 +139,11 @@ export async function POST(
 
   const bookingRow = booking as BookingRow;
 
-  if (bookingRow.booking_status !== "review_requested" && bookingRow.booking_status !== "reviewed") {
+  if (
+    bookingRow.booking_status !== "completed" &&
+    bookingRow.booking_status !== "review_requested" &&
+    bookingRow.booking_status !== "reviewed"
+  ) {
     return NextResponse.json(
       { error: "Provider review is only available after the booking is fully completed." },
       { status: 400 },
@@ -164,9 +170,10 @@ export async function POST(
     customer_id: bookingRow.customer_id,
     rating,
     comment,
+    photos,
   };
 
-  const reviewWrite = existingReview?.id
+  let reviewWrite = existingReview?.id
     ? await verified.adminClient
         .from("provider_customer_reviews")
         .update(reviewPayload)
@@ -174,6 +181,25 @@ export async function POST(
     : await verified.adminClient
         .from("provider_customer_reviews")
         .insert(reviewPayload);
+
+  if (reviewWrite.error && reviewWrite.error.message?.toLowerCase().includes("photos")) {
+    const fallbackPayload = {
+      booking_id: bookingRow.id,
+      provider_id: verified.profile.id,
+      customer_id: bookingRow.customer_id,
+      rating,
+      comment,
+    };
+
+    reviewWrite = existingReview?.id
+      ? await verified.adminClient
+          .from("provider_customer_reviews")
+          .update(fallbackPayload)
+          .eq("id", existingReview.id)
+      : await verified.adminClient
+          .from("provider_customer_reviews")
+          .insert(fallbackPayload);
+  }
 
   if (reviewWrite.error) {
     return NextResponse.json(

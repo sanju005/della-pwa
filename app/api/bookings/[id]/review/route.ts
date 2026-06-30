@@ -34,6 +34,11 @@ type BookingRow = {
     | "accepted"
     | "on_the_way"
     | "arrived"
+    | "work_finished_by_provider"
+    | "work_confirmed_by_user"
+    | "final_payment_sent"
+    | "cash_paid_by_user"
+    | "payment_received_by_provider"
     | "completed"
     | "paid"
     | "review_requested"
@@ -126,7 +131,8 @@ function isMissingReviewMetadataColumnError(message?: string | null) {
   const normalized = message?.trim().toLowerCase() ?? "";
   return normalized.includes("column") && (
     normalized.includes("tags") ||
-    normalized.includes("recommend")
+    normalized.includes("recommend") ||
+    normalized.includes("photos")
   );
 }
 
@@ -154,6 +160,7 @@ export async function POST(
   const rating = Math.max(1, Math.min(5, Math.round(Number(payload.rating ?? 0))));
   const comment = payload.comment?.trim() ?? "";
   const tags = (payload.tags ?? []).map((tag) => tag.trim()).filter(Boolean);
+  const photos = (payload.photos ?? []).map((photo) => photo.trim()).filter(Boolean);
   const recommend = payload.recommend !== false;
 
   if (!rating || !Number.isFinite(rating)) {
@@ -180,6 +187,9 @@ export async function POST(
   const bookingRow = booking as BookingRow;
 
   if (
+    bookingRow.booking_status !== "cash_paid_by_user" &&
+    bookingRow.booking_status !== "payment_received_by_provider" &&
+    bookingRow.booking_status !== "completed" &&
     bookingRow.booking_status !== "review_requested" &&
     bookingRow.booking_status !== "reviewed"
   ) {
@@ -213,6 +223,7 @@ export async function POST(
     customer_id: verified.profile.id,
     rating,
     comment,
+    photos,
     tags,
     recommend,
   };
@@ -279,21 +290,30 @@ export async function POST(
     }
   }
 
+  const shouldMoveToReviewed =
+    bookingRow.booking_status === "completed" ||
+    bookingRow.booking_status === "review_requested" ||
+    bookingRow.booking_status === "reviewed";
+  const bookingReviewUpdate = shouldMoveToReviewed
+    ? {
+        booking_status: "reviewed",
+        user_review_status: "submitted",
+        reviewed_at: new Date().toISOString(),
+      }
+    : {
+        user_review_status: "submitted",
+      };
+
   let { error: bookingUpdateError } = await verified.adminClient
     .from("bookings")
-    .update({
-      booking_status: "reviewed",
-      reviewed_at: new Date().toISOString(),
-    })
+    .update(bookingReviewUpdate)
     .eq("id", bookingRow.id)
     .eq("customer_id", verified.profile.id);
 
   if (bookingUpdateError && isMissingReviewedAtColumnError(bookingUpdateError.message)) {
     const fallbackWrite = await verified.adminClient
       .from("bookings")
-      .update({
-        booking_status: "reviewed",
-      })
+      .update(shouldMoveToReviewed ? { booking_status: "reviewed" } : {})
       .eq("id", bookingRow.id)
       .eq("customer_id", verified.profile.id);
 

@@ -37,7 +37,7 @@ type BookingTab = "all" | "ongoing" | "pending" | "canceled" | "completes";
 type TimelineState = "done" | "current" | "waiting";
 
 const WORK_FINISHED_IMAGE_MAX_BYTES = 5 * 1024 * 1024;
-const WORK_FINISHED_IMAGE_MAX_COUNT = 4;
+const WORK_FINISHED_IMAGE_MAX_COUNT = 3;
 
 async function readImageAsDataUrl(file: File) {
   return new Promise<string>((resolve, reject) => {
@@ -481,21 +481,37 @@ function ProviderReviewModal({
   customerName,
   rating,
   comment,
+  photos,
   loading,
   onRatingChange,
   onCommentChange,
+  onPhotosChange,
   onClose,
   onSubmit,
 }: {
   customerName: string;
   rating: number;
   comment: string;
+  photos: string[];
   loading: boolean;
   onRatingChange: (value: number) => void;
   onCommentChange: (value: string) => void;
+  onPhotosChange: (value: string[]) => void;
   onClose: () => void;
   onSubmit: () => void;
 }) {
+  async function handleReviewPhotoChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(event.target.files ?? []).slice(0, 4);
+    event.target.value = "";
+
+    if (files.length === 0) {
+      return;
+    }
+
+    const images = await Promise.all(files.map((file) => readImageAsDataUrl(file)));
+    onPhotosChange(images);
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0f172a]/50 px-4">
       <div className="w-full max-w-md rounded-[28px] bg-white p-5 shadow-[0_24px_60px_rgba(15,23,42,0.28)]">
@@ -536,6 +552,22 @@ function ProviderReviewModal({
             placeholder="Write your feedback about this customer."
           />
         </label>
+
+        <div className="mt-5">
+          <label className="inline-flex h-12 w-full cursor-pointer items-center justify-center rounded-[14px] border border-dashed border-[#cdb3eb] bg-[#fcfaff] text-[13px] font-extrabold text-[#8E5EB5]">
+            Add Review Photos
+            <input type="file" accept="image/*" multiple className="hidden" onChange={(event) => void handleReviewPhotoChange(event)} />
+          </label>
+          {photos.length > 0 ? (
+            <div className="mt-3 grid grid-cols-4 gap-2">
+              {photos.map((photo, index) => (
+                <div key={`provider-review-photo-${index}`} className="aspect-square overflow-hidden rounded-[10px] border border-[#e7dff2]">
+                  <img src={photo} alt={`Review photo ${index + 1}`} className="h-full w-full object-cover" />
+                </div>
+              ))}
+            </div>
+          ) : null}
+        </div>
 
         <div className="mt-5 flex gap-3">
           <AppButton className="flex-1" tone="secondary" onClick={onClose}>
@@ -883,7 +915,9 @@ export function ProviderBookingsScreen({
   const [reviewBookingId, setReviewBookingId] = useState("");
   const [reviewRating, setReviewRating] = useState(0);
   const [reviewComment, setReviewComment] = useState("");
+  const [reviewPhotos, setReviewPhotos] = useState<string[]>([]);
   const [reviewLoading, setReviewLoading] = useState(false);
+  const [autoReviewOpenedFor, setAutoReviewOpenedFor] = useState("");
   const [calendarMonth, setCalendarMonth] = useState(() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
@@ -920,6 +954,19 @@ export function ProviderBookingsScreen({
   const todayKey = getTodayKey();
   const selectedBooking =
     state.bookings.find((booking) => booking.id === selectedBookingId) ?? null;
+
+  useEffect(() => {
+    if (
+      selectedBooking &&
+      selectedBooking.bookingStatus === "completed" &&
+      selectedBooking.providerReviewStatus !== "submitted" &&
+      autoReviewOpenedFor !== selectedBooking.id &&
+      !reviewBookingId
+    ) {
+      setAutoReviewOpenedFor(selectedBooking.id);
+      openReviewModal(selectedBooking);
+    }
+  }, [autoReviewOpenedFor, reviewBookingId, selectedBooking]);
   const monthLabel = new Intl.DateTimeFormat("en-MY", {
     month: "long",
     year: "numeric",
@@ -1013,7 +1060,20 @@ export function ProviderBookingsScreen({
   }
 
   function handleDecline(bookingId: string) {
-    state.handleBookingAction(bookingId, "declined_by_provider", "Provider declined booking");
+    const reason = window.prompt("Please enter the reason for declining this booking.");
+
+    if (reason === null) {
+      return;
+    }
+
+    const trimmedReason = reason.trim();
+
+    if (!trimmedReason) {
+      state.setError("Decline reason is required.");
+      return;
+    }
+
+    state.handleBookingAction(bookingId, "declined_by_provider", trimmedReason);
   }
 
   function handleOnTheWay(bookingId: string) {
@@ -1025,6 +1085,11 @@ export function ProviderBookingsScreen({
   }
 
   function handleWorkFinished(bookingId: string, images: string[] = []) {
+    if (images.length < 1) {
+      state.setError("Please attach at least 1 job image before sending the payment request.");
+      return;
+    }
+
     const booking = state.bookings.find((item) => item.id === bookingId);
     const input = window.prompt(
       "Enter final amount (RM) to request from the customer.",
@@ -1088,7 +1153,7 @@ export function ProviderBookingsScreen({
   }
 
   function handleConfirmPaymentReceived(bookingId: string) {
-    state.handleBookingAction(bookingId, "payment_received_by_provider", "Provider confirmed cash payment received.");
+    state.handleBookingAction(bookingId, "completed", "Provider confirmed payment received and completed the task.");
   }
 
   function handleCompleteProviderJob(bookingId: string) {
@@ -1099,6 +1164,7 @@ export function ProviderBookingsScreen({
     setReviewBookingId(booking.id);
     setReviewRating(booking.providerReviewRating ?? 0);
     setReviewComment(booking.providerReviewComment ?? "");
+    setReviewPhotos([]);
   }
 
   async function handleSubmitProviderReview() {
@@ -1139,10 +1205,11 @@ export function ProviderBookingsScreen({
         "Content-Type": "application/json",
         Authorization: `Bearer ${session.access_token}`,
       },
-      body: JSON.stringify({
-        rating: reviewRating,
-        comment: reviewComment.trim(),
-      }),
+        body: JSON.stringify({
+          rating: reviewRating,
+          comment: reviewComment.trim(),
+          photos: reviewPhotos,
+        }),
     }).catch(() => null);
 
     const result = response
@@ -1462,9 +1529,11 @@ export function ProviderBookingsScreen({
           customerName={state.bookings.find((booking) => booking.id === reviewBookingId)?.customerName || "Customer"}
           rating={reviewRating}
           comment={reviewComment}
+          photos={reviewPhotos}
           loading={reviewLoading}
           onRatingChange={setReviewRating}
           onCommentChange={setReviewComment}
+          onPhotosChange={setReviewPhotos}
           onClose={() => {
             if (!reviewLoading) {
               setReviewBookingId("");

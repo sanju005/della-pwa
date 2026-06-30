@@ -282,7 +282,7 @@ const allowedTransitions: Record<BookingStatus, BookingStatus[]> = {
   work_finished_by_provider: ["final_payment_sent"],
   work_confirmed_by_user: ["final_payment_sent"],
   final_payment_sent: [],
-  cash_paid_by_user: ["payment_received_by_provider"],
+  cash_paid_by_user: ["payment_received_by_provider", "completed"],
   payment_received_by_provider: ["completed"],
   completed: [],
   declined_by_provider: [],
@@ -539,6 +539,9 @@ export async function PATCH(
 
   if (nextStatus === "completed") {
     updatePayload.completed_at = new Date().toISOString();
+    if (current.booking_status === "cash_paid_by_user") {
+      updatePayload.payment_received_by_provider_at = new Date().toISOString();
+    }
   }
 
   if (nextStatus === "cancelled") {

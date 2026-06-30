@@ -1503,7 +1503,9 @@ export function BookingDetailScreen({ booking }: BookingDetailProps) {
     booking.paymentStatus === "paid" ||
     ["cash_paid_by_user", "payment_received_by_provider", "completed"].includes(booking.workflowStatus);
   const canPayNow = booking.workflowStatus === "final_payment_sent" && !paymentMarkedPaid;
-  const canReview = booking.workflowStatus === "completed" && booking.userReviewStatus !== "submitted";
+  const canReview =
+    ["cash_paid_by_user", "payment_received_by_provider", "completed"].includes(booking.workflowStatus) &&
+    booking.userReviewStatus !== "submitted";
   const paidDateLabel =
     canPayNow
       ? "Awaiting Customer Payment"
@@ -1580,7 +1582,9 @@ export function BookingDetailScreen({ booking }: BookingDetailProps) {
           ? "done"
           : "waiting",
     completed:
-      booking.workflowStatus === "completed" ? "done" : "waiting",
+      ["cash_paid_by_user", "payment_received_by_provider", "completed"].includes(booking.workflowStatus)
+        ? "done"
+        : "waiting",
     review:
       booking.workflowStatus === "completed" && booking.userReviewStatus !== "submitted"
         ? "current"
@@ -1639,7 +1643,7 @@ export function BookingDetailScreen({ booking }: BookingDetailProps) {
       }
 
       setPaymentNotice("Cash payment confirmed successfully.");
-      router.replace(`/profile/bookings/${booking.id}?payment=success`);
+      router.replace(`/profile/bookings/${booking.id}/review?payment=success`);
       router.refresh();
     });
   }
@@ -1702,6 +1706,26 @@ export function BookingDetailScreen({ booking }: BookingDetailProps) {
           description="Provider has sent the final payment."
           expanded={stepState.paymentRequest === "current" || stepState.paymentRequest === "done"}
         >
+          {booking.workFinishedImages && booking.workFinishedImages.length > 0 ? (
+            <div className="mb-4">
+              <p className="text-[14px] font-black text-[#24193a]">
+                Job Photos ({booking.workFinishedImages.length})
+              </p>
+              <div className="mt-3 grid grid-cols-3 gap-2">
+                {booking.workFinishedImages.slice(0, 3).map((image, index) => (
+                  <a
+                    key={`${booking.id}-user-work-photo-${index}`}
+                    href={image}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="block aspect-[4/3] overflow-hidden rounded-[12px] border border-[#ebe2f8] bg-[#f8f5fc]"
+                  >
+                    <img src={image} alt={`Job photo ${index + 1}`} className="h-full w-full object-cover" />
+                  </a>
+                ))}
+              </div>
+            </div>
+          ) : null}
           <div className="rounded-[20px] border border-[#ebe2f8] bg-white p-4">
             <p className="text-[15px] font-black text-[#8E5EB5]">Payment Summary</p>
             <div className="mt-4 space-y-3 text-[14px] text-[#24193a]">
@@ -2092,8 +2116,11 @@ export function BookingReviewScreen({ booking }: BookingReviewProps) {
             multiple
             className="hidden"
             onChange={(event) => {
-              const files = Array.from(event.target.files ?? []).map((file) => file.name);
-              setPhotos(files);
+              const files = Array.from(event.target.files ?? []).slice(0, 4);
+              event.target.value = "";
+              void Promise.all(files.map((file) => readPaymentProofAsDataUrl(file)))
+                .then((items) => setPhotos(items))
+                .catch(() => setError("Unable to read review photos."));
             }}
           />
         </label>
@@ -2101,9 +2128,13 @@ export function BookingReviewScreen({ booking }: BookingReviewProps) {
           {(photos.length > 0 ? photos : ["+", "+", "+", "+"]).map((photo, index) => (
             <div
               key={`${photo}-${index}`}
-              className="flex aspect-square items-center justify-center rounded-[12px] border border-[#e7dcf7] bg-white px-2 text-center text-[20px] font-semibold text-[#8E5EB5]"
+              className="flex aspect-square items-center justify-center overflow-hidden rounded-[12px] border border-[#e7dcf7] bg-white px-2 text-center text-[20px] font-semibold text-[#8E5EB5]"
             >
-              {photo}
+              {photo.startsWith("data:image/") ? (
+                <img src={photo} alt={`Review photo ${index + 1}`} className="h-full w-full object-cover" />
+              ) : (
+                photo
+              )}
             </div>
           ))}
         </div>
