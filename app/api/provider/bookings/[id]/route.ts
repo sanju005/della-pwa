@@ -24,6 +24,7 @@ type ProfileRow = {
 };
 
 type BookingStatus =
+  | "pending"
   | "pending_provider_response"
   | "declined_by_provider"
   | "accepted"
@@ -273,6 +274,7 @@ async function verifyProviderRequest(request: Request) {
 }
 
 const allowedTransitions: Record<BookingStatus, BookingStatus[]> = {
+  pending: ["accepted", "declined_by_provider", "cancelled"],
   pending_provider_response: ["accepted", "declined_by_provider", "cancelled"],
   accepted: ["on_the_way", "cancelled"],
   on_the_way: ["arrived", "cancelled"],

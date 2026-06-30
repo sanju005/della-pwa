@@ -352,6 +352,119 @@ function ProviderBookingSummary({ booking }: { booking: ProviderBookingItem }) {
   );
 }
 
+function ProviderBookingSummaryWithActions({
+  booking,
+  actionBookingId,
+  onAccept,
+  onDecline,
+}: {
+  booking: ProviderBookingItem;
+  actionBookingId: string;
+  onAccept: (bookingId: string) => void;
+  onDecline: (bookingId: string) => void;
+}) {
+  const modeLabel = booking.bookingMode === "daily" ? "Daily booking" : "Hourly booking";
+  const paymentLabel = booking.paymentOption === "online" ? "Online payment" : "Cash payment";
+  const canRespondToRequest =
+    booking.bookingStatus === "pending" || booking.bookingStatus === "pending_provider_response";
+  const scheduleLabel = [
+    formatDateLabel(booking.scheduledDate),
+    formatTimeLabel(booking.scheduledDate, booking.scheduledStartTime),
+    booking.scheduledEndTime ? `to ${formatTimeLabel(booking.scheduledDate, booking.scheduledEndTime)}` : "",
+  ].filter(Boolean).join(" ");
+
+  return (
+    <div className="mt-5 rounded-[24px] border border-[#eee5f7] bg-white p-4 shadow-[0_14px_32px_rgba(86,38,135,0.06)]">
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <div>
+          <p className="text-[12px] font-extrabold uppercase tracking-[0.14em] text-[#8E5EB5]">
+            Task Details
+          </p>
+          <p className="mt-1 text-[12px] text-[#64748b]">
+            Review the request before following the task path.
+          </p>
+        </div>
+        <StatusBadge label={booking.statusLabel} tone={providerStatusTone(booking.bookingStatus)} />
+      </div>
+
+      <div className="grid grid-cols-1 gap-3">
+        <BookingInfoRow
+          icon={<BriefcaseBusiness className="h-4.5 w-4.5" />}
+          label="User Detail"
+          value={
+            <>
+              <span className="block">{booking.customerName || "Customer"}</span>
+              <span className="mt-0.5 block text-[12px] font-medium text-[#64748b]">
+                Booking ID: {booking.id}
+              </span>
+            </>
+          }
+        />
+        <BookingInfoRow
+          icon={<MapPin className="h-4.5 w-4.5" />}
+          label="Location"
+          value={booking.location || "Location not provided"}
+        />
+        <div className="grid grid-cols-2 gap-3">
+          <BookingInfoRow
+            icon={<CalendarDays className="h-4.5 w-4.5" />}
+            label="Date & Time"
+            value={scheduleLabel || booking.schedule || "Schedule not provided"}
+          />
+          <BookingInfoRow
+            icon={<Wallet className="h-4.5 w-4.5" />}
+            label="Rates"
+            value={
+              <>
+                <span className="block">{modeLabel}</span>
+                <span className="mt-0.5 block text-[12px] font-medium text-[#64748b]">
+                  Base {formatCurrency(booking.baseAmount)} / Total {formatCurrency(booking.quotedAmount)}
+                </span>
+              </>
+            }
+          />
+        </div>
+        <BookingInfoRow
+          icon={<Wallet className="h-4.5 w-4.5" />}
+          label="Payment"
+          value={
+            <>
+              <span className="block">{paymentLabel}</span>
+              <span className="mt-0.5 block text-[12px] font-medium text-[#64748b]">
+                Provider net {formatCurrency(booking.providerNetAmount)} / Commission {formatCurrency(booking.companyCommissionAmount)}
+              </span>
+            </>
+          }
+        />
+        <BookingInfoRow
+          icon={<MessageCircleMore className="h-4.5 w-4.5" />}
+          label="User Notes"
+          value={booking.customerNote?.trim() || "No notes from user."}
+        />
+        {canRespondToRequest ? (
+          <div className="grid grid-cols-2 gap-3 pt-1">
+            <AppButton
+              className="w-full"
+              tone="danger"
+              disabled={actionBookingId === booking.id}
+              onClick={() => onDecline(booking.id)}
+            >
+              Decline
+            </AppButton>
+            <AppButton
+              className="w-full"
+              disabled={actionBookingId === booking.id}
+              onClick={() => onAccept(booking.id)}
+            >
+              Accept
+            </AppButton>
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
 function ProviderReviewModal({
   customerName,
   rating,
@@ -484,7 +597,12 @@ function BookingDetails({
         </button>
       </div>
 
-      <ProviderBookingSummary booking={booking} />
+      <ProviderBookingSummaryWithActions
+        booking={booking}
+        actionBookingId={actionBookingId}
+        onAccept={onAccept}
+        onDecline={onDecline}
+      />
 
       {!isCanceledStatus(booking.bookingStatus) ? (
         <div className="mt-4 space-y-4">
@@ -494,26 +612,7 @@ function BookingDetails({
             state={stepState.confirmed}
             dateLabel={formatStepDate(booking.acceptedAt || booking.createdAt)}
             timeLabel={formatStepTime(booking.acceptedAt || booking.createdAt)}
-            expanded={booking.bookingStatus === "pending"}
-          >
-            <div className="flex gap-3">
-              <AppButton
-                className="flex-1"
-                tone="danger"
-                disabled={actionBookingId === booking.id}
-                onClick={() => onDecline(booking.id)}
-              >
-                Decline
-              </AppButton>
-              <AppButton
-                className="flex-1"
-                disabled={actionBookingId === booking.id}
-                onClick={() => onAccept(booking.id)}
-              >
-                Confirm Booking
-              </AppButton>
-            </div>
-          </TimelineCard>
+          />
           <TimelineCard
             number={2}
             title="On The Way"
