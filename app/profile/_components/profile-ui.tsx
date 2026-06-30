@@ -1218,13 +1218,7 @@ export function AddressesScreen({ addresses }: AddressesProps) {
 
 export function BookingsScreen({ bookings, initialTab = "pending" }: BookingsProps) {
   const [items, setItems] = useState(bookings);
-  const [activeTab, setActiveTab] = useState<BookingStatus>(initialTab);
-  const tabLabels: Record<BookingStatus, string> = {
-    pending: "Pending",
-    ongoing: "On Going",
-    completed: "Completed",
-    cancelled: "Cancel",
-  };
+  const filtered = items;
 
   useEffect(() => {
     let active = true;
@@ -1267,34 +1261,12 @@ export function BookingsScreen({ bookings, initialTab = "pending" }: BookingsPro
     };
   }, []);
 
-  const filtered = useMemo(
-    () => items.filter((booking) => booking.status === activeTab),
-    [activeTab, items]
-  );
-
   return (
     <ProfileShell title="My Bookings" showBack backHref="/profile">
-      <div className="rounded-[18px] border border-[#efe6fb] bg-white p-1.5 text-[13px] font-semibold text-[#8d84a0] shadow-[0_10px_24px_rgba(142,94,181,0.06)]">
-        {(["pending", "ongoing", "completed", "cancelled"] as BookingStatus[]).map((tab) => (
-          <button
-            key={tab}
-            type="button"
-            onClick={() => setActiveTab(tab)}
-            className={`flex-1 rounded-[14px] px-2 py-2.5 ${
-              activeTab === tab
-                ? "border border-[#ede1fa] bg-white text-[#8E5EB5] shadow-[0_10px_20px_rgba(142,94,181,0.18)]"
-                : "text-[#8d84a0]"
-            }`}
-          >
-            {tabLabels[tab]}
-          </button>
-        ))}
-      </div>
-
       <div className="mt-4 space-y-4">
         {filtered.length === 0 ? (
           <SharedEmptyState
-            title={`No ${tabLabels[activeTab]} bookings yet`}
+            title="No bookings yet"
             description="When you create or finish bookings, they will appear here with live status updates."
             action={<AppButton href="/providers">Find Providers</AppButton>}
           />

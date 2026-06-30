@@ -1070,54 +1070,9 @@ export function ProviderBookingsScreen({
     cells.push({ label: day, key });
   }
 
-  const dateContext =
-    selectedDate < todayKey ? "past" : selectedDate > todayKey ? "future" : "current";
-
-  const tabOptions = (() => {
-    if (dateContext === "past") {
-      return [
-        ["all", "All"],
-        ["completes", "Completed"],
-        ["canceled", "Canceled"],
-      ] as Array<[BookingTab, string]>;
-    }
-
-    if (dateContext === "future") {
-      return [
-        ["pending", "Pending"],
-        ["canceled", "Canceled"],
-        ["all", "All"],
-      ] as Array<[BookingTab, string]>;
-    }
-
-    return [
-      ["ongoing", "On Going"],
-      ["pending", "Pending"],
-      ["canceled", "Canceled"],
-      ["completes", "Completed"],
-    ] as Array<[BookingTab, string]>;
-  })();
-  const activeTab = tabOptions.some(([value]) => value === tab) ? tab : tabOptions[0][0];
-
   const items = state.bookings.filter((booking) => {
     if (booking.scheduledDate !== selectedDate) {
       return false;
-    }
-
-    if (activeTab === "pending") {
-      return booking.bucket === "requests" || booking.bookingStatus === "pending";
-    }
-
-    if (activeTab === "ongoing") {
-      return isOngoingStatus(booking.bookingStatus);
-    }
-
-    if (activeTab === "canceled") {
-      return isCanceledStatus(booking.bookingStatus);
-    }
-
-    if (activeTab === "completes") {
-      return isCompletedStatus(booking.bookingStatus);
     }
 
     return true;
@@ -1455,28 +1410,11 @@ export function ProviderBookingsScreen({
             </div>
           </div>
 
-          <div className="mt-4 flex flex-wrap gap-2">
-            {tabOptions.map(([value, label]) => (
-              <button
-                key={value}
-                type="button"
-                onClick={() => setTab(value)}
-                className={`inline-flex min-h-[44px] items-center justify-center rounded-[14px] px-5 py-2.5 text-[13px] font-medium transition ${
-                  activeTab === value
-                    ? "border border-[#e8d9fb] bg-white text-[#8E5EB5] shadow-[0_10px_20px_rgba(142,94,181,0.10)]"
-                    : "bg-[#f7f1fc] text-[#746b88]"
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-
           <div className="mt-4 space-y-3">
             {items.length === 0 ? (
               <EmptyState
                 title="No bookings found"
-                description="No bookings match the selected date and status."
+                description="No bookings are scheduled for the selected date."
                 icon={<CalendarDays className="h-6 w-6" />}
               />
             ) : (
