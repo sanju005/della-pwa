@@ -407,14 +407,30 @@ export async function PATCH(
     );
   }
 
-  const { data: booking, error: bookingError } = await verified.adminClient
+  let { data: booking, error: bookingError } = await verified.adminClient
     .from("bookings")
     .select("id, customer_id, provider_id, booking_status, service_label, quoted_amount, booking_price")
     .eq("id", params.id)
     .eq("provider_id", verified.profile.id)
     .maybeSingle();
 
+  if (bookingError && isUnknownColumnError(bookingError.message)) {
+    const fallbackLookup = await verified.adminClient
+      .from("bookings")
+      .select("id, customer_id, provider_id, booking_status, service_label, quoted_amount")
+      .eq("id", params.id)
+      .eq("provider_id", verified.profile.id)
+      .maybeSingle();
+
+    booking = fallbackLookup.data as typeof booking;
+    bookingError = fallbackLookup.error;
+  }
+
   if (bookingError || !booking) {
+    if (bookingError) {
+      console.error("[Provider booking update] Failed to find booking:", bookingError);
+    }
+
     return NextResponse.json(
       { error: "Booking was not found." },
       { status: 404 }
