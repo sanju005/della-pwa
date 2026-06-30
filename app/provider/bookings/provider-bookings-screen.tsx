@@ -952,6 +952,9 @@ function BookingDetails({
             ) : null}
             {booking.providerReviewedAt ? (
               <div className="rounded-[18px] border border-[#eee5f7] bg-white px-4 py-3">
+                <p className="text-[12px] font-extrabold uppercase tracking-[0.12em] text-[#16a34a]">
+                  Review done
+                </p>
                 <p className="text-[13px] font-semibold text-[#1f1630]">
                   Your rating: {booking.providerReviewRating ?? 0}/5
                 </p>
@@ -1037,6 +1040,7 @@ export function ProviderBookingsScreen({
     if (
       selectedBooking &&
       selectedBooking.bookingStatus === "completed" &&
+      !selectedBooking.providerReviewedAt &&
       selectedBooking.providerReviewStatus !== "submitted" &&
       autoReviewOpenedFor !== selectedBooking.id &&
       !reviewBookingId
