@@ -2562,8 +2562,10 @@ export function MessagesScreen() {
 
 export function EarningsScreen() {
   const state = useProviderAppData();
-  const [paymentFilter, setPaymentFilter] = useState<"date" | "week" | "month" | "all">("week");
+  const [paymentFilter, setPaymentFilter] = useState<"date" | "week" | "month" | "range" | "all">("week");
   const [selectedPaymentDate, setSelectedPaymentDate] = useState(getTodayKey());
+  const [rangeStartDate, setRangeStartDate] = useState(getTodayKey());
+  const [rangeEndDate, setRangeEndDate] = useState(getTodayKey());
   const [dailyAction, setDailyAction] = useState<"" | "withdraw" | "pay-company">("");
   const fallback = LoadingOrError(state);
 
@@ -2579,20 +2581,19 @@ export function EarningsScreen() {
   const endOfWeek = new Date(startOfWeek);
   endOfWeek.setDate(startOfWeek.getDate() + 6);
 
+  const isCollectedPayment = (booking: ProviderBookingItem) =>
+    booking.paymentStatus === "paid" ||
+    [
+      "cash_paid_by_user",
+      "payment_received_by_provider",
+      "completed",
+      "paid",
+      "review_requested",
+      "reviewed",
+    ].includes(booking.bookingStatus);
+
   const paymentBookings = [...state.bookings]
-    .filter(
-      (booking) =>
-        Boolean(booking.paymentStatus) ||
-        Boolean(booking.paymentOption) ||
-        [
-          "cash_paid_by_user",
-          "payment_received_by_provider",
-          "completed",
-          "paid",
-          "review_requested",
-          "reviewed",
-        ].includes(booking.bookingStatus),
-    )
+    .filter(isCollectedPayment)
     .sort(
       (left, right) =>
         new Date(`${right.scheduledDate}T${right.scheduledStartTime}`).getTime() -
@@ -2617,19 +2618,14 @@ export function EarningsScreen() {
       );
     }
 
+    if (paymentFilter === "range") {
+      const startDate = new Date(`${rangeStartDate}T00:00:00`);
+      const endDate = new Date(`${rangeEndDate}T00:00:00`);
+      return bookingDate >= startDate && bookingDate <= endDate;
+    }
+
     return true;
   });
-
-  const isCollectedPayment = (booking: ProviderBookingItem) =>
-    booking.paymentStatus === "paid" ||
-    [
-      "cash_paid_by_user",
-      "payment_received_by_provider",
-      "completed",
-      "paid",
-      "review_requested",
-      "reviewed",
-    ].includes(booking.bookingStatus);
 
   const totalCollected = filteredPayments
     .filter(isCollectedPayment)
@@ -2665,6 +2661,8 @@ export function EarningsScreen() {
         ? "Showing payments for this week"
         : paymentFilter === "month"
         ? "Showing payments for this month"
+        : paymentFilter === "range"
+          ? `Showing payments from ${formatDateLabel(rangeStartDate)} to ${formatDateLabel(rangeEndDate)}`
           : "Showing all payment records";
 
   async function handleDailyCompanyPayment() {
@@ -2791,12 +2789,13 @@ export function EarningsScreen() {
             ["date", "Date"],
             ["week", "Week"],
             ["month", "Month"],
+            ["range", "Range"],
             ["all", "All"],
           ].map(([value, label]) => (
             <button
               key={value}
               type="button"
-              onClick={() => setPaymentFilter(value as "date" | "week" | "month" | "all")}
+              onClick={() => setPaymentFilter(value as "date" | "week" | "month" | "range" | "all")}
               className={`rounded-full px-4 py-2 text-[13px] font-bold transition ${
                 paymentFilter === value
                   ? "bg-[#8E5EB5] text-white shadow-[0_10px_20px_rgba(142,94,181,0.22)]"
@@ -2817,6 +2816,29 @@ export function EarningsScreen() {
               className="mt-2 h-11 w-full rounded-[14px] border border-[#ded5eb] bg-white px-4 text-[14px] text-[#1f1630] outline-none"
             />
           </label>
+        ) : null}
+        {paymentFilter === "range" ? (
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <label className="block">
+              <span className="text-[12px] font-semibold text-[#6c5d83]">Start date</span>
+              <input
+                type="date"
+                value={rangeStartDate}
+                onChange={(event) => setRangeStartDate(event.target.value || getTodayKey())}
+                className="mt-2 h-11 w-full rounded-[14px] border border-[#ded5eb] bg-white px-4 text-[14px] text-[#1f1630] outline-none"
+              />
+            </label>
+            <label className="block">
+              <span className="text-[12px] font-semibold text-[#6c5d83]">End date</span>
+              <input
+                type="date"
+                value={rangeEndDate}
+                min={rangeStartDate}
+                onChange={(event) => setRangeEndDate(event.target.value || rangeStartDate)}
+                className="mt-2 h-11 w-full rounded-[14px] border border-[#ded5eb] bg-white px-4 text-[14px] text-[#1f1630] outline-none"
+              />
+            </label>
+          </div>
         ) : null}
       </section>
 
