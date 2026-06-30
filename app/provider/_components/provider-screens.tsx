@@ -2889,10 +2889,10 @@ export function EarningsScreen() {
                   : booking.companyPaymentStatus === "paid"
                     ? "Paid"
                     : "Pending";
-              const paymentStatusLabel = booking.paymentStatus
-                ? booking.paymentStatus.charAt(0).toUpperCase() + booking.paymentStatus.slice(1)
-                : collected
-                  ? "Paid"
+              const paymentStatusLabel = collected
+                ? "Paid"
+                : booking.paymentStatus
+                  ? booking.paymentStatus.charAt(0).toUpperCase() + booking.paymentStatus.slice(1)
                   : "Pending";
 
               return (
