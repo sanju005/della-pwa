@@ -2584,7 +2584,14 @@ export function EarningsScreen() {
       (booking) =>
         Boolean(booking.paymentStatus) ||
         Boolean(booking.paymentOption) ||
-        ["completed", "paid", "review_requested", "reviewed"].includes(booking.bookingStatus),
+        [
+          "cash_paid_by_user",
+          "payment_received_by_provider",
+          "completed",
+          "paid",
+          "review_requested",
+          "reviewed",
+        ].includes(booking.bookingStatus),
     )
     .sort(
       (left, right) =>
@@ -2615,13 +2622,25 @@ export function EarningsScreen() {
 
   const isCollectedPayment = (booking: ProviderBookingItem) =>
     booking.paymentStatus === "paid" ||
-    ["paid", "review_requested", "reviewed"].includes(booking.bookingStatus);
+    [
+      "cash_paid_by_user",
+      "payment_received_by_provider",
+      "completed",
+      "paid",
+      "review_requested",
+      "reviewed",
+    ].includes(booking.bookingStatus);
 
   const totalCollected = filteredPayments
     .filter(isCollectedPayment)
     .reduce((sum, booking) => sum + booking.quotedAmount, 0);
   const totalPendingCompany = filteredPayments
-    .filter((booking) => isCollectedPayment(booking) && booking.companyPaymentStatus !== "paid")
+    .filter(
+      (booking) =>
+        isCollectedPayment(booking) &&
+        booking.companyPaymentStatus !== "paid" &&
+        booking.companyCommissionAmount > 0,
+    )
     .reduce((sum, booking) => sum + booking.companyCommissionAmount, 0);
   const totalNetEarnings = filteredPayments
     .filter(isCollectedPayment)
@@ -2634,7 +2653,10 @@ export function EarningsScreen() {
     .reduce((sum, booking) => sum + booking.quotedAmount, 0);
   const leadPayment = filteredPayments[0] ?? null;
   const payableBookings = filteredPayments.filter(
-    (booking) => isCollectedPayment(booking) && booking.companyPaymentStatus !== "paid",
+    (booking) =>
+      isCollectedPayment(booking) &&
+      booking.companyPaymentStatus !== "paid" &&
+      booking.companyCommissionAmount > 0,
   );
   const filterSummary =
     paymentFilter === "date"
@@ -2861,6 +2883,12 @@ export function EarningsScreen() {
             filteredPayments.map((booking) => {
               const collected = isCollectedPayment(booking);
               const paymentMode = booking.paymentOption === "online" ? "Online" : "Cash";
+              const companyStatusLabel =
+                booking.companyCommissionAmount <= 0
+                  ? "Not due"
+                  : booking.companyPaymentStatus === "paid"
+                    ? "Paid"
+                    : "Pending";
               const paymentStatusLabel = booking.paymentStatus
                 ? booking.paymentStatus.charAt(0).toUpperCase() + booking.paymentStatus.slice(1)
                 : collected
@@ -2919,7 +2947,7 @@ export function EarningsScreen() {
                   </div>
 
                   <div className="mt-4 grid gap-2 text-[12px] text-[#5b536d] sm:grid-cols-2">
-                    <p>Company Status: <span className="font-bold text-[#1f1630]">{booking.companyPaymentStatus === "paid" ? "Paid" : "Pending"}</span></p>
+                    <p>Company Status: <span className="font-bold text-[#1f1630]">{companyStatusLabel}</span></p>
                     <p>Customer Proof: <span className="font-bold text-[#1f1630]">{booking.customerPaymentProofDataUrl ? "Attached" : "No proof"}</span></p>
                     <p>Company Slip: <span className="font-bold text-[#1f1630]">{booking.providerCompanyPaymentProofDataUrl ? "Attached" : "No slip"}</span></p>
                     <p>Review Status: <span className="font-bold text-[#1f1630]">{booking.customerStatusLabel}</span></p>
