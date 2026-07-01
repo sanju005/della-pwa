@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState, useTransition } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -10,7 +11,6 @@ import {
   Wallet,
 } from "lucide-react";
 
-import { BottomNav } from "@/app/_components/della-ui";
 import { subscribeToForegroundPush } from "@/lib/notifications";
 import { getSupabaseClient } from "@/lib/supabase";
 
@@ -611,49 +611,65 @@ export function useProviderAppData() {
 
 export function ProviderBottomNav() {
   const pathname = usePathname();
+  const items = [
+    {
+      href: "/provider/dashboard",
+      label: "Home",
+      icon: <BriefcaseBusiness className="h-5 w-5" />,
+      active: pathname === "/provider/dashboard",
+    },
+    {
+      href: "/provider/bookings",
+      label: "Bookings",
+      icon: <CalendarDays className="h-5 w-5" />,
+      active: pathname === "/provider/bookings" || pathname === "/provider/calendar",
+    },
+    {
+      href: "/provider/messages",
+      label: "Messages",
+      icon: <MessageCircleMore className="h-5 w-5" />,
+      active: pathname === "/provider/messages",
+    },
+    {
+      href: "/provider/payments",
+      label: "Payments",
+      icon: <Wallet className="h-5 w-5" />,
+      active:
+        pathname === "/provider/payments" ||
+        pathname === "/provider/tasks" ||
+        pathname === "/provider/earnings",
+    },
+    {
+      href: "/provider/profile",
+      label: "Profile",
+      icon: <UserRound className="h-5 w-5" />,
+      active: pathname === "/provider/profile" || pathname === "/provider/more",
+    },
+  ];
 
   return (
-    <BottomNav
-      items={[
-        {
-          href: "/provider/dashboard",
-          label: "Home",
-          icon: <BriefcaseBusiness className="h-5 w-5" />,
-          active: pathname === "/provider/dashboard",
-          hardNavigate: true,
-        },
-        {
-          href: "/provider/bookings",
-          label: "Bookings",
-          icon: <CalendarDays className="h-5 w-5" />,
-          active: pathname === "/provider/bookings" || pathname === "/provider/calendar",
-          hardNavigate: true,
-        },
-        {
-          href: "/provider/messages",
-          label: "Messages",
-          icon: <MessageCircleMore className="h-5 w-5" />,
-          active: pathname === "/provider/messages",
-          hardNavigate: true,
-        },
-        {
-          href: "/provider/payments",
-          label: "Payments",
-          icon: <Wallet className="h-5 w-5" />,
-          active:
-            pathname === "/provider/payments" ||
-            pathname === "/provider/tasks" ||
-            pathname === "/provider/earnings",
-          hardNavigate: true,
-        },
-        {
-          href: "/provider/profile",
-          label: "Profile",
-          icon: <UserRound className="h-5 w-5" />,
-          active: pathname === "/provider/profile" || pathname === "/provider/more",
-          hardNavigate: true,
-        },
-      ]}
-    />
+    <nav className="fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-[430px] border-t border-[#ede4f7] bg-white/97 px-3 pb-[calc(0.8rem+env(safe-area-inset-bottom))] pt-2.5 backdrop-blur">
+      <div className="flex items-center justify-between gap-1 text-[10.5px] font-medium text-[#7f849f]">
+        {items.map((item) => (
+          <Link
+            key={item.href}
+            href={item.href}
+            className={`flex min-w-[3.1rem] flex-col items-center gap-1 transition ${
+              item.active ? "text-[#8E5EB5]" : "text-[#7f849f]"
+            }`}
+          >
+            {item.icon}
+            <span>{item.label}</span>
+            <span className="flex h-3 items-end">
+              <span
+                className={`rounded-full transition-all ${
+                  item.active ? "h-[3px] w-10 bg-[#8E5EB5]" : "h-[3px] w-6 bg-transparent"
+                }`}
+              />
+            </span>
+          </Link>
+        ))}
+      </div>
+    </nav>
   );
 }

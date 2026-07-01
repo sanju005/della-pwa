@@ -26,6 +26,7 @@ import {
   Star,
   UserRound,
   Wallet,
+  X,
 } from "lucide-react";
 
 import {
@@ -3007,8 +3008,702 @@ export function EarningsScreen() {
   );
 }
 
+type ProviderPaymentTab = "overview" | "payments" | "withdrawals";
+type ProviderPaymentRange = "today" | "week" | "month" | "custom";
+type ProviderPaymentModal = "withdraw" | "company" | null;
+type ProviderPaymentTransactionKind = "payment" | "commission" | "withdrawal";
+type ProviderPaymentStatus = "Completed" | "Pending" | "Paid";
+
+type ProviderPaymentTransaction = {
+  id: string;
+  kind: ProviderPaymentTransactionKind;
+  title: string;
+  bookingLabel?: string;
+  date: string;
+  timeLabel: string;
+  amount: number;
+  direction: "in" | "out";
+  status: ProviderPaymentStatus;
+};
+
+const PROVIDER_PAYMENT_TRANSACTIONS: ProviderPaymentTransaction[] = [
+  {
+    id: "payment-bk-10021",
+    kind: "payment",
+    title: "Payment Received",
+    bookingLabel: "Booking #BK-10021",
+    date: "2026-07-01",
+    timeLabel: "01 Jul 2026, 6:30 PM",
+    amount: 80,
+    direction: "in",
+    status: "Completed",
+  },
+  {
+    id: "commission-bk-10021",
+    kind: "commission",
+    title: "Commission to Company",
+    bookingLabel: "Booking #BK-10021",
+    date: "2026-07-01",
+    timeLabel: "01 Jul 2026, 6:30 PM",
+    amount: 15,
+    direction: "out",
+    status: "Pending",
+  },
+  {
+    id: "withdrawal-bank-10001",
+    kind: "withdrawal",
+    title: "Withdrawal to Bank",
+    date: "2026-07-01",
+    timeLabel: "01 Jul 2026, 2:15 PM",
+    amount: 200,
+    direction: "out",
+    status: "Completed",
+  },
+  {
+    id: "payment-bk-10020",
+    kind: "payment",
+    title: "Payment Received",
+    bookingLabel: "Booking #BK-10020",
+    date: "2026-06-30",
+    timeLabel: "30 Jun 2026, 5:00 PM",
+    amount: 60,
+    direction: "in",
+    status: "Completed",
+  },
+  {
+    id: "commission-bk-10020",
+    kind: "commission",
+    title: "Commission to Company",
+    bookingLabel: "Booking #BK-10020",
+    date: "2026-06-30",
+    timeLabel: "30 Jun 2026, 5:00 PM",
+    amount: 12,
+    direction: "out",
+    status: "Paid",
+  },
+];
+
+function getProviderPaymentStatusClasses(status: ProviderPaymentStatus) {
+  if (status === "Pending") {
+    return "bg-[#fff1f2] text-[#dc2626]";
+  }
+
+  if (status === "Paid") {
+    return "bg-[#edf9f0] text-[#16a34a]";
+  }
+
+  return "bg-[#f2ebfd] text-[#7c3aed]";
+}
+
+function getProviderPaymentIcon(
+  kind: ProviderPaymentTransactionKind,
+  direction: ProviderPaymentTransaction["direction"],
+) {
+  if (kind === "commission") {
+    return {
+      wrapperClassName: "bg-[#fff3ea] text-[#f97316]",
+      icon: <Landmark className="h-5 w-5" />,
+    };
+  }
+
+  if (kind === "withdrawal") {
+    return {
+      wrapperClassName: "bg-[#f3ebff] text-[#8E5EB5]",
+      icon: <Wallet className="h-5 w-5" />,
+    };
+  }
+
+  return {
+    wrapperClassName:
+      direction === "in" ? "bg-[#edf9f0] text-[#16a34a]" : "bg-[#f3ebff] text-[#8E5EB5]",
+    icon: <CreditCard className="h-5 w-5" />,
+  };
+}
+
+function ProviderPaymentModalShell({
+  title,
+  subtitle,
+  onClose,
+  children,
+}: {
+  title: string;
+  subtitle: string;
+  onClose: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#170d28]/45 px-4 pb-4 pt-10 backdrop-blur-[2px]">
+      <div className="w-full max-w-[430px] rounded-[30px] bg-white p-5 shadow-[0_28px_80px_rgba(20,12,34,0.3)]">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h3 className="text-[1.15rem] font-black tracking-[-0.04em] text-[#1c1530]">
+              {title}
+            </h3>
+            <p className="mt-1 text-[13px] leading-5 text-[#7b748f]">{subtitle}</p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#f5f0fb] text-[#8E5EB5]"
+            aria-label="Close"
+          >
+            <X className="h-4.5 w-4.5" />
+          </button>
+        </div>
+        <div className="mt-5">{children}</div>
+      </div>
+    </div>
+  );
+}
+
 export function PaymentsScreen() {
-  return <EarningsScreen />;
+  const state = useProviderAppData();
+  const fallback = LoadingOrError(state);
+  const [activeTab, setActiveTab] = useState<ProviderPaymentTab>("overview");
+  const [activeRange, setActiveRange] = useState<ProviderPaymentRange>("custom");
+  const [modal, setModal] = useState<ProviderPaymentModal>(null);
+  const [customStartDate, setCustomStartDate] = useState("2026-07-01");
+  const [customEndDate, setCustomEndDate] = useState("2026-07-01");
+
+  if (fallback) {
+    return fallback;
+  }
+
+  const walletBalance = 320;
+  const totalEarnings = 1250;
+  const totalWithdrawn = 930;
+  const pendingAmount = 150;
+  const pendingCompanyAmount = 75;
+  const displayDate = "01 Jul 2026";
+
+  const filteredTransactions = useMemo(() => {
+    const visibleKinds =
+      activeTab === "payments"
+        ? (["payment"] satisfies ProviderPaymentTransactionKind[])
+        : activeTab === "withdrawals"
+          ? (["withdrawal"] satisfies ProviderPaymentTransactionKind[])
+          : (["payment", "commission", "withdrawal"] satisfies ProviderPaymentTransactionKind[]);
+
+    const startDate =
+      activeRange === "today"
+        ? "2026-07-01"
+        : activeRange === "week"
+          ? "2026-06-29"
+          : activeRange === "month"
+            ? "2026-07-01"
+            : customStartDate;
+    const endDate =
+      activeRange === "today"
+        ? "2026-07-01"
+        : activeRange === "week"
+          ? "2026-07-05"
+          : activeRange === "month"
+            ? "2026-07-31"
+            : customEndDate;
+
+    return PROVIDER_PAYMENT_TRANSACTIONS.filter(
+      (transaction) =>
+        visibleKinds.includes(transaction.kind) &&
+        transaction.date >= startDate &&
+        transaction.date <= endDate,
+    );
+  }, [activeRange, activeTab, customEndDate, customStartDate]);
+
+  const summaryTransactions = useMemo(
+    () => PROVIDER_PAYMENT_TRANSACTIONS.filter((transaction) => transaction.date === "2026-07-01"),
+    [],
+  );
+  const earningsToday = summaryTransactions
+    .filter((transaction) => transaction.kind === "payment")
+    .reduce((total, transaction) => total + transaction.amount, 0);
+  const withdrawnToday = summaryTransactions
+    .filter((transaction) => transaction.kind === "withdrawal")
+    .reduce((total, transaction) => total + transaction.amount, 0);
+  const toCompanyToday = summaryTransactions
+    .filter((transaction) => transaction.kind === "commission")
+    .reduce((total, transaction) => total + transaction.amount, 0);
+
+  const paymentTabs: Array<{ key: ProviderPaymentTab; label: string; icon: React.ReactNode }> = [
+    {
+      key: "overview",
+      label: "Overview",
+      icon: <Wallet className="h-4.5 w-4.5" />,
+    },
+    {
+      key: "payments",
+      label: "Payment History",
+      icon: <CreditCard className="h-4.5 w-4.5" />,
+    },
+    {
+      key: "withdrawals",
+      label: "Withdrawal History",
+      icon: <Wallet className="h-4.5 w-4.5" />,
+    },
+  ];
+  const rangeTabs: Array<{ key: ProviderPaymentRange; label: string }> = [
+    { key: "today", label: "Today" },
+    { key: "week", label: "This Week" },
+    { key: "month", label: "This Month" },
+    { key: "custom", label: "Custom Range" },
+  ];
+
+  return (
+    <MobilePage className="pb-30">
+      <section className="space-y-5">
+        <header className="flex items-start justify-between gap-4 px-1 pt-2">
+          <div>
+            <h1 className="text-[2.2rem] font-black tracking-[-0.07em] text-[#17153b]">
+              Payments
+            </h1>
+            <p className="mt-2 text-[15px] leading-6 text-[#6f748b]">
+              Manage your earnings and payments
+            </p>
+          </div>
+          <button
+            type="button"
+            className="relative inline-flex h-11 w-11 items-center justify-center rounded-full bg-white text-[#1c1635] shadow-[0_16px_30px_rgba(86,38,135,0.1)] ring-1 ring-[#efe6fa]"
+            aria-label="Notifications"
+          >
+            <Bell className="h-5 w-5" />
+            <span className="absolute right-2 top-2 h-2.5 w-2.5 rounded-full bg-[#c084fc] ring-2 ring-white" />
+          </button>
+        </header>
+
+        <section className="relative overflow-hidden rounded-[30px] bg-[linear-gradient(135deg,#8e5eb5_0%,#7b46a8_52%,#925ec8_100%)] px-5 py-5 text-white shadow-[0_28px_50px_rgba(122,71,175,0.28)]">
+          <div className="absolute inset-y-0 right-[34%] hidden w-px bg-white/18 sm:block" />
+          <div className="absolute inset-x-0 top-0 h-full bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.18),transparent_38%)]" />
+          <div className="relative flex items-start justify-between gap-4">
+            <div className="max-w-[12rem]">
+              <p className="text-[14px] font-medium text-white/90">Wallet Balance</p>
+              <p className="mt-3 text-[2.45rem] font-black tracking-[-0.06em]">RM 320.00</p>
+              <p className="mt-2 text-[14px] text-white/88">Available to withdraw</p>
+              <button
+                type="button"
+                onClick={() => setModal("withdraw")}
+                className="mt-5 inline-flex min-h-[3.35rem] items-center gap-3 rounded-[18px] bg-white px-4 py-3 text-[15px] font-extrabold text-[#8E5EB5] shadow-[0_14px_28px_rgba(255,255,255,0.2)]"
+              >
+                <span className="inline-flex h-9 w-9 items-center justify-center rounded-[14px] bg-[#f4ecfd]">
+                  <Wallet className="h-4.5 w-4.5" />
+                </span>
+                Withdraw Funds
+              </button>
+            </div>
+
+            <div className="pointer-events-none absolute left-[45%] top-[50%] hidden -translate-x-1/2 -translate-y-1/2 sm:block">
+              <div className="relative h-[9.6rem] w-[8.7rem]">
+                <div className="absolute left-5 top-0 h-12 w-16 rotate-[-12deg] rounded-[10px] border border-[#d9f2d6] bg-[linear-gradient(180deg,#f1fff2_0%,#c9ebc5_100%)] shadow-[0_12px_20px_rgba(26,94,38,0.18)]" />
+                <div className="absolute left-7 top-2 h-12 w-16 rotate-[-7deg] rounded-[10px] border border-[#d9f2d6] bg-[linear-gradient(180deg,#f6fff6_0%,#daf4d7_100%)]" />
+                <div className="absolute inset-x-0 bottom-3 h-[5.4rem] rounded-[24px] bg-[linear-gradient(180deg,#7e4aad_0%,#5d2f88_100%)] shadow-[0_22px_34px_rgba(36,13,66,0.4)]" />
+                <div className="absolute inset-x-2 bottom-0 h-[6.1rem] rounded-[24px] border border-white/12 bg-[linear-gradient(180deg,#6e3e9f_0%,#562980_100%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]" />
+                <div className="absolute right-1 top-[3.4rem] h-11 w-11 rounded-[15px] bg-[linear-gradient(180deg,#7e4aad_0%,#643493_100%)] shadow-[0_12px_24px_rgba(36,13,66,0.28)]" />
+                <div className="absolute right-3 top-[4.6rem] h-2.5 w-2.5 rounded-full bg-[#ffbc5e]" />
+                <div className="absolute bottom-1 right-[-0.35rem] flex h-12 w-12 items-center justify-center rounded-full border-[3px] border-[#f5b557] bg-[linear-gradient(180deg,#ffd77a_0%,#f5a93d_100%)] text-[16px] font-black text-white shadow-[0_12px_18px_rgba(245,169,61,0.35)]">
+                  RM
+                </div>
+                <span className="absolute left-[-0.6rem] top-8 h-1.5 w-1.5 rounded-full bg-white/65" />
+                <span className="absolute left-1 top-16 h-1 w-1 rounded-full bg-[#d191ff]" />
+                <span className="absolute right-8 top-4 h-1.5 w-1.5 rounded-full bg-[#ffe27d]" />
+                <span className="absolute right-16 top-0 h-1 w-1 rounded-full bg-white/65" />
+              </div>
+            </div>
+
+            <div className="min-w-[8.3rem] max-w-[8.3rem] space-y-5 pl-3 text-right sm:pl-0 sm:text-left">
+              <div>
+                <p className="text-[13px] text-white/78">Total Earnings</p>
+                <p className="mt-1 text-[1.05rem] font-extrabold">RM 1,250.00</p>
+              </div>
+              <div>
+                <p className="text-[13px] text-white/78">Total Withdrawn</p>
+                <p className="mt-1 text-[1.05rem] font-extrabold">RM 930.00</p>
+              </div>
+              <div>
+                <p className="text-[13px] text-white/78">Pending Amount</p>
+                <p className="mt-1 text-[1.05rem] font-extrabold">RM 150.00</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {pendingCompanyAmount > 0 ? (
+          <section className="rounded-[28px] border border-[#ffd9d5] bg-[linear-gradient(180deg,#fffefe_0%,#fff8f8_100%)] px-5 py-5 shadow-[0_18px_36px_rgba(255,89,89,0.08)]">
+            <div className="flex items-center gap-4">
+              <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(180deg,#fff1f3_0%,#ffe6eb_100%)] text-[#d61f45]">
+                <Landmark className="h-7 w-7" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <h2 className="text-[1.05rem] font-black tracking-[-0.04em] text-[#d62839]">
+                  Amount to Pay Company
+                </h2>
+                <p className="mt-1 max-w-[14rem] text-[14px] leading-6 text-[#5d6278]">
+                  You have pending amount to pay as company commission.
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-[1.15rem] font-black tracking-[-0.04em] text-[#d62839]">
+                  RM 75.00
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setModal("company")}
+                  className="mt-3 inline-flex min-h-[2.95rem] items-center gap-2 rounded-[16px] bg-[linear-gradient(180deg,#ec3349_0%,#d81d35_100%)] px-4 py-2 text-[14px] font-extrabold text-white shadow-[0_16px_28px_rgba(216,29,53,0.24)]"
+                >
+                  Pay Now
+                  <ChevronRight className="h-4.5 w-4.5" />
+                </button>
+              </div>
+            </div>
+          </section>
+        ) : null}
+
+        <section className="overflow-hidden rounded-[30px] bg-white shadow-[0_24px_54px_rgba(91,45,144,0.1)] ring-1 ring-[#efe7f8]">
+          <div className="flex border-b border-[#efe7f8]">
+            {paymentTabs.map((tab) => (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => setActiveTab(tab.key)}
+                className={`flex flex-1 items-center justify-center gap-2 px-2 py-4 text-[13px] font-semibold transition ${
+                  activeTab === tab.key ? "text-[#8E5EB5]" : "text-[#717791]"
+                }`}
+              >
+                {tab.icon}
+                <span className="text-center">{tab.label}</span>
+              </button>
+            ))}
+          </div>
+          <div className="grid grid-cols-3">
+            {paymentTabs.map((tab) => (
+              <span
+                key={`${tab.key}-indicator`}
+                className={`h-[3px] transition ${
+                  activeTab === tab.key ? "bg-[#8E5EB5]" : "bg-transparent"
+                }`}
+              />
+            ))}
+          </div>
+
+          <div className="space-y-5 px-4 py-5">
+            <div className="grid grid-cols-2 gap-3">
+              {rangeTabs.map((range) => (
+                <button
+                  key={range.key}
+                  type="button"
+                  onClick={() => setActiveRange(range.key)}
+                  className={`inline-flex min-h-[2.95rem] items-center justify-center rounded-[18px] border px-3 text-[14px] font-semibold transition ${
+                    activeRange === range.key
+                      ? "border-[#8E5EB5] bg-[#fbf7ff] text-[#8E5EB5] shadow-[0_8px_18px_rgba(142,94,181,0.08)]"
+                      : "border-[#ece6f5] bg-[#faf7fd] text-[#747b91]"
+                  }`}
+                >
+                  {range.label}
+                </button>
+              ))}
+            </div>
+
+            {activeRange === "custom" ? (
+              <div className="grid gap-3 rounded-[22px] border border-[#eee7f7] bg-white p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)]">
+                <label className="flex items-center gap-3 rounded-[16px] border border-[#ede5f7] bg-[#fffefe] px-4 py-3">
+                  <Calendar className="h-4.5 w-4.5 text-[#7d84a0]" />
+                  <input
+                    type="date"
+                    value={customStartDate}
+                    onChange={(event) => setCustomStartDate(event.target.value)}
+                    className="w-full bg-transparent text-[14px] font-semibold text-[#1c1530] outline-none"
+                  />
+                </label>
+                <label className="flex items-center gap-3 rounded-[16px] border border-[#ede5f7] bg-[#fffefe] px-4 py-3">
+                  <Calendar className="h-4.5 w-4.5 text-[#7d84a0]" />
+                  <input
+                    type="date"
+                    value={customEndDate}
+                    onChange={(event) => setCustomEndDate(event.target.value)}
+                    className="w-full bg-transparent text-[14px] font-semibold text-[#1c1530] outline-none"
+                  />
+                </label>
+              </div>
+            ) : null}
+
+            {activeTab === "overview" ? (
+              <>
+                <section className="overflow-hidden rounded-[24px] border border-[#efe7f8] bg-white shadow-[0_18px_40px_rgba(91,45,144,0.07)]">
+                  <div className="flex items-center gap-3 border-b border-[#f2ebfa] px-4 py-4">
+                    <h2 className="text-[1.05rem] font-black tracking-[-0.04em] text-[#1d1633]">
+                      Daily Summary
+                    </h2>
+                    <span className="text-[0.98rem] font-medium text-[#6f748b]">
+                      ({displayDate})
+                    </span>
+                    <Calendar className="ml-auto h-4.5 w-4.5 text-[#7c819d]" />
+                  </div>
+                  <div className="grid grid-cols-4 divide-x divide-[#f0e9f8]">
+                    <div className="px-2 py-4 text-center">
+                      <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-[#edf9f0] text-[#16a34a]">
+                        <Wallet className="h-4.5 w-4.5" />
+                      </div>
+                      <p className="mt-3 text-[12px] text-[#676f86]">Earnings</p>
+                      <p className="mt-1 text-[0.98rem] font-black text-[#1d1633]">
+                        {formatCurrency(earningsToday)}
+                      </p>
+                    </div>
+                    <div className="px-2 py-4 text-center">
+                      <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-[#f3ebff] text-[#8E5EB5]">
+                        <Wallet className="h-4.5 w-4.5" />
+                      </div>
+                      <p className="mt-3 text-[12px] text-[#676f86]">Withdrawn</p>
+                      <p className="mt-1 text-[0.98rem] font-black text-[#1d1633]">
+                        {formatCurrency(withdrawnToday)}
+                      </p>
+                    </div>
+                    <div className="px-2 py-4 text-center">
+                      <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-[#fff3ea] text-[#f97316]">
+                        <Landmark className="h-4.5 w-4.5" />
+                      </div>
+                      <p className="mt-3 text-[12px] text-[#676f86]">To Company</p>
+                      <p className="mt-1 text-[0.98rem] font-black text-[#1d1633]">
+                        {formatCurrency(toCompanyToday)}
+                      </p>
+                    </div>
+                    <div className="px-2 py-4 text-center">
+                      <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-[#edf1ff] text-[#2563eb]">
+                        <Wallet className="h-4.5 w-4.5" />
+                      </div>
+                      <p className="mt-3 text-[12px] text-[#676f86]">Balance</p>
+                      <p className="mt-1 text-[0.98rem] font-black text-[#1d1633]">
+                        {formatCurrency(walletBalance)}
+                      </p>
+                    </div>
+                  </div>
+                </section>
+
+                <section>
+                  <div className="flex items-center justify-between gap-3 px-1">
+                    <h2 className="text-[1.3rem] font-black tracking-[-0.05em] text-[#1d1633]">
+                      Recent Transactions
+                    </h2>
+                    <button
+                      type="button"
+                      className="inline-flex items-center gap-2 text-[14px] font-semibold text-[#8E5EB5]"
+                    >
+                      View All
+                      <ChevronRight className="h-4.5 w-4.5" />
+                    </button>
+                  </div>
+                  <div className="mt-4 overflow-hidden rounded-[24px] border border-[#efe7f8] bg-white shadow-[0_18px_40px_rgba(91,45,144,0.07)]">
+                    {filteredTransactions.length === 0 ? (
+                      <div className="px-5 py-8 text-center text-[14px] text-[#7b748f]">
+                        No transactions found for this date range.
+                      </div>
+                    ) : (
+                      filteredTransactions.map((transaction, index) => {
+                        const iconData = getProviderPaymentIcon(
+                          transaction.kind,
+                          transaction.direction,
+                        );
+
+                        return (
+                          <div
+                            key={transaction.id}
+                            className={`flex items-center gap-3 px-4 py-4 ${
+                              index < filteredTransactions.length - 1
+                                ? "border-b border-[#f3edf9]"
+                                : ""
+                            }`}
+                          >
+                            <div
+                              className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${iconData.wrapperClassName}`}
+                            >
+                              {iconData.icon}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-[15px] font-semibold text-[#1d1633]">
+                                {transaction.title}
+                              </p>
+                              <p className="mt-1 text-[13px] leading-5 text-[#7a8096]">
+                                {transaction.bookingLabel
+                                  ? `${transaction.bookingLabel} • ${transaction.timeLabel}`
+                                  : transaction.timeLabel}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <p
+                                className={`text-[1rem] font-black tracking-[-0.03em] ${
+                                  transaction.direction === "in"
+                                    ? "text-[#16a34a]"
+                                    : transaction.kind === "commission"
+                                      ? "text-[#dc2626]"
+                                      : "text-[#1d1633]"
+                                }`}
+                              >
+                                {transaction.direction === "in" ? "+ " : "- "}
+                                {formatCurrency(transaction.amount)}
+                              </p>
+                              <span
+                                className={`mt-2 inline-flex rounded-full px-3 py-1 text-[12px] font-semibold ${getProviderPaymentStatusClasses(transaction.status)}`}
+                              >
+                                {transaction.status}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </section>
+              </>
+            ) : (
+              <section className="overflow-hidden rounded-[24px] border border-[#efe7f8] bg-white shadow-[0_18px_40px_rgba(91,45,144,0.07)]">
+                <div className="border-b border-[#f3edf9] px-4 py-4">
+                  <h2 className="text-[1.05rem] font-black tracking-[-0.04em] text-[#1d1633]">
+                    {activeTab === "payments" ? "Payment History" : "Withdrawal History"}
+                  </h2>
+                  <p className="mt-1 text-[13px] text-[#7b748f]">
+                    {activeTab === "payments"
+                      ? "Showing payment received transactions only."
+                      : "Showing withdrawal transactions only."}
+                  </p>
+                </div>
+                {filteredTransactions.length === 0 ? (
+                  <div className="px-5 py-8 text-center text-[14px] text-[#7b748f]">
+                    No transactions found for this date range.
+                  </div>
+                ) : (
+                  filteredTransactions.map((transaction, index) => {
+                    const iconData = getProviderPaymentIcon(
+                      transaction.kind,
+                      transaction.direction,
+                    );
+
+                    return (
+                      <div
+                        key={transaction.id}
+                        className={`flex items-center gap-3 px-4 py-4 ${
+                          index < filteredTransactions.length - 1
+                            ? "border-b border-[#f3edf9]"
+                            : ""
+                        }`}
+                      >
+                        <div
+                          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${iconData.wrapperClassName}`}
+                        >
+                          {iconData.icon}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-[15px] font-semibold text-[#1d1633]">
+                            {transaction.title}
+                          </p>
+                          <p className="mt-1 text-[13px] leading-5 text-[#7a8096]">
+                            {transaction.bookingLabel
+                              ? `${transaction.bookingLabel} • ${transaction.timeLabel}`
+                              : transaction.timeLabel}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p
+                            className={`text-[1rem] font-black tracking-[-0.03em] ${
+                              transaction.direction === "in" ? "text-[#16a34a]" : "text-[#1d1633]"
+                            }`}
+                          >
+                            {transaction.direction === "in" ? "+ " : "- "}
+                            {formatCurrency(transaction.amount)}
+                          </p>
+                          <span
+                            className={`mt-2 inline-flex rounded-full px-3 py-1 text-[12px] font-semibold ${getProviderPaymentStatusClasses(transaction.status)}`}
+                          >
+                            {transaction.status}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </section>
+            )}
+          </div>
+        </section>
+      </section>
+
+      <ProviderBottomNav />
+
+      {modal === "withdraw" ? (
+        <ProviderPaymentModalShell
+          title="Withdraw Funds"
+          subtitle="Clean placeholder for the withdrawal flow. No payment logic is connected yet."
+          onClose={() => setModal(null)}
+        >
+          <div className="space-y-4">
+            <div className="rounded-[22px] border border-[#ece3f7] bg-[#faf7fe] p-4">
+              <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-[#8E5EB5]">
+                Available balance
+              </p>
+              <p className="mt-2 text-[2rem] font-black tracking-[-0.05em] text-[#1d1633]">
+                {formatCurrency(walletBalance)}
+              </p>
+            </div>
+            <label className="block rounded-[20px] border border-[#ece3f7] bg-white p-4">
+              <span className="text-[12px] font-bold uppercase tracking-[0.12em] text-[#7d84a0]">
+                Amount
+              </span>
+              <input
+                type="text"
+                placeholder="Enter withdrawal amount"
+                className="mt-3 block w-full bg-transparent text-[15px] font-semibold text-[#1d1633] outline-none"
+              />
+            </label>
+            <button
+              type="button"
+              onClick={() => setModal(null)}
+              className="inline-flex min-h-[3.2rem] w-full items-center justify-center rounded-[18px] bg-[#8E5EB5] px-4 text-[15px] font-extrabold text-white shadow-[0_18px_32px_rgba(142,94,181,0.24)]"
+            >
+              Withdraw button
+            </button>
+          </div>
+        </ProviderPaymentModalShell>
+      ) : null}
+
+      {modal === "company" ? (
+        <ProviderPaymentModalShell
+          title="Pay Company Commission"
+          subtitle="Clean placeholder for company payment proof and mark-as-paid flow."
+          onClose={() => setModal(null)}
+        >
+          <div className="space-y-4">
+            <div className="rounded-[22px] border border-[#ffd8d8] bg-[#fff7f7] p-4">
+              <p className="text-[12px] font-bold uppercase tracking-[0.14em] text-[#dc2626]">
+                Pending company amount
+              </p>
+              <p className="mt-2 text-[2rem] font-black tracking-[-0.05em] text-[#1d1633]">
+                {formatCurrency(pendingCompanyAmount)}
+              </p>
+            </div>
+            <div className="rounded-[20px] border border-dashed border-[#e3d5f4] bg-[#fbf8ff] p-4">
+              <p className="text-[13px] font-semibold text-[#1d1633]">
+                Payment method placeholder
+              </p>
+              <p className="mt-1 text-[13px] leading-6 text-[#7b748f]">
+                Bank transfer / online receipt selection will be connected later.
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setModal(null)}
+                className="inline-flex min-h-[3rem] items-center justify-center rounded-[16px] border border-[#e7dcf4] bg-white px-4 text-[14px] font-bold text-[#8E5EB5]"
+              >
+                Mark as Paid
+              </button>
+              <button
+                type="button"
+                onClick={() => setModal(null)}
+                className="inline-flex min-h-[3rem] items-center justify-center rounded-[16px] bg-[#f4ecfd] px-4 text-[14px] font-bold text-[#8E5EB5]"
+              >
+                Upload Proof
+              </button>
+            </div>
+          </div>
+        </ProviderPaymentModalShell>
+      ) : null}
+    </MobilePage>
+  );
 }
 
 export function TasksScreen() {
