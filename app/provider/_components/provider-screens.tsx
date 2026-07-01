@@ -3026,6 +3026,18 @@ type ProviderPaymentTransaction = {
   status: ProviderPaymentStatus;
 };
 
+type ProviderLedgerMethod = "Cash" | "Card" | "Online" | "Wallet";
+
+type ProviderLedgerRow = {
+  id: string;
+  date: string;
+  bookingId: string;
+  paymentMethod: ProviderLedgerMethod;
+  earned: number;
+  toCompany: number;
+  netEarned: number;
+};
+
 const PROVIDER_PAYMENT_TRANSACTIONS: ProviderPaymentTransaction[] = [
   {
     id: "payment-bk-10021",
@@ -3082,6 +3094,70 @@ const PROVIDER_PAYMENT_TRANSACTIONS: ProviderPaymentTransaction[] = [
     status: "Paid",
   },
 ];
+
+const PROVIDER_LEDGER_ROWS: ProviderLedgerRow[] = [
+  {
+    id: "ledger-10021",
+    date: "01 Jul 2026",
+    bookingId: "BK-10021",
+    paymentMethod: "Cash",
+    earned: 80,
+    toCompany: 15,
+    netEarned: 65,
+  },
+  {
+    id: "ledger-10020",
+    date: "01 Jul 2026",
+    bookingId: "BK-10020",
+    paymentMethod: "Card",
+    earned: 60,
+    toCompany: 0,
+    netEarned: 60,
+  },
+  {
+    id: "ledger-10018",
+    date: "30 Jun 2026",
+    bookingId: "BK-10018",
+    paymentMethod: "Online",
+    earned: 120,
+    toCompany: 0,
+    netEarned: 120,
+  },
+  {
+    id: "ledger-10017",
+    date: "30 Jun 2026",
+    bookingId: "BK-10017",
+    paymentMethod: "Wallet",
+    earned: 45,
+    toCompany: 0,
+    netEarned: 45,
+  },
+  {
+    id: "ledger-10015",
+    date: "29 Jun 2026",
+    bookingId: "BK-10015",
+    paymentMethod: "Cash",
+    earned: 100,
+    toCompany: 30,
+    netEarned: 70,
+  },
+];
+
+function getLedgerMethodClasses(method: ProviderLedgerMethod) {
+  if (method === "Cash") {
+    return "bg-[#fff1e8] text-[#ea580c]";
+  }
+
+  if (method === "Card") {
+    return "bg-[#eaf1ff] text-[#3157c9]";
+  }
+
+  if (method === "Online") {
+    return "bg-[#e5f8f1] text-[#0f766e]";
+  }
+
+  return "bg-[#f3ebff] text-[#7c3aed]";
+}
 
 function getProviderPaymentStatusClasses(status: ProviderPaymentStatus) {
   if (status === "Pending") {
@@ -3163,6 +3239,7 @@ export function PaymentsScreen() {
   const [modal, setModal] = useState<ProviderPaymentModal>(null);
   const [customStartDate, setCustomStartDate] = useState("2026-07-01");
   const [customEndDate, setCustomEndDate] = useState("2026-07-01");
+  const [showLedger, setShowLedger] = useState(false);
 
   const walletBalance = 320;
   const totalEarnings = 1250;
@@ -3219,6 +3296,13 @@ export function PaymentsScreen() {
   const toCompanyToday = summaryTransactions
     .filter((transaction) => transaction.kind === "commission")
     .reduce((total, transaction) => total + transaction.amount, 0);
+  const ledgerSummary = {
+    totalEarned: 405,
+    toCompany: 45,
+    netEarned: 360,
+    cashJobs: 2,
+    otherPayments: 3,
+  };
 
   const paymentTabs: Array<{ key: ProviderPaymentTab; label: string; icon: React.ReactNode }> = [
     {
@@ -3246,6 +3330,209 @@ export function PaymentsScreen() {
 
   if (fallback) {
     return fallback;
+  }
+
+  if (showLedger) {
+    return (
+      <MobilePage className="pb-36" fullWidth>
+        <section className="space-y-5">
+          <header className="rounded-[28px] bg-white px-4 py-5 shadow-[0_20px_44px_rgba(91,45,144,0.1)] ring-1 ring-[#efe7f8]">
+            <div className="grid grid-cols-[2.75rem_minmax(0,1fr)_2.75rem] items-start gap-3">
+              <button
+                type="button"
+                onClick={() => setShowLedger(false)}
+                className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-[#f8f2ff] text-[#8E5EB5]"
+                aria-label="Back to Payments"
+              >
+                <ChevronLeft className="h-6 w-6" />
+              </button>
+              <div className="pt-1 text-center">
+                <h1 className="text-[1.95rem] font-black tracking-[-0.06em] text-[#17153b]">
+                  Transaction Ledger
+                </h1>
+                <p className="mt-2 text-[14px] leading-6 text-[#6f748b]">
+                  Booking-wise earnings with company payable details
+                </p>
+              </div>
+              <button
+                type="button"
+                className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-[#f8f2ff] text-[#8E5EB5]"
+                aria-label="Filter ledger dates"
+              >
+                <CalendarDays className="h-6 w-6" />
+              </button>
+            </div>
+          </header>
+
+          <section className="rounded-[28px] bg-white px-4 py-4 shadow-[0_20px_44px_rgba(91,45,144,0.08)] ring-1 ring-[#efe7f8]">
+            <div className="grid grid-cols-4 overflow-hidden rounded-[18px] border border-[#ede4f7] bg-[#fffefe]">
+              {rangeTabs.map((range, index) => (
+                <button
+                  key={`ledger-${range.key}`}
+                  type="button"
+                  onClick={() => setActiveRange(range.key)}
+                  className={`relative min-h-[3.7rem] px-2 text-[13px] font-semibold transition ${
+                    activeRange === range.key ? "bg-[#8E5EB5] text-white" : "bg-white text-[#585d7b]"
+                  } ${index < rangeTabs.length - 1 ? "border-r border-[#ede4f7]" : ""}`}
+                >
+                  {range.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <label className="rounded-[18px] border border-[#ece4f7] bg-white px-4 py-4 shadow-[0_12px_28px_rgba(91,45,144,0.04)]">
+                <span className="text-[13px] font-semibold text-[#6f748b]">Start Date</span>
+                <span className="mt-3 flex items-center gap-3">
+                  <Calendar className="h-5 w-5 text-[#7d84a0]" />
+                  <input
+                    type="text"
+                    value="01/07/2026"
+                    readOnly
+                    className="w-full bg-transparent text-[15px] font-semibold text-[#1c1530] outline-none"
+                  />
+                </span>
+              </label>
+              <label className="rounded-[18px] border border-[#ece4f7] bg-white px-4 py-4 shadow-[0_12px_28px_rgba(91,45,144,0.04)]">
+                <span className="text-[13px] font-semibold text-[#6f748b]">End Date</span>
+                <span className="mt-3 flex items-center gap-3">
+                  <Calendar className="h-5 w-5 text-[#7d84a0]" />
+                  <input
+                    type="text"
+                    value="07/07/2026"
+                    readOnly
+                    className="w-full bg-transparent text-[15px] font-semibold text-[#1c1530] outline-none"
+                  />
+                </span>
+              </label>
+            </div>
+          </section>
+
+          <section className="overflow-x-auto rounded-[28px] bg-white px-3 py-4 shadow-[0_20px_44px_rgba(91,45,144,0.08)] ring-1 ring-[#efe7f8]">
+            <div className="grid min-w-[780px] grid-cols-5 divide-x divide-[#efe7f8]">
+              <div className="px-3 py-3 text-center">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#f3ebff] text-[#8E5EB5]">
+                  <Wallet className="h-5 w-5" />
+                </div>
+                <p className="mt-4 text-[12px] text-[#5f6480]">Total Earned</p>
+                <p className="mt-2 whitespace-nowrap text-[1rem] font-black text-[#8E5EB5]">
+                  RM 405.00
+                </p>
+              </div>
+              <div className="px-3 py-3 text-center">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#fff1e8] text-[#f97316]">
+                  <Landmark className="h-5 w-5" />
+                </div>
+                <p className="mt-4 text-[12px] text-[#5f6480]">To Company</p>
+                <p className="mt-2 whitespace-nowrap text-[1rem] font-black text-[#f97316]">
+                  RM 45.00
+                </p>
+              </div>
+              <div className="px-3 py-3 text-center">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#e9f7ea] text-[#16a34a]">
+                  <BriefcaseBusiness className="h-5 w-5" />
+                </div>
+                <p className="mt-4 text-[12px] text-[#5f6480]">Net Earned</p>
+                <p className="mt-2 whitespace-nowrap text-[1rem] font-black text-[#16a34a]">
+                  RM 360.00
+                </p>
+              </div>
+              <div className="px-3 py-3 text-center">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#edf1ff] text-[#3157c9]">
+                  <CreditCard className="h-5 w-5" />
+                </div>
+                <p className="mt-4 text-[12px] text-[#5f6480]">Cash Jobs</p>
+                <p className="mt-2 whitespace-nowrap text-[1rem] font-black text-[#3157c9]">
+                  2
+                </p>
+              </div>
+              <div className="px-3 py-3 text-center">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#f3ebff] text-[#8E5EB5]">
+                  <CreditCard className="h-5 w-5" />
+                </div>
+                <p className="mt-4 text-[12px] text-[#5f6480]">Other Payments</p>
+                <p className="mt-2 whitespace-nowrap text-[1rem] font-black text-[#7c3aed]">
+                  3
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <section className="overflow-hidden rounded-[28px] bg-white shadow-[0_20px_44px_rgba(91,45,144,0.08)] ring-1 ring-[#efe7f8]">
+            <div className="overflow-x-auto">
+              <div className="min-w-[790px]">
+                <div className="grid grid-cols-[110px_120px_130px_120px_130px_130px] border-b-2 border-[#8E5EB5] px-3 py-4 text-[13px] font-semibold text-[#5f5d87]">
+                  <p className="px-2">Date</p>
+                  <p className="px-2">Booking ID</p>
+                  <p className="px-2">Payment Method</p>
+                  <p className="px-2">Earned</p>
+                  <p className="px-2">To Company</p>
+                  <p className="px-2">Net Earned</p>
+                </div>
+
+                {PROVIDER_LEDGER_ROWS.map((row) => (
+                  <div
+                    key={row.id}
+                    className="grid grid-cols-[110px_120px_130px_120px_130px_130px] border-b border-[#f0ebf8] px-3 py-5 text-[14px] text-[#17153b]"
+                  >
+                    <p className="px-2">{row.date}</p>
+                    <p className="px-2">{row.bookingId}</p>
+                    <div className="px-2">
+                      <span
+                        className={`inline-flex min-w-[84px] items-center justify-center rounded-[12px] px-3 py-2 text-[13px] font-bold ${getLedgerMethodClasses(row.paymentMethod)}`}
+                      >
+                        {row.paymentMethod}
+                      </span>
+                    </div>
+                    <p className="px-2 whitespace-nowrap font-semibold text-[#16a34a]">
+                      {formatCurrency(row.earned)}
+                    </p>
+                    <p className="px-2 whitespace-nowrap font-semibold text-[#f97316]">
+                      {formatCurrency(row.toCompany)}
+                    </p>
+                    <p className="px-2 whitespace-nowrap font-semibold text-[#16a34a]">
+                      {formatCurrency(row.netEarned)}
+                    </p>
+                  </div>
+                ))}
+
+                <div className="grid grid-cols-[110px_120px_130px_120px_130px_130px] bg-[linear-gradient(180deg,#fffefe_0%,#faf7ff_100%)] px-3 py-5 text-[#17153b]">
+                  <div className="px-2">
+                    <p className="text-[14px] font-black text-[#6d3bb5]">Total for Selected Range</p>
+                  </div>
+                  <div className="col-span-2 px-2">
+                    <p className="text-[14px] font-black">5 bookings</p>
+                    <p className="mt-1 text-[13px] text-[#4f4c75]">2 Cash / 3 Other</p>
+                  </div>
+                  <p className="px-2 whitespace-nowrap text-[15px] font-black text-[#16a34a]">
+                    RM 405.00
+                  </p>
+                  <p className="px-2 whitespace-nowrap text-[15px] font-black text-[#f97316]">
+                    RM 45.00
+                  </p>
+                  <p className="px-2 whitespace-nowrap text-[15px] font-black text-[#16a34a]">
+                    RM 360.00
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section className="rounded-[24px] border border-[#ede4f7] bg-[linear-gradient(180deg,#fffefe_0%,#faf7ff_100%)] px-5 py-4 shadow-[0_18px_32px_rgba(91,45,144,0.05)]">
+            <div className="flex items-start gap-4">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#f3ebff] text-[#8E5EB5]">
+                <ShieldCheck className="h-6 w-6" />
+              </div>
+              <p className="text-[14px] leading-7 text-[#54557b]">
+                Cash jobs create company payable. Other payment methods already have commission deducted before payout.
+              </p>
+            </div>
+          </section>
+        </section>
+
+        <ProviderBottomNav />
+      </MobilePage>
+    );
   }
 
   return (
@@ -3473,6 +3760,7 @@ export function PaymentsScreen() {
                     </h2>
                     <button
                       type="button"
+                      onClick={() => setShowLedger(true)}
                       className="inline-flex items-center gap-2 text-[14px] font-semibold text-[#8E5EB5]"
                     >
                       View All
