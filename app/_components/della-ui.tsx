@@ -27,13 +27,20 @@ function cx(...parts: Array<string | false | null | undefined>) {
 export function MobilePage({
   children,
   className,
+  fullWidth = false,
 }: {
   children: ReactNode;
   className?: string;
+  fullWidth?: boolean;
 }) {
   return (
     <main className="min-h-[100dvh] overflow-x-hidden bg-[radial-gradient(circle_at_top,rgba(166,121,207,0.28),transparent_32%),linear-gradient(180deg,#fcfaff_0%,#f5f1fa_100%)]">
-      <div className="mx-auto min-h-[100dvh] w-full max-w-[430px] bg-white px-4 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] sm:px-5">
+      <div
+        className={cx(
+          "mx-auto min-h-[100dvh] w-full bg-white pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]",
+          fullWidth ? "max-w-[430px] px-3 sm:max-w-[440px] sm:px-4" : "max-w-[430px] px-4 sm:px-5"
+        )}
+      >
         <div className={cx("min-h-[100dvh] py-4", className)}>{children}</div>
       </div>
     </main>

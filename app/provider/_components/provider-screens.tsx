@@ -3209,6 +3209,7 @@ export function PaymentsScreen() {
     () => PROVIDER_PAYMENT_TRANSACTIONS.filter((transaction) => transaction.date === "2026-07-01"),
     [],
   );
+  const overviewTransactions = PROVIDER_PAYMENT_TRANSACTIONS;
   const earningsToday = summaryTransactions
     .filter((transaction) => transaction.kind === "payment")
     .reduce((total, transaction) => total + transaction.amount, 0);
@@ -3248,7 +3249,7 @@ export function PaymentsScreen() {
   }
 
   return (
-    <MobilePage className="pb-30">
+    <MobilePage className="pb-36" fullWidth>
       <section className="space-y-5">
         <header className="flex items-start justify-between gap-4 px-1 pt-2">
           <div>
@@ -3270,12 +3271,14 @@ export function PaymentsScreen() {
         </header>
 
         <section className="relative overflow-hidden rounded-[30px] bg-[linear-gradient(135deg,#8e5eb5_0%,#7b46a8_52%,#925ec8_100%)] px-5 py-5 text-white shadow-[0_28px_50px_rgba(122,71,175,0.28)]">
-          <div className="absolute inset-y-0 right-[34%] hidden w-px bg-white/18 sm:block" />
+          <div className="absolute right-[7.5rem] top-5 bottom-5 hidden w-px bg-white/16 sm:block" />
           <div className="absolute inset-x-0 top-0 h-full bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.18),transparent_38%)]" />
-          <div className="relative flex items-start justify-between gap-4">
-            <div className="max-w-[12rem]">
+          <div className="relative grid grid-cols-[minmax(0,1fr)_7rem] gap-x-3 gap-y-5 sm:grid-cols-[minmax(0,1fr)_7.25rem_7.25rem] sm:items-center">
+            <div className="min-w-0">
               <p className="text-[14px] font-medium text-white/90">Wallet Balance</p>
-              <p className="mt-3 text-[2.45rem] font-black tracking-[-0.06em]">RM 320.00</p>
+              <p className="mt-3 whitespace-nowrap text-[2.45rem] font-black tracking-[-0.06em]">
+                RM 320.00
+              </p>
               <p className="mt-2 text-[14px] text-white/88">Available to withdraw</p>
               <button
                 type="button"
@@ -3289,8 +3292,8 @@ export function PaymentsScreen() {
               </button>
             </div>
 
-            <div className="pointer-events-none absolute left-[45%] top-[50%] hidden -translate-x-1/2 -translate-y-1/2 sm:block">
-              <div className="relative h-[9.6rem] w-[8.7rem]">
+            <div className="pointer-events-none relative ml-auto hidden sm:block">
+              <div className="relative h-[9.2rem] w-[7rem]">
                 <div className="absolute left-5 top-0 h-12 w-16 rotate-[-12deg] rounded-[10px] border border-[#d9f2d6] bg-[linear-gradient(180deg,#f1fff2_0%,#c9ebc5_100%)] shadow-[0_12px_20px_rgba(26,94,38,0.18)]" />
                 <div className="absolute left-7 top-2 h-12 w-16 rotate-[-7deg] rounded-[10px] border border-[#d9f2d6] bg-[linear-gradient(180deg,#f6fff6_0%,#daf4d7_100%)]" />
                 <div className="absolute inset-x-0 bottom-3 h-[5.4rem] rounded-[24px] bg-[linear-gradient(180deg,#7e4aad_0%,#5d2f88_100%)] shadow-[0_22px_34px_rgba(36,13,66,0.4)]" />
@@ -3307,18 +3310,24 @@ export function PaymentsScreen() {
               </div>
             </div>
 
-            <div className="min-w-[8.3rem] max-w-[8.3rem] space-y-5 pl-3 text-right sm:pl-0 sm:text-left">
+            <div className="col-span-2 grid grid-cols-3 gap-3 rounded-[20px] bg-white/8 p-3 backdrop-blur-[1px] sm:col-span-1 sm:block sm:space-y-5 sm:rounded-none sm:bg-transparent sm:p-0 sm:text-left">
               <div>
-                <p className="text-[13px] text-white/78">Total Earnings</p>
-                <p className="mt-1 text-[1.05rem] font-extrabold">RM 1,250.00</p>
+                <p className="text-[11px] text-white/74 sm:text-[13px]">Total Earnings</p>
+                <p className="mt-1 whitespace-nowrap text-[0.96rem] font-extrabold sm:text-[1.05rem]">
+                  RM 1,250.00
+                </p>
               </div>
               <div>
-                <p className="text-[13px] text-white/78">Total Withdrawn</p>
-                <p className="mt-1 text-[1.05rem] font-extrabold">RM 930.00</p>
+                <p className="text-[11px] text-white/74 sm:text-[13px]">Total Withdrawn</p>
+                <p className="mt-1 whitespace-nowrap text-[0.96rem] font-extrabold sm:text-[1.05rem]">
+                  RM 930.00
+                </p>
               </div>
               <div>
-                <p className="text-[13px] text-white/78">Pending Amount</p>
-                <p className="mt-1 text-[1.05rem] font-extrabold">RM 150.00</p>
+                <p className="text-[11px] text-white/74 sm:text-[13px]">Pending Amount</p>
+                <p className="mt-1 whitespace-nowrap text-[0.96rem] font-extrabold sm:text-[1.05rem]">
+                  RM 150.00
+                </p>
               </div>
             </div>
           </div>
@@ -3326,26 +3335,26 @@ export function PaymentsScreen() {
 
         {pendingCompanyAmount > 0 ? (
           <section className="rounded-[28px] border border-[#ffd9d5] bg-[linear-gradient(180deg,#fffefe_0%,#fff8f8_100%)] px-5 py-5 shadow-[0_18px_36px_rgba(255,89,89,0.08)]">
-            <div className="flex items-center gap-4">
+            <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-4 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-center">
               <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(180deg,#fff1f3_0%,#ffe6eb_100%)] text-[#d61f45]">
                 <Landmark className="h-7 w-7" />
               </div>
               <div className="min-w-0 flex-1">
-                <h2 className="text-[1.05rem] font-black tracking-[-0.04em] text-[#d62839]">
+                <h2 className="max-w-[14rem] text-[1.05rem] font-black leading-6 tracking-[-0.04em] text-[#d62839] sm:max-w-none">
                   Amount to Pay Company
                 </h2>
-                <p className="mt-1 max-w-[14rem] text-[14px] leading-6 text-[#5d6278]">
+                <p className="mt-1 max-w-[15rem] text-[14px] leading-6 text-[#5d6278] sm:max-w-none">
                   You have pending amount to pay as company commission.
                 </p>
               </div>
-              <div className="text-right">
-                <p className="text-[1.15rem] font-black tracking-[-0.04em] text-[#d62839]">
+              <div className="col-span-2 flex items-center justify-between gap-3 sm:col-span-1 sm:block sm:text-right">
+                <p className="whitespace-nowrap text-[1.15rem] font-black tracking-[-0.04em] text-[#d62839]">
                   RM 75.00
                 </p>
                 <button
                   type="button"
                   onClick={() => setModal("company")}
-                  className="mt-3 inline-flex min-h-[2.95rem] items-center gap-2 rounded-[16px] bg-[linear-gradient(180deg,#ec3349_0%,#d81d35_100%)] px-4 py-2 text-[14px] font-extrabold text-white shadow-[0_16px_28px_rgba(216,29,53,0.24)]"
+                  className="inline-flex min-h-[2.95rem] items-center gap-2 rounded-[16px] bg-[linear-gradient(180deg,#ec3349_0%,#d81d35_100%)] px-4 py-2 text-[14px] font-extrabold text-white shadow-[0_16px_28px_rgba(216,29,53,0.24)] sm:mt-3"
                 >
                   Pay Now
                   <ChevronRight className="h-4.5 w-4.5" />
@@ -3356,20 +3365,22 @@ export function PaymentsScreen() {
         ) : null}
 
         <section className="overflow-hidden rounded-[30px] bg-white shadow-[0_24px_54px_rgba(91,45,144,0.1)] ring-1 ring-[#efe7f8]">
-          <div className="flex border-b border-[#efe7f8]">
+          <div className="overflow-x-auto border-b border-[#efe7f8]">
+            <div className="grid min-w-full grid-cols-3">
             {paymentTabs.map((tab) => (
               <button
                 key={tab.key}
                 type="button"
                 onClick={() => setActiveTab(tab.key)}
-                className={`flex flex-1 items-center justify-center gap-2 px-2 py-4 text-[13px] font-semibold transition ${
+                className={`flex min-w-0 flex-col items-center justify-center gap-1 px-1 py-4 text-[11px] leading-4 font-semibold transition sm:flex-row sm:gap-2 sm:px-2 sm:text-[13px] ${
                   activeTab === tab.key ? "text-[#8E5EB5]" : "text-[#717791]"
                 }`}
               >
                 {tab.icon}
-                <span className="text-center">{tab.label}</span>
+                <span className="text-center whitespace-nowrap">{tab.label}</span>
               </button>
             ))}
+            </div>
           </div>
           <div className="grid grid-cols-3">
             {paymentTabs.map((tab) => (
@@ -3383,7 +3394,7 @@ export function PaymentsScreen() {
           </div>
 
           <div className="space-y-5 px-4 py-5">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="mt-1 grid grid-cols-2 gap-3">
               {rangeTabs.map((range) => (
                 <button
                   key={range.key}
@@ -3435,13 +3446,13 @@ export function PaymentsScreen() {
                     </span>
                     <Calendar className="ml-auto h-4.5 w-4.5 text-[#7c819d]" />
                   </div>
-                  <div className="grid grid-cols-4 divide-x divide-[#f0e9f8]">
+                  <div className="grid grid-cols-2 divide-x-0 divide-y divide-[#f0e9f8] sm:grid-cols-4 sm:divide-x sm:divide-y-0">
                     <div className="px-2 py-4 text-center">
                       <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-[#edf9f0] text-[#16a34a]">
                         <Wallet className="h-4.5 w-4.5" />
                       </div>
                       <p className="mt-3 text-[12px] text-[#676f86]">Earnings</p>
-                      <p className="mt-1 text-[0.98rem] font-black text-[#1d1633]">
+                      <p className="mt-1 whitespace-nowrap text-[0.98rem] font-black text-[#1d1633]">
                         {formatCurrency(earningsToday)}
                       </p>
                     </div>
@@ -3450,7 +3461,7 @@ export function PaymentsScreen() {
                         <Wallet className="h-4.5 w-4.5" />
                       </div>
                       <p className="mt-3 text-[12px] text-[#676f86]">Withdrawn</p>
-                      <p className="mt-1 text-[0.98rem] font-black text-[#1d1633]">
+                      <p className="mt-1 whitespace-nowrap text-[0.98rem] font-black text-[#1d1633]">
                         {formatCurrency(withdrawnToday)}
                       </p>
                     </div>
@@ -3459,7 +3470,7 @@ export function PaymentsScreen() {
                         <Landmark className="h-4.5 w-4.5" />
                       </div>
                       <p className="mt-3 text-[12px] text-[#676f86]">To Company</p>
-                      <p className="mt-1 text-[0.98rem] font-black text-[#1d1633]">
+                      <p className="mt-1 whitespace-nowrap text-[0.98rem] font-black text-[#1d1633]">
                         {formatCurrency(toCompanyToday)}
                       </p>
                     </div>
@@ -3468,7 +3479,7 @@ export function PaymentsScreen() {
                         <Wallet className="h-4.5 w-4.5" />
                       </div>
                       <p className="mt-3 text-[12px] text-[#676f86]">Balance</p>
-                      <p className="mt-1 text-[0.98rem] font-black text-[#1d1633]">
+                      <p className="mt-1 whitespace-nowrap text-[0.98rem] font-black text-[#1d1633]">
                         {formatCurrency(walletBalance)}
                       </p>
                     </div>
@@ -3489,12 +3500,12 @@ export function PaymentsScreen() {
                     </button>
                   </div>
                   <div className="mt-4 overflow-hidden rounded-[24px] border border-[#efe7f8] bg-white shadow-[0_18px_40px_rgba(91,45,144,0.07)]">
-                    {filteredTransactions.length === 0 ? (
+                    {overviewTransactions.length === 0 ? (
                       <div className="px-5 py-8 text-center text-[14px] text-[#7b748f]">
                         No transactions found for this date range.
                       </div>
                     ) : (
-                      filteredTransactions.map((transaction, index) => {
+                      overviewTransactions.map((transaction, index) => {
                         const iconData = getProviderPaymentIcon(
                           transaction.kind,
                           transaction.direction,
@@ -3524,9 +3535,9 @@ export function PaymentsScreen() {
                                   : transaction.timeLabel}
                               </p>
                             </div>
-                            <div className="text-right">
+                            <div className="shrink-0 text-right">
                               <p
-                                className={`text-[1rem] font-black tracking-[-0.03em] ${
+                                className={`whitespace-nowrap text-[1rem] font-black tracking-[-0.03em] ${
                                   transaction.direction === "in"
                                     ? "text-[#16a34a]"
                                     : transaction.kind === "commission"
@@ -3597,9 +3608,9 @@ export function PaymentsScreen() {
                               : transaction.timeLabel}
                           </p>
                         </div>
-                        <div className="text-right">
+                        <div className="shrink-0 text-right">
                           <p
-                            className={`text-[1rem] font-black tracking-[-0.03em] ${
+                            className={`whitespace-nowrap text-[1rem] font-black tracking-[-0.03em] ${
                               transaction.direction === "in" ? "text-[#16a34a]" : "text-[#1d1633]"
                             }`}
                           >
