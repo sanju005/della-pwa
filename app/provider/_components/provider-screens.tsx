@@ -3310,26 +3310,6 @@ export function PaymentsScreen() {
               </div>
             </div>
 
-            <div className="col-span-2 grid grid-cols-3 gap-3 rounded-[20px] bg-white/8 p-3 backdrop-blur-[1px] sm:col-span-1 sm:block sm:space-y-5 sm:rounded-none sm:bg-transparent sm:p-0 sm:text-left">
-              <div>
-                <p className="text-[11px] text-white/74 sm:text-[13px]">Total Earnings</p>
-                <p className="mt-1 whitespace-nowrap text-[0.96rem] font-extrabold sm:text-[1.05rem]">
-                  RM 1,250.00
-                </p>
-              </div>
-              <div>
-                <p className="text-[11px] text-white/74 sm:text-[13px]">Total Withdrawn</p>
-                <p className="mt-1 whitespace-nowrap text-[0.96rem] font-extrabold sm:text-[1.05rem]">
-                  RM 930.00
-                </p>
-              </div>
-              <div>
-                <p className="text-[11px] text-white/74 sm:text-[13px]">Pending Amount</p>
-                <p className="mt-1 whitespace-nowrap text-[0.96rem] font-extrabold sm:text-[1.05rem]">
-                  RM 150.00
-                </p>
-              </div>
-            </div>
           </div>
         </section>
 
