@@ -3158,16 +3158,11 @@ function ProviderPaymentModalShell({
 
 export function PaymentsScreen() {
   const state = useProviderAppData();
-  const fallback = LoadingOrError(state);
   const [activeTab, setActiveTab] = useState<ProviderPaymentTab>("overview");
   const [activeRange, setActiveRange] = useState<ProviderPaymentRange>("custom");
   const [modal, setModal] = useState<ProviderPaymentModal>(null);
   const [customStartDate, setCustomStartDate] = useState("2026-07-01");
   const [customEndDate, setCustomEndDate] = useState("2026-07-01");
-
-  if (fallback) {
-    return fallback;
-  }
 
   const walletBalance = 320;
   const totalEarnings = 1250;
@@ -3175,6 +3170,7 @@ export function PaymentsScreen() {
   const pendingAmount = 150;
   const pendingCompanyAmount = 75;
   const displayDate = "01 Jul 2026";
+  const fallback = LoadingOrError(state);
 
   const filteredTransactions = useMemo(() => {
     const visibleKinds =
@@ -3246,6 +3242,10 @@ export function PaymentsScreen() {
     { key: "month", label: "This Month" },
     { key: "custom", label: "Custom Range" },
   ];
+
+  if (fallback) {
+    return fallback;
+  }
 
   return (
     <MobilePage className="pb-30">
